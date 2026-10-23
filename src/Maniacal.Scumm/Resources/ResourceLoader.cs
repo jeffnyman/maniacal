@@ -1,0 +1,68 @@
+using System.Buffers.Binary;
+using Daventry.Core.Storage;
+
+namespace Maniacal.Scumm.Resources;
+
+/// <summary>
+/// Loads resources from the room files the index points to. In versions 1 and 2 every resource
+/// starts with its own size as a 16-bit word, the size included; a room file is the room itself
+/// followed by the costumes, scripts and sounds stored with it. Mirrors the <c>GF_OLD_BUNDLE</c>
+/// path of ScummVM's <c>ScummEngine::loadResource</c>. Decoded room files are cached.
+/// </summary>
+public sealed class ResourceLoader
+{
+    private readonly IGameContainer _game;
+    private readonly Dictionary<int, byte[]> _files = [];
+
+    public ResourceLoader(IGameContainer game, ResourceIndex index)
+    {
+        _game = game;
+        Index = index;
+    }
+
+    public ResourceIndex Index { get; }
+
+    /// <summary>Reads the index from <c>00.LFL</c> and returns a loader over it.</summary>
+    public static ResourceLoader Open(IGameContainer game)
+        => new(game, ResourceIndex.Parse(LflFile.Read(game, 0)));
+
+    /// <summary>The decoded contents of a room file.</summary>
+    public ReadOnlyMemory<byte> RoomFile(int room)
+    {
+        if (!_files.TryGetValue(room, out var data))
+        {
+            data = LflFile.Read(_game, room);
+            _files[room] = data;
+        }
+
+        return data;
+    }
+
+    /// <summary>
+    /// The bytes of a resource, starting with its size word, or null when the index has no entry
+    /// for it or its room file is missing. Throws <see cref="InvalidDataException"/> when the entry
+    /// points outside its file.
+    /// </summary>
+    public ReadOnlyMemory<byte>? Load(ResourceType type, int index)
+    {
+        var location = Index.Locate(type, index);
+        if (!location.IsPresent || !LflFile.Exists(_game, location.Room))
+        {
+            return null;
+        }
+
+        var file = RoomFile(location.Room);
+        if (location.Offset + 2 > file.Length)
+        {
+            throw new InvalidDataException($"{type} {index}: offset {location.Offset} is past the end of {LflFile.NameOf(location.Room)} ({file.Length} bytes).");
+        }
+
+        int size = BinaryPrimitives.ReadUInt16LittleEndian(file.Span[location.Offset..]);
+        if (size < 2 || location.Offset + size > file.Length)
+        {
+            throw new InvalidDataException($"{type} {index}: size {size} at offset {location.Offset} does not fit in {LflFile.NameOf(location.Room)} ({file.Length} bytes).");
+        }
+
+        return file.Slice(location.Offset, size);
+    }
+}
