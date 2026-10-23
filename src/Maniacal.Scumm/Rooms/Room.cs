@@ -10,7 +10,7 @@ namespace Maniacal.Scumm.Rooms;
 /// </summary>
 /// <remarks>
 /// Header, from the room's size word: width and height at 4 (version 1: two bytes in 8-pixel
-/// units; version 2: two words in pixels), the object count at 20, the walkbox offset at 21 (a
+/// units; version 2: two words in pixels, and the picture offset at 10), the object count at 20, the walkbox offset at 21 (a
 /// byte), the sound and script counts at 22 and 23, the exit and entry script offsets at 24 and
 /// 26, and from 28 the object image offsets, the object code offsets, the sound numbers and the
 /// script numbers.
@@ -40,6 +40,7 @@ public sealed class Room
         {
             Width = Word(span, 4);
             Height = Word(span, 6);
+            ImageOffset = Word(span, 0x0A);
         }
 
         int objectCount = span[20];
@@ -86,6 +87,9 @@ public sealed class Room
 
     /// <summary>Height in pixels.</summary>
     public int Height { get; }
+
+    /// <summary>Version 2: offset of the background picture and its mask (<c>_IM00_offs</c>). Version 1 keeps its graphics elsewhere and leaves this 0.</summary>
+    public int ImageOffset { get; }
 
     public IReadOnlyList<RoomObject> Objects { get; }
 

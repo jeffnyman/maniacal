@@ -10,8 +10,9 @@ the same engine generations and would come nearly for free, but it is not a goal
 
 ## Status
 
-Early. The solution builds, and Maniac Mansion releases are identified by ScummVM's MD5 table.
-There is no interpreter yet: `maniacal <folder>` names the release and stops.
+Early. Releases are identified by ScummVM's MD5 table; the resources, rooms (objects, walkboxes,
+scripts) and, for V2, room pictures are read. There is no interpreter yet: `maniacal <folder>` names
+the release and stops, and `maniacal <folder> --room N [--mask]` writes a V2 room's background as a PNG.
 [ROADMAP.md](ROADMAP.md) gives the order of work.
 
 | Release | SCUMM version | Data | State |
@@ -43,6 +44,7 @@ Needs the .NET 10 SDK.
 dotnet build Maniacal.slnx
 dotnet test Maniacal.slnx
 dotnet run --project src/Maniacal.Player -- <game folder> [--list] [--scale N] [--fullscreen]
+dotnet run --project src/Maniacal.Player -- <game folder> --room N [--mask] [--output file.png]
 ```
 
 ## Game data

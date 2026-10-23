@@ -1,7 +1,10 @@
+using Daventry.Core.Graphics;
 using Daventry.Core.Hosting;
 using Daventry.Core.Storage;
 using Daventry.Host.Sdl;
 using Maniacal.Scumm;
+using Maniacal.Scumm.Graphics;
+using Maniacal.Scumm.Resources;
 
 namespace Maniacal.Player;
 
@@ -14,6 +17,9 @@ internal static class Program
         bool fullscreen = false;
         bool verbose = false;
         int scale = 3;
+        int? room = null;
+        bool mask = false;
+        string? output = null;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -30,6 +36,16 @@ internal static class Program
                     break;
                 case "--scale" when i + 1 < args.Length && int.TryParse(args[i + 1], out scale):
                     i++;
+                    break;
+                case "--room" when i + 1 < args.Length && int.TryParse(args[i + 1], out int number):
+                    room = number;
+                    i++;
+                    break;
+                case "--mask":
+                    mask = true;
+                    break;
+                case "--output" when i + 1 < args.Length:
+                    output = args[++i];
                     break;
                 case var arg when !arg.StartsWith("--", StringComparison.Ordinal) && gamePath is null:
                     gamePath = arg;
@@ -65,6 +81,11 @@ internal static class Program
             return 0;
         }
 
+        if (room is { } roomNumber)
+        {
+            return WriteRoom(container, roomNumber, mask, output ?? $"room-{roomNumber:D2}{(mask ? "-mask" : "")}.png");
+        }
+
         var saveDirectory = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Maniacal", "saves", detected[0].GameId);
 
@@ -96,8 +117,41 @@ internal static class Program
         return 0;
     }
 
+    /// <summary>Writes a room's background picture, or its mask in black and white, as a PNG.</summary>
+    private static int WriteRoom(IGameContainer container, int number, bool mask, string path)
+    {
+        try
+        {
+            if (ResourceLoader.Open(container).LoadRoom(number) is not { } room)
+            {
+                Console.Error.WriteLine($"There is no room {number}");
+                return 1;
+            }
+
+            var image = RoomBackground.Decode(room);
+            using var file = File.Create(path);
+            if (mask)
+            {
+                PngWriter.Write(file, image.Mask, [Rgb.Black, Rgb.White]);
+            }
+            else
+            {
+                PngWriter.Write(file, image.Pixels, Palettes.Ega);
+            }
+
+            Console.WriteLine($"Room {number}: {room.Width}x{room.Height}, {room.Objects.Count} objects, written to {path}");
+            return 0;
+        }
+        catch (Exception ex) when (ex is NotSupportedException or InvalidDataException)
+        {
+            Console.Error.WriteLine(ex.Message);
+            return 3;
+        }
+    }
+
     private static void PrintUsage()
     {
         Console.Error.WriteLine("usage: maniacal <game folder> [--list] [--scale N] [--fullscreen] [--verbose]");
+        Console.Error.WriteLine("       maniacal <game folder> --room N [--mask] [--output file.png]");
     }
 }
