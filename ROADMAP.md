@@ -57,17 +57,19 @@ run of clicks that reaches a known state.
   box matrix, the entry and exit scripts, and the sounds and scripts loaded with each room
   (`Maniacal.Scumm.Rooms`). Every room of both releases parses.
 - Object images (OBIM) and the room graphics are read in Phase 2.
-- Done for V2: `maniacal <folder> --room N [--mask]` writes a room's background (or its mask) as a
-  PNG. Still to come: V1 rooms, and `--costume N` for the frames of a costume.
+- Done: `maniacal <folder> --room N [--mask]` writes a room's background (or its mask) as a PNG,
+  for both DOS releases. Still to come: `--costume N` for the frames of a costume.
 - Check: every room and costume of both DOS releases decodes; PNGs of a few rooms checked by eye.
 
 ## Phase 2: drawing (V2, then V1)
 
 - Done: the V2 picture and mask decoder (`GdiV2::prepareDrawBitmap`, `generateStripTable`) as
   `V2Bitmap`, and the EGA palette. Every V2 room decodes, ending exactly where its object images begin.
-- `gfx.cpp`: `VirtScreen`, the strip renderer;
-  `GdiV1::drawStripV1Background`, `drawStripV1Object`, `drawStripV1Mask`, `decodeV1Gfx`, and the
-  render-mode colour maps.
+- Done: the V1 tile decoder (`GdiV1::roomChanged`, `decodeV1Gfx`, `drawStripV1Background`,
+  `drawStripV1Mask`) as `V1Bitmap`, with the Maniac Mansion EGA row of `setV1ColorTable`. Every V1
+  room decodes, ending exactly where its object images begin.
+- `gfx.cpp`: `VirtScreen`, the strip renderer, object images (`drawStripV1Object` for V1, the V2
+  format at each object's image offset), and the CGA and Hercules colour maps if wanted.
 - `palette.cpp`: done for DOS; V1 and V2 both use the EGA palette (`resetPalette`). The C64 palette
   comes with V0.
 - `costume.cpp`: `ClassicCostumeLoader` and `ClassicCostumeRenderer`, with the version 1 branches.

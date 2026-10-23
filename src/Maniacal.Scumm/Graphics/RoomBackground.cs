@@ -2,14 +2,14 @@ using Maniacal.Scumm.Rooms;
 
 namespace Maniacal.Scumm.Graphics;
 
-/// <summary>Decodes a room's background picture and mask, in the room's own colour numbers (see <see cref="Palettes"/>).</summary>
+/// <summary>Decodes a room's background picture and mask. Both versions give EGA colour numbers, for <see cref="Palettes.Ega"/>.</summary>
 public static class RoomBackground
 {
     public static MaskedImage Decode(Room room)
     {
-        if (room.Version != 2)
+        if (room.Version == 1)
         {
-            throw new NotSupportedException($"Room {room.Number}: version {room.Version} room graphics are not ported yet.");
+            return V1Bitmap.DecodeRoom(room);
         }
 
         var data = room.Data.Span;

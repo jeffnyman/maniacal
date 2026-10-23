@@ -11,14 +11,14 @@ the same engine generations and would come nearly for free, but it is not a goal
 ## Status
 
 Early. Releases are identified by ScummVM's MD5 table; the resources, rooms (objects, walkboxes,
-scripts) and, for V2, room pictures are read. There is no interpreter yet: `maniacal <folder>` names
-the release and stops, and `maniacal <folder> --room N [--mask]` writes a V2 room's background as a PNG.
+scripts) and room pictures of both DOS releases are read. There is no interpreter yet: `maniacal <folder>` names
+the release and stops, and `maniacal <folder> --room N [--mask]` writes a room's background as a PNG.
 [ROADMAP.md](ROADMAP.md) gives the order of work.
 
 | Release | SCUMM version | Data | State |
 |---|---|---|---|
-| DOS V1 (1987) | 1 | `00.LFL` to `52.LFL`, XOR-encoded | Detected |
-| DOS V2 "enhanced" (1988) | 2 | `00.LFL` to `53.LFL`, XOR-encoded | Detected |
+| DOS V1 (1987) | 1 | `00.LFL` to `52.LFL`, XOR-encoded | Detected; resources, rooms and room pictures read |
+| DOS V2 "enhanced" (1988) | 2 | `00.LFL` to `53.LFL`, XOR-encoded | Detected; resources, rooms and room pictures read |
 | Commodore 64 (1987) | 0 | `maniac1.d64`, `maniac2.d64` disk images | Not yet: needs the disk image reader |
 | NES (1990) | 1 (NES dialect) | `.prg` extracted from the ROM | Later, if at all |
 

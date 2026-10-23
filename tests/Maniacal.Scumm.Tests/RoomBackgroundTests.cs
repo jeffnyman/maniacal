@@ -96,18 +96,70 @@ public class RoomBackgroundTests
     }
 
     [Fact]
-    public void Version_1_rooms_are_not_supported_yet()
+    public void V1_layers_use_common_values_repeats_and_literals()
+    {
+        // common values 7, 8, 9, 10; then: common value 1 three times (0x80 | 1 << 5 | 2),
+        // the byte 0x55 twice (0x40 | 1), and two literals (0x01)
+        byte[] data = [7, 8, 9, 10, 0xA2, 0x41, 0x55, 0x01, 0x11, 0x22];
+
+        var layer = V1Bitmap.DecodeLayer(data, 0, 7, out int end);
+
+        Assert.Equal([8, 8, 8, 0x55, 0x55, 0x11, 0x22], layer);
+        Assert.Equal(data.Length, end);
+    }
+
+    /// <summary>As in version 2, the room's graphics end where its object images begin: here after the mask characters.</summary>
+    [Fact]
+    public void Every_v1_room_decodes_up_to_its_object_images()
     {
         if (Open(V1Folder) is not { } loader)
         {
             return;
         }
 
-        Assert.Throws<NotSupportedException>(() => RoomBackground.Decode(loader.LoadRoom(1)!));
+        for (int number = 1; number <= 52; number++)
+        {
+            var room = loader.LoadRoom(number)!;
+            var image = RoomBackground.Decode(room);
+
+            Assert.Equal(room.Width, image.Pixels.Width);
+            Assert.Equal(room.Height, image.Pixels.Height);
+            Assert.All(image.Pixels.Pixels, pixel => Assert.InRange(pixel, 0, 15));
+
+            var data = room.Data.Span;
+            int maskOffset = data[18] | (data[19] << 8);
+            V1Bitmap.DecodeLayer(data, maskOffset + 2, (data[maskOffset] | (data[maskOffset + 1] << 8)) - 8, out int end);
+            var images = room.Objects.Select(o => o.ImageOffset).Where(offset => offset > maskOffset).ToList();
+            if (images.Count > 0)
+            {
+                Assert.True(end == images.Min(), $"room {number}: graphics end at {end}, first object image at {images.Min()}");
+            }
+            else
+            {
+                Assert.InRange(end, maskOffset, room.Data.Length);
+            }
+        }
+    }
+
+    [Fact]
+    public void V1_front_of_the_mansion_picture_is_stable()
+    {
+        if (Open(V1Folder) is not { } loader)
+        {
+            return;
+        }
+
+        var image = RoomBackground.Decode(loader.LoadRoom(1)!);
+
+        // pinned after checking the picture by eye against the room map
+        Assert.Equal(V1PixelsMd5, Md5.ComputeHex(image.Pixels.Pixels));
+        Assert.Equal(V1MaskMd5, Md5.ComputeHex(image.Mask.Pixels));
     }
 
     private const string PixelsMd5 = "ed148d7b10998fd612d592cbc41ce7f1";
     private const string MaskMd5 = "8ce08ed6bde1b4bde0e7d4286c33239e";
+    private const string V1PixelsMd5 = "abf8a1ba6c3162137c3286a7bec29c72";
+    private const string V1MaskMd5 = "5bfbbed378058da55624a4e8deb5c540";
 
     private static ResourceLoader? Open(string folder)
         => GameFolders.Find(folder) is { } path ? ResourceLoader.Open(new DirectoryGameContainer(path)) : null;
