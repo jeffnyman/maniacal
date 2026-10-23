@@ -19,6 +19,7 @@ internal static class Program
         int scale = 3;
         int? room = null;
         bool mask = false;
+        string objects = "initial";
         string? output = null;
 
         for (int i = 0; i < args.Length; i++)
@@ -43,6 +44,9 @@ internal static class Program
                     break;
                 case "--mask":
                     mask = true;
+                    break;
+                case "--objects" when i + 1 < args.Length && args[i + 1] is "none" or "initial" or "all":
+                    objects = args[++i];
                     break;
                 case "--output" when i + 1 < args.Length:
                     output = args[++i];
@@ -83,7 +87,7 @@ internal static class Program
 
         if (room is { } roomNumber)
         {
-            return WriteRoom(container, roomNumber, mask, output ?? $"room-{roomNumber:D2}{(mask ? "-mask" : "")}.png");
+            return WriteRoom(container, roomNumber, objects, mask, output ?? $"room-{roomNumber:D2}{(mask ? "-mask" : "")}.png");
         }
 
         var saveDirectory = Path.Combine(
@@ -117,18 +121,28 @@ internal static class Program
         return 0;
     }
 
-    /// <summary>Writes a room's background picture, or its mask in black and white, as a PNG.</summary>
-    private static int WriteRoom(IGameContainer container, int number, bool mask, string path)
+    /// <summary>
+    /// Writes a room's picture, or its mask in black and white, as a PNG. The objects are drawn as
+    /// the game starts (<c>initial</c>), not at all (<c>none</c>), or all of them whatever their state (<c>all</c>).
+    /// </summary>
+    private static int WriteRoom(IGameContainer container, int number, string objects, bool mask, string path)
     {
         try
         {
-            if (ResourceLoader.Open(container).LoadRoom(number) is not { } room)
+            var loader = ResourceLoader.Open(container);
+            if (loader.LoadRoom(number) is not { } room)
             {
                 Console.Error.WriteLine($"There is no room {number}");
                 return 1;
             }
 
-            var image = RoomBackground.Decode(room);
+            var states = loader.Index.ObjectStates;
+            var image = objects switch
+            {
+                "none" => RoomRenderer.DrawBackground(room),
+                "all" => RoomRenderer.RenderAll(room),
+                _ => RoomRenderer.Render(room, n => n < states.Count ? states[n] : 0),
+            };
             using var file = File.Create(path);
             if (mask)
             {
@@ -152,6 +166,6 @@ internal static class Program
     private static void PrintUsage()
     {
         Console.Error.WriteLine("usage: maniacal <game folder> [--list] [--scale N] [--fullscreen] [--verbose]");
-        Console.Error.WriteLine("       maniacal <game folder> --room N [--mask] [--output file.png]");
+        Console.Error.WriteLine("       maniacal <game folder> --room N [--objects none|initial|all] [--mask] [--output file.png]");
     }
 }

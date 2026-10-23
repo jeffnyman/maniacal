@@ -4,7 +4,7 @@ using Maniacal.Scumm.Resources;
 
 namespace Maniacal.Scumm.Tests;
 
-public class RoomBackgroundTests
+public class RoomRendererTests
 {
     private const string V1Folder = "maniac_mansion_original_DOS.com";
     private const string V2Folder = "maniac_mansion_enhanced_DOS.com";
@@ -88,7 +88,7 @@ public class RoomBackgroundTests
             return;
         }
 
-        var image = RoomBackground.Decode(loader.LoadRoom(1)!);
+        var image = RoomRenderer.DrawBackground(loader.LoadRoom(1)!);
 
         // pinned after checking the picture by eye against the room map
         Assert.Equal(PixelsMd5, Md5.ComputeHex(image.Pixels.Pixels));
@@ -120,7 +120,7 @@ public class RoomBackgroundTests
         for (int number = 1; number <= 52; number++)
         {
             var room = loader.LoadRoom(number)!;
-            var image = RoomBackground.Decode(room);
+            var image = RoomRenderer.DrawBackground(room);
 
             Assert.Equal(room.Width, image.Pixels.Width);
             Assert.Equal(room.Height, image.Pixels.Height);
@@ -149,11 +149,85 @@ public class RoomBackgroundTests
             return;
         }
 
-        var image = RoomBackground.Decode(loader.LoadRoom(1)!);
+        var image = RoomRenderer.DrawBackground(loader.LoadRoom(1)!);
 
         // pinned after checking the picture by eye against the room map
         Assert.Equal(V1PixelsMd5, Md5.ComputeHex(image.Pixels.Pixels));
         Assert.Equal(V1MaskMd5, Md5.ComputeHex(image.Mask.Pixels));
+    }
+
+    /// <summary>
+    /// At the start of the game the package (not delivered yet) and the three tombstones (no kid
+    /// has died) are in state 8: their images, empty ground, are drawn over the background, which
+    /// shows them. The script run when a kid dies clears state 8 to reveal a tombstone.
+    /// </summary>
+    [Theory]
+    [InlineData(V1Folder)]
+    [InlineData(V2Folder)]
+    public void Front_of_the_mansion_hides_the_package_and_tombstones_at_the_start(string folder)
+    {
+        if (Open(folder) is not { } loader)
+        {
+            return;
+        }
+
+        var room = loader.LoadRoom(1)!;
+        var states = loader.Index.ObjectStates;
+
+        var visible = RoomRenderer.VisibleObjects(room, n => states[n]).Select(o => o.Number).ToList();
+
+        Assert.Contains(57, visible);  // package
+        Assert.Contains(62, visible);  // tombstones
+        Assert.Contains(63, visible);
+        Assert.Contains(64, visible);
+        Assert.DoesNotContain(61, visible);  // the front door is closed: its open image is not drawn
+    }
+
+    /// <summary>The key under the door mat shows only when the mat, its parent, has been moved (state 8).</summary>
+    [Theory]
+    [InlineData(V1Folder)]
+    [InlineData(V2Folder)]
+    public void The_key_shows_only_when_the_mat_is_moved(string folder)
+    {
+        if (Open(folder) is not { } loader)
+        {
+            return;
+        }
+
+        var room = loader.LoadRoom(1)!;
+        bool KeyVisible(int matState) => RoomRenderer
+            .VisibleObjects(room, n => n switch { 54 => matState, 55 => 8, _ => 0 })
+            .Any(o => o.Number == 55);
+
+        Assert.False(KeyVisible(0));
+        Assert.True(KeyVisible(8));
+    }
+
+    /// <summary>Every image that clearly belongs to its object decodes, in both releases.</summary>
+    [Theory]
+    [InlineData(V1Folder, 52, 246)]
+    [InlineData(V2Folder, 53, 258)]
+    public void Every_owned_object_image_decodes(string folder, int lastRoom, int expected)
+    {
+        if (Open(folder) is not { } loader)
+        {
+            return;
+        }
+
+        int count = 0;
+        for (int number = 1; number <= lastRoom; number++)
+        {
+            var room = loader.LoadRoom(number)!;
+            foreach (var obj in room.Objects.Where(o => RoomRenderer.OwnsImage(room, o)))
+            {
+                var image = RoomRenderer.DrawObject(room, obj)!;
+                Assert.Equal(obj.Width, image.Pixels.Width);
+                Assert.Equal(obj.Height, image.Pixels.Height);
+                count++;
+            }
+        }
+
+        Assert.Equal(expected, count);
     }
 
     private const string PixelsMd5 = "ed148d7b10998fd612d592cbc41ce7f1";

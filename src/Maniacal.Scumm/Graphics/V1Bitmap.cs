@@ -5,78 +5,101 @@ using Maniacal.Scumm.Rooms;
 namespace Maniacal.Scumm.Graphics;
 
 /// <summary>
-/// The picture format of version 1 rooms, kept from the C64 original: the room is a grid of 8x8
-/// tiles from the room's own character set, drawn in C64 multicolour mode. Mirrors ScummVM's
-/// <c>GdiV1::roomChanged</c>, <c>decodeV1Gfx</c>, <c>drawStripV1Background</c> and <c>drawStripV1Mask</c>.
+/// The picture format of version 1 rooms and objects, kept from the C64 original: pictures are
+/// grids of 8x8 tiles from the room's own character set, drawn in C64 multicolour mode. Mirrors
+/// ScummVM's <c>GdiV1::roomChanged</c>, <c>decodeV1Gfx</c>, <c>drawStripV1Background</c>,
+/// <c>drawStripV1Object</c> and <c>drawStripV1Mask</c>.
 /// </summary>
 /// <remarks>
-/// <para>The header holds four colours at 6 to 9 and the offsets of five compressed layers at 10 to
-/// 18: the character set (256 tiles of 8 bytes), the tile map, the colour map, the mask map (one
-/// byte per cell each, column by column) and the mask characters (preceded by a length word that is
-/// 8 more than the data).</para>
+/// <para>The room header holds four colours at 6 to 9 and the offsets of five compressed layers at
+/// 10 to 18: the character set (256 tiles of 8 bytes), the tile map, the colour map, the mask map
+/// (one byte per cell each, column by column) and the mask characters (preceded by a length word
+/// that is 8 more than the data).</para>
 /// <para>Each tile row is a byte of four 2-bit pixels, each drawn 2 pixels wide. Values 0 to 2 pick
 /// the room's first three colours and 3 the cell's own colour from the colour map. Colours are C64
 /// colour numbers, shown through <see cref="Palettes.ManiacV1ToEga"/>.</para>
+/// <para>An object image is one compressed layer holding three maps of the object's size, row by
+/// row: tiles, cell colours and mask tiles, drawn with the room's character sets.</para>
 /// </remarks>
-public static class V1Bitmap
+public sealed class V1Bitmap
 {
     private const int TileSize = 8;
     private const int CharsetSize = 256 * TileSize;
 
-    public static MaskedImage DecodeRoom(Room room)
+    private readonly byte[] _colors = new byte[4];
+    private readonly byte[] _charset;
+    private readonly byte[] _tiles;
+    private readonly byte[] _cellColors;
+    private readonly byte[] _maskTiles;
+    private readonly byte[] _maskChars;
+    private readonly int _columns;
+    private readonly int _rows;
+
+    private V1Bitmap(Room room)
     {
         var data = room.Data.Span;
-        int columns = data[4];
-        int rows = data[5];
-        int cells = columns * rows;
+        _columns = data[4];
+        _rows = data[5];
+        int cells = _columns * _rows;
+        data.Slice(6, 4).CopyTo(_colors);
 
-        Span<byte> colors = stackalloc byte[4];
-        data.Slice(6, 4).CopyTo(colors);
-
-        var charset = DecodeLayer(data, Word(data, 10), CharsetSize, out _);
-        var tiles = DecodeLayer(data, Word(data, 12), cells, out _);
-        var cellColors = DecodeLayer(data, Word(data, 14), cells, out _);
-        var maskTiles = DecodeLayer(data, Word(data, 16), cells, out _);
+        _charset = DecodeLayer(data, Word(data, 10), CharsetSize, out _);
+        _tiles = DecodeLayer(data, Word(data, 12), cells, out _);
+        _cellColors = DecodeLayer(data, Word(data, 14), cells, out _);
+        _maskTiles = DecodeLayer(data, Word(data, 16), cells, out _);
         int maskOffset = Word(data, 18);
-        var maskChars = DecodeLayer(data, maskOffset + 2, Word(data, maskOffset) - 8, out _);
+        _maskChars = DecodeLayer(data, maskOffset + 2, Word(data, maskOffset) - 8, out int end);
+        GraphicsEnd = end;
+    }
 
-        var colorMap = Palettes.ManiacV1ToEga;
-        var pixels = new Surface8(columns * TileSize, rows * TileSize);
-        var mask = new Surface8(columns * TileSize, rows * TileSize);
+    /// <summary>The offset just past the room's graphics, where its object images begin.</summary>
+    public int GraphicsEnd { get; }
 
-        for (int column = 0; column < columns; column++)
+    /// <summary>Decodes a room's character sets and maps, which its background and objects are drawn from.</summary>
+    public static V1Bitmap ForRoom(Room room)
+    {
+        if (room.Version != 1)
         {
-            for (int row = 0; row < rows; row++)
+            throw new ArgumentException($"Room {room.Number} is version {room.Version}, not 1.", nameof(room));
+        }
+
+        return new V1Bitmap(room);
+    }
+
+    public MaskedImage DrawBackground()
+    {
+        var image = Create(_columns, _rows);
+        for (int column = 0; column < _columns; column++)
+        {
+            for (int row = 0; row < _rows; row++)
             {
-                int cell = row + column * rows;
-                colors[3] = (byte)(cellColors[cell] & 7);
-                int tile = tiles[cell] * TileSize;
-                int maskTile = maskTiles[cell] * TileSize;
-
-                for (int line = 0; line < TileSize; line++)
-                {
-                    int y = row * TileSize + line;
-                    int x = column * TileSize;
-                    byte bits = charset[tile + line];
-                    for (int pair = 0; pair < 4; pair++)
-                    {
-                        byte color = colorMap[colors[(bits >> (6 - 2 * pair)) & 3]];
-                        pixels[x + 2 * pair, y] = color;
-                        pixels[x + 2 * pair + 1, y] = color;
-                    }
-
-                    // the mask characters set the bits of the pixels behind the foreground, the
-                    // opposite of the masks of later versions
-                    byte front = (byte)(maskChars[maskTile + line] ^ 0xFF);
-                    for (int bit = 0; bit < 8; bit++)
-                    {
-                        mask[x + bit, y] = (byte)((front >> (7 - bit)) & 1);
-                    }
-                }
+                int cell = row + column * _rows;
+                DrawCell(image, column, row, _tiles[cell], _cellColors[cell], _maskTiles[cell]);
             }
         }
 
-        return new MaskedImage(pixels, mask);
+        return image;
+    }
+
+    /// <summary>Draws an object's image from the room data at <paramref name="offset"/>; width and height in pixels.</summary>
+    public MaskedImage DrawObject(ReadOnlySpan<byte> room, int offset, int width, int height)
+    {
+        int columns = width / TileSize;
+        int rows = height / TileSize;
+        int cells = columns * rows;
+        var maps = DecodeLayer(room, offset, cells * 3, out _);
+
+        var image = Create(columns, rows);
+        for (int row = 0; row < rows; row++)
+        {
+            for (int column = 0; column < columns; column++)
+            {
+                int cell = row * columns + column;
+                DrawCell(image, column, row, maps[cell], maps[cells + cell], maps[2 * cells + cell]);
+            }
+        }
+
+        return image;
     }
 
     /// <summary>
@@ -123,6 +146,40 @@ public static class V1Bitmap
 
         end = source;
         return output;
+    }
+
+    private static MaskedImage Create(int columns, int rows)
+        => new(new Surface8(columns * TileSize, rows * TileSize), new Surface8(columns * TileSize, rows * TileSize));
+
+    private void DrawCell(MaskedImage image, int column, int row, byte tile, byte cellColor, byte maskTile)
+    {
+        if ((maskTile + 1) * TileSize > _maskChars.Length)
+        {
+            throw new InvalidDataException($"Mask tile {maskTile} is past the room's {_maskChars.Length / TileSize} mask tiles.");
+        }
+
+        var colorMap = Palettes.ManiacV1ToEga;
+        _colors[3] = (byte)(cellColor & 7);
+        int x = column * TileSize;
+        for (int line = 0; line < TileSize; line++)
+        {
+            int y = row * TileSize + line;
+            byte bits = _charset[tile * TileSize + line];
+            for (int pair = 0; pair < 4; pair++)
+            {
+                byte color = colorMap[_colors[(bits >> (6 - 2 * pair)) & 3]];
+                image.Pixels[x + 2 * pair, y] = color;
+                image.Pixels[x + 2 * pair + 1, y] = color;
+            }
+
+            // the mask characters set the bits of the pixels behind the foreground, the opposite
+            // of the masks of later versions
+            byte front = (byte)(_maskChars[maskTile * TileSize + line] ^ 0xFF);
+            for (int bit = 0; bit < 8; bit++)
+            {
+                image.Mask[x + bit, y] = (byte)((front >> (7 - bit)) & 1);
+            }
+        }
     }
 
     private static void Fill(byte[] output, ref int x, byte value, int count)

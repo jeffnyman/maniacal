@@ -11,8 +11,8 @@ the same engine generations and would come nearly for free, but it is not a goal
 ## Status
 
 Early. Releases are identified by ScummVM's MD5 table; the resources, rooms (objects, walkboxes,
-scripts) and room pictures of both DOS releases are read. There is no interpreter yet: `maniacal <folder>` names
-the release and stops, and `maniacal <folder> --room N [--mask]` writes a room's background as a PNG.
+scripts), room pictures and object images of both DOS releases are read. There is no interpreter yet: `maniacal <folder>` names
+the release and stops, and `maniacal <folder> --room N` writes a room, with its objects as the game starts, as a PNG.
 [ROADMAP.md](ROADMAP.md) gives the order of work.
 
 | Release | SCUMM version | Data | State |
@@ -44,7 +44,7 @@ Needs the .NET 10 SDK.
 dotnet build Maniacal.slnx
 dotnet test Maniacal.slnx
 dotnet run --project src/Maniacal.Player -- <game folder> [--list] [--scale N] [--fullscreen]
-dotnet run --project src/Maniacal.Player -- <game folder> --room N [--mask] [--output file.png]
+dotnet run --project src/Maniacal.Player -- <game folder> --room N [--objects none|initial|all] [--mask] [--output file.png]
 ```
 
 ## Game data
