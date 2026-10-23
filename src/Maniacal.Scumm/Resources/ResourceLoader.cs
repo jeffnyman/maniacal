@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using Daventry.Core.Storage;
+using Maniacal.Scumm.Rooms;
 
 namespace Maniacal.Scumm.Resources;
 
@@ -65,4 +66,8 @@ public sealed class ResourceLoader
 
         return file.Slice(location.Offset, size);
     }
+
+    /// <summary>Loads and parses a room, or returns null when the index has no such room.</summary>
+    public Room? LoadRoom(int room)
+        => Load(ResourceType.Room, room) is { } data ? Room.Parse(room, Index.Version, data) : null;
 }

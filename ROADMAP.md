@@ -52,7 +52,11 @@ run of clicks that reaches a known state.
   stub; the fonts are in `charset-fontdata.cpp`, ported in Phase 2).
 - `resource.cpp`: the resource types and the small-header (`GF_SMALL_HEADER`, `GF_OLD_BUNDLE`)
   block lookup that V1/V2 use; leave out the HE and V7+ paths.
-- `room.cpp`, `object.cpp`: room headers, object tables, object images and names.
+- Done: `room.cpp`, `object.cpp`, `boxes.cpp` (reading): the room header, the objects' code
+  blocks (number, geometry, parent, walk-to point, preposition, name, verb table), the walkboxes and
+  box matrix, the entry and exit scripts, and the sounds and scripts loaded with each room
+  (`Maniacal.Scumm.Rooms`). Every room of both releases parses.
+- Object images (OBIM) and the room graphics are read in Phase 2.
 - A browser command like Daventry's `--picture`: `maniacal <folder> --room N` writes a PNG of a
   room's background, and `--costume N` the frames of a costume.
 - Check: every room and costume of both DOS releases decodes; PNGs of a few rooms checked by eye.
