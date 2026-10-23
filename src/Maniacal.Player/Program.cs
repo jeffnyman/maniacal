@@ -3,6 +3,7 @@ using Daventry.Core.Hosting;
 using Daventry.Core.Storage;
 using Daventry.Host.Sdl;
 using Maniacal.Scumm;
+using Maniacal.Scumm.Costumes;
 using Maniacal.Scumm.Graphics;
 using Maniacal.Scumm.Resources;
 
@@ -18,6 +19,8 @@ internal static class Program
         bool verbose = false;
         int scale = 3;
         int? room = null;
+        int? costume = null;
+        int zoom = 1;
         bool mask = false;
         string objects = "initial";
         string? output = null;
@@ -40,6 +43,13 @@ internal static class Program
                     break;
                 case "--room" when i + 1 < args.Length && int.TryParse(args[i + 1], out int number):
                     room = number;
+                    i++;
+                    break;
+                case "--costume" when i + 1 < args.Length && int.TryParse(args[i + 1], out int costumeNumber):
+                    costume = costumeNumber;
+                    i++;
+                    break;
+                case "--zoom" when i + 1 < args.Length && int.TryParse(args[i + 1], out zoom) && zoom is >= 1 and <= 8:
                     i++;
                     break;
                 case "--mask":
@@ -85,9 +95,14 @@ internal static class Program
             return 0;
         }
 
+        if (costume is { } costumeId)
+        {
+            return WriteCostume(container, costumeId, zoom, output ?? $"costume-{costumeId:D2}.png");
+        }
+
         if (room is { } roomNumber)
         {
-            return WriteRoom(container, roomNumber, objects, mask, output ?? $"room-{roomNumber:D2}{(mask ? "-mask" : "")}.png");
+            return WriteRoom(container, roomNumber, objects, mask, zoom, output ?? $"room-{roomNumber:D2}{(mask ? "-mask" : "")}.png");
         }
 
         var saveDirectory = Path.Combine(
@@ -125,7 +140,7 @@ internal static class Program
     /// Writes a room's picture, or its mask in black and white, as a PNG. The objects are drawn as
     /// the game starts (<c>initial</c>), not at all (<c>none</c>), or all of them whatever their state (<c>all</c>).
     /// </summary>
-    private static int WriteRoom(IGameContainer container, int number, string objects, bool mask, string path)
+    private static int WriteRoom(IGameContainer container, int number, string objects, bool mask, int zoom, string path)
     {
         try
         {
@@ -146,11 +161,11 @@ internal static class Program
             using var file = File.Create(path);
             if (mask)
             {
-                PngWriter.Write(file, image.Mask, [Rgb.Black, Rgb.White]);
+                PngWriter.Write(file, image.Mask, [Rgb.Black, Rgb.White], zoom, zoom);
             }
             else
             {
-                PngWriter.Write(file, image.Pixels, Palettes.Ega);
+                PngWriter.Write(file, image.Pixels, Palettes.Ega, zoom, zoom);
             }
 
             Console.WriteLine($"Room {number}: {room.Width}x{room.Height}, {room.Objects.Count} objects, written to {path}");
@@ -163,9 +178,91 @@ internal static class Program
         }
     }
 
+    /// <summary>
+    /// Writes a sheet of a costume's figures as a PNG: standing in the four directions, then the
+    /// walk cycle facing right. Version 1 colours are those of the actor with the costume's number.
+    /// </summary>
+    private static int WriteCostume(IGameContainer container, int number, int zoom, string path)
+    {
+        try
+        {
+            if (ResourceLoader.Open(container).LoadCostume(number) is not { } costume)
+            {
+                Console.Error.WriteLine($"There is no costume {number}");
+                return 1;
+            }
+
+            int[] standing = [CostumeRenderer.InitFrame, CostumeRenderer.StandFrame];
+            int[] walking = [CostumeRenderer.InitFrame, CostumeRenderer.WalkFrame];
+            int walkSteps = costume.Animation(CostumeRenderer.WalkFrame * 4 + CostumeRenderer.Right)
+                .Where(l => l.Start is not null).Select(l => l.Length + 1).DefaultIfEmpty(1).Max();
+
+            var rows = new List<List<CostumeFrame>>
+            {
+                new[] { CostumeRenderer.Left, CostumeRenderer.Right, CostumeRenderer.Front, CostumeRenderer.Back }
+                    .Select(d => CostumeRenderer.DrawFrame(costume, d, standing, number)).ToList(),
+                Enumerable.Range(0, walkSteps)
+                    .Select(step => CostumeRenderer.DrawFrame(costume, CostumeRenderer.Right, walking, number, step)).ToList(),
+            };
+
+            var sheet = Sheet(rows);
+            var palette = new Rgb[256];
+            Palettes.Ega.CopyTo(palette);
+            palette[CostumeRenderer.Transparent] = new Rgb(0x40, 0x40, 0x60);
+
+            using var file = File.Create(path);
+            PngWriter.Write(file, sheet, palette, zoom, zoom);
+            Console.WriteLine($"Costume {number}: format 0x{costume.Format:X2}, {costume.AnimationCount} animations, {walkSteps} walk steps, written to {path}");
+            return 0;
+        }
+        catch (InvalidDataException ex)
+        {
+            Console.Error.WriteLine(ex.Message);
+            return 3;
+        }
+    }
+
+    /// <summary>Lays figures out in rows of equal cells, every figure standing on the same point of its cell.</summary>
+    private static Surface8 Sheet(List<List<CostumeFrame>> rows)
+    {
+        const int gap = 4;
+        var all = rows.SelectMany(r => r).ToList();
+        int left = all.Max(f => f.OriginX);
+        int right = all.Max(f => f.Pixels.Width - f.OriginX);
+        int above = all.Max(f => f.OriginY);
+        int below = all.Max(f => f.Pixels.Height - f.OriginY);
+        int cellWidth = left + right + gap;
+        int cellHeight = above + below + gap;
+
+        var sheet = new Surface8(cellWidth * rows.Max(r => r.Count), cellHeight * rows.Count);
+        sheet.Fill(CostumeRenderer.Transparent);
+        for (int row = 0; row < rows.Count; row++)
+        {
+            for (int column = 0; column < rows[row].Count; column++)
+            {
+                var frame = rows[row][column];
+                int x0 = column * cellWidth + left - frame.OriginX;
+                int y0 = row * cellHeight + above - frame.OriginY;
+                for (int y = 0; y < frame.Pixels.Height; y++)
+                {
+                    for (int x = 0; x < frame.Pixels.Width; x++)
+                    {
+                        if (frame.Pixels[x, y] != CostumeRenderer.Transparent)
+                        {
+                            sheet[x0 + x, y0 + y] = frame.Pixels[x, y];
+                        }
+                    }
+                }
+            }
+        }
+
+        return sheet;
+    }
+
     private static void PrintUsage()
     {
         Console.Error.WriteLine("usage: maniacal <game folder> [--list] [--scale N] [--fullscreen] [--verbose]");
-        Console.Error.WriteLine("       maniacal <game folder> --room N [--objects none|initial|all] [--mask] [--output file.png]");
+        Console.Error.WriteLine("       maniacal <game folder> --room N [--objects none|initial|all] [--mask] [--zoom N] [--output file.png]");
+        Console.Error.WriteLine("       maniacal <game folder> --costume N [--zoom N] [--output file.png]");
     }
 }

@@ -10,15 +10,17 @@ the same engine generations and would come nearly for free, but it is not a goal
 
 ## Status
 
-Early. Releases are identified by ScummVM's MD5 table; the resources, rooms (objects, walkboxes,
-scripts), room pictures and object images of both DOS releases are read. There is no interpreter yet: `maniacal <folder>` names
-the release and stops, and `maniacal <folder> --room N` writes a room, with its objects as the game starts, as a PNG.
+Early. Releases are identified by ScummVM's MD5 table. For both DOS releases the index, rooms
+(objects, walkboxes), room pictures, object images and costumes are read; scripts and sounds are
+located but not yet interpreted or played.
+There is no interpreter yet: `maniacal <folder>` names the release and stops. `--room N` writes a
+room as a PNG, with its objects as the game starts, and `--costume N` a sheet of a costume's figures.
 [ROADMAP.md](ROADMAP.md) gives the order of work.
 
 | Release | SCUMM version | Data | State |
 |---|---|---|---|
-| DOS V1 (1987) | 1 | `00.LFL` to `52.LFL`, XOR-encoded | Detected; resources, rooms and room pictures read |
-| DOS V2 "enhanced" (1988) | 2 | `00.LFL` to `53.LFL`, XOR-encoded | Detected; resources, rooms and room pictures read |
+| DOS V1 (1987) | 1 | `00.LFL` to `52.LFL`, XOR-encoded | Detected; all resources read: rooms, pictures, objects, costumes |
+| DOS V2 "enhanced" (1988) | 2 | `00.LFL` to `53.LFL`, XOR-encoded | Detected; all resources read: rooms, pictures, objects, costumes |
 | Commodore 64 (1987) | 0 | `maniac1.d64`, `maniac2.d64` disk images | Not yet: needs the disk image reader |
 | NES (1990) | 1 (NES dialect) | `.prg` extracted from the ROM | Later, if at all |
 
@@ -44,7 +46,8 @@ Needs the .NET 10 SDK.
 dotnet build Maniacal.slnx
 dotnet test Maniacal.slnx
 dotnet run --project src/Maniacal.Player -- <game folder> [--list] [--scale N] [--fullscreen]
-dotnet run --project src/Maniacal.Player -- <game folder> --room N [--objects none|initial|all] [--mask] [--output file.png]
+dotnet run --project src/Maniacal.Player -- <game folder> --room N [--objects none|initial|all] [--mask] [--zoom N] [--output file.png]
+dotnet run --project src/Maniacal.Player -- <game folder> --costume N [--zoom N] [--output file.png]
 ```
 
 ## Game data

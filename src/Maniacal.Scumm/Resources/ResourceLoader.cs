@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using Daventry.Core.Storage;
+using Maniacal.Scumm.Costumes;
 using Maniacal.Scumm.Rooms;
 
 namespace Maniacal.Scumm.Resources;
@@ -70,4 +71,8 @@ public sealed class ResourceLoader
     /// <summary>Loads and parses a room, or returns null when the index has no such room.</summary>
     public Room? LoadRoom(int room)
         => Load(ResourceType.Room, room) is { } data ? Room.Parse(room, Index.Version, data) : null;
+
+    /// <summary>Loads and parses a costume, or returns null when the index has no such costume.</summary>
+    public Costume? LoadCostume(int costume)
+        => Load(ResourceType.Costume, costume) is { } data ? Costume.Parse(costume, data) : null;
 }

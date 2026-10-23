@@ -44,24 +44,27 @@ run of clicks that reaches a known state.
   every room file is a chain of sized resources, and the index entries that point at real resources
   are counted and pinned in the tests.
 
-## Phase 1: resources (V2, then V1)
+## Phase 1: resources (done)
 
-- Done: `file.cpp` (`ScummFile` with XOR 0xFF), `resource_v2.cpp` (`readIndexFile`,
-  `readClassicIndexFile`, `readEnhancedIndexFile`, `readGlobalObjects`).
+Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costumes`:
+
+- `file.cpp`, `resource.cpp`, `resource_v2.cpp`: the XOR-encoded LFL files, both index formats, and
+  loading a resource by its size word (`ResourceLoader`).
+- `room.cpp`, `object.cpp`, `boxes.cpp` (reading): the room header, the objects' code blocks
+  (number, geometry, parent, walk-to point, preposition, name, verb table), the walkboxes and box
+  matrix, the entry and exit scripts, and the sounds and scripts loaded with each room.
+- `gfx.cpp`, `palette.cpp`: room pictures and masks (`V2Bitmap`, `V1Bitmap`), object images, and
+  drawing a room with its objects as `drawRoomObjects` does (`RoomRenderer`), in EGA colours.
+- `costume.cpp`: the classic costume format (`0x58`, V2) and its C64-derived variant (`0x57`, V1):
+  animations, limb command runs, cels, and figures built from them (`Costume`, `CostumeRenderer`),
+  with V2's start offset of (-72, -100) from `drawCostume` and V1's actor colour tables.
 - No charset files: V1 and V2 fonts are built into the engine (`ScummEngine_v2::loadCharset` is a
   stub; the fonts are in `charset-fontdata.cpp`, ported in Phase 2).
-- `resource.cpp`: the resource types and the small-header (`GF_SMALL_HEADER`, `GF_OLD_BUNDLE`)
-  block lookup that V1/V2 use; leave out the HE and V7+ paths.
-- Done: `room.cpp`, `object.cpp`, `boxes.cpp` (reading): the room header, the objects' code
-  blocks (number, geometry, parent, walk-to point, preposition, name, verb table), the walkboxes and
-  box matrix, the entry and exit scripts, and the sounds and scripts loaded with each room
-  (`Maniacal.Scumm.Rooms`). Every room of both releases parses.
-- Done: object images for both versions, and drawing a room with its objects as ScummVM's
-  `drawRoomObjects` does (state 8 and the parent chain; `RoomRenderer`).
-- Done: `maniacal <folder> --room N [--objects none|initial|all] [--mask]` writes a room as a PNG,
-  for both DOS releases, by default with its objects as the game starts. Still to come:
-  `--costume N` for the frames of a costume.
-- Check: every room and costume of both DOS releases decodes; PNGs of a few rooms checked by eye.
+- `maniacal <folder> --room N [--objects none|initial|all] [--mask]` and
+  `maniacal <folder> --costume N` write rooms and costume sheets as PNGs (`--zoom N` to enlarge).
+- Checked: every room, object image and costume of both releases decodes; pictures match the room
+  maps by eye and an independent decoder by hash; the room layouts end exactly where the next part
+  begins.
 
 ## Phase 2: drawing (V2, then V1)
 
@@ -75,7 +78,9 @@ run of clicks that reaches a known state.
   object's image offset).
 - `palette.cpp`: done for DOS; V1 and V2 both use the EGA palette (`resetPalette`). The C64 palette
   comes with V0.
-- `costume.cpp`: `ClassicCostumeLoader` and `ClassicCostumeRenderer`, with the version 1 branches.
+- Actors on the room: costumes are decoded (Phase 1); still to do are clipping them by the room
+  mask, the actor position offsets of `Actor_v2::prepareDrawActorCostume` (+8 in V2, +16 facing left)
+  and V1's one-line drop (`compData.y += 1`), and the dark-room colours of `setPalette`.
 - `charset.cpp` (`CharsetRendererV2`), `charset-fontdata.cpp`: the built-in fonts.
 - `camera.cpp`: horizontal scrolling across rooms wider than the screen.
 - Check: headless screenshots of rooms with actors in them, matching ScummVM's output.
