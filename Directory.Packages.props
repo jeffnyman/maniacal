@@ -1,0 +1,12 @@
+<Project>
+  <ItemGroup>
+    <!-- the host contract, audio mixer and SDL host are shared with Daventry, the AGI and SCI port -->
+    <PackageVersion Include="Daventry.Core" Version="0.1.0-alpha" />
+    <PackageVersion Include="Daventry.Audio" Version="0.1.0-alpha" />
+    <PackageVersion Include="Daventry.Host.Sdl" Version="0.1.0-alpha" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+  </ItemGroup>
+</Project>

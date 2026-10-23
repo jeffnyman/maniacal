@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>The SCUMM interpreter for Maniac Mansion (V0, V1 and V2), ported from ScummVM.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Maniacal.Scumm.Tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Daventry.Core" />
+    <PackageReference Include="Daventry.Audio" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,19 @@
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.idea/
+*.swp
+TestResults/
+artifacts/
+
+# Python tooling
+__pycache__/
+
+# game data never goes in the repository
+*.LFL
+*.d64
+*.nes
+*.prg
+MANIAC.EXE

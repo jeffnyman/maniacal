@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Maniacal.Player/Maniacal.Player.csproj" />
+    <Project Path="src/Maniacal.Scumm/Maniacal.Scumm.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Maniacal.Scumm.Tests/Maniacal.Scumm.Tests.csproj" />
+  </Folder>
+</Solution>

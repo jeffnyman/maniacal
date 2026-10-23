@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>maniacal</AssemblyName>
+    <Description>Command line player for Maniac Mansion: maniacal &lt;game folder&gt;.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Maniacal.Scumm\Maniacal.Scumm.csproj" />
+    <PackageReference Include="Daventry.Host.Sdl" />
+  </ItemGroup>
+</Project>
