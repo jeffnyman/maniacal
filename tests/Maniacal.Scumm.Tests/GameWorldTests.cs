@@ -215,6 +215,78 @@ public class GameWorldTests
     }
 
     /// <summary>
+    /// After the intro, Dave goes into the mansion: off the street's left edge to the drive, along
+    /// it to the porch, Pull the door mat (the key shows), Pick up the key (Dave owns it and the
+    /// inventory names it), Unlock the front door with the key, which opens it, and Walk to the
+    /// door, which takes him into the hall, room 10.
+    /// </summary>
+    [Fact]
+    public void The_c64_kid_goes_into_the_house()
+    {
+        if (AfterTheC64Intro() is not { } world)
+        {
+            return;
+        }
+
+        const int DoorMat = 21, Key = 22, FrontDoor = 28, Dave = 3;
+        void Steps(int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                world.Step();
+            }
+        }
+
+        // a verb at its column and row, and an object of the room at its middle, twice to carry the sentence out
+        void Sentence(int column, int row, int obj, int steps)
+        {
+            world.Click(column * 8 + 4, 145 + 8 + row * 8 + 4);
+            Steps(3);
+            var o = world.CurrentRoom!.FindObject(obj)!;
+            for (int i = 0; i < 2; i++)
+            {
+                world.Click(o.X + o.Width / 2 - world.Camera.Left, o.Y + o.Height / 2 + 9);
+                Steps(3);
+            }
+
+            Steps(steps);
+        }
+
+        world.Click(4, 100);
+        Steps(250);
+        Assert.Equal(1, world.CurrentRoom?.Number);
+        for (int i = 0; i < 5; i++)
+        {
+            world.Click(10, 120);
+            Steps(40);
+        }
+
+        Sentence(0, 1, DoorMat, 80);
+        Assert.Equal(8, world.Engine.GetState(DoorMat));
+        Sentence(15, 1, Key, 80);
+        Assert.Equal(Dave, world.Engine.ObjectOwners[Key]);
+        var verbs = world.Verbs.Pixels;
+        Assert.Contains(Enumerable.Range(VerbArea.InventoryTop, verbs.Height - VerbArea.InventoryTop), y => verbs.Row(y).Contains((byte)16));
+
+        // Unlock, the door, then the key in the inventory's first box
+        world.Click(24 * 8 + 4, 145 + 16 + 4);
+        Steps(3);
+        var door = world.CurrentRoom!.FindObject(FrontDoor)!;
+        world.Click(door.X + door.Width / 2 - world.Camera.Left, door.Y + door.Height / 2 + 9);
+        Steps(3);
+        world.Click(10, 182);
+        Steps(3);
+        world.Click(10, 182);
+        Steps(100);
+        Assert.Equal(8, world.Engine.GetState(FrontDoor));
+
+        Sentence(15, 0, FrontDoor, 60);
+        Assert.Equal(10, world.CurrentRoom?.Number);
+        Assert.True(world.Actors[Dave].InCurrentRoom);
+        Assert.Empty(world.Unhandled);
+    }
+
+    /// <summary>
     /// The C64's engine makes its 15 verbs itself, at columns and rows under the sentence line, in
     /// its colours; Give takes "to", Unlock and Fix "with", and Use the preposition of its object.
     /// </summary>

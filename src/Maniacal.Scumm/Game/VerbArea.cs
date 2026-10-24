@@ -334,7 +334,7 @@ public sealed class VerbArea
             return;
         }
 
-        Pixels.FillRect(new Rect(0, InventoryTop, Width, Pixels.Height - InventoryTop), 0);
+        Pixels.FillRect(new Rect(_offset, InventoryTop + _offset, Width - _offset, Pixels.Height - InventoryTop - _offset), 0);
         int shown = Math.Min(names.Count - InventoryOffset, 4);
         for (int i = 0; i < shown; i++)
         {

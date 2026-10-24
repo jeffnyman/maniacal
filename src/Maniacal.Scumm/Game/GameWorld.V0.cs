@@ -217,6 +217,46 @@ public sealed partial class GameWorld
                     return true;
                 }
 
+            // o_pickupObject: 0 is the sentence's object (ScummEngine_v0::o_pickupObject)
+            case "o_pickupObject":
+                PickUp(arguments[0] != 0 ? arguments[0] : engine.CommandObject);
+                return true;
+
+            // o_setOwnerOf: 0 is the sentence's object; given to nobody, it leaves the inventory (setOwnerOf)
+            case "o_setOwnerOf":
+                {
+                    int obj = arguments[0] != 0 ? arguments[0] : engine.CommandObject;
+                    if (obj <= 0 || obj >= engine.ObjectOwners.Length)
+                    {
+                        throw new InvalidOperationException($"Object {obj} has no owner to set.");
+                    }
+
+                    if (arguments[1] == 0)
+                    {
+                        ClearOwnerOf(obj);
+                    }
+
+                    engine.ObjectOwners[obj] = (byte)arguments[1];
+                    RedrawInventory();
+                    return true;
+                }
+
+            // o_setObjectName: 0 is the sentence's object, else the opcode's bit 0x80 makes it part of the room
+            case "o_setObjectName":
+                {
+                    int obj = arguments[0] == 0
+                        ? engine.CommandObject
+                        : V0Object(arguments[0], (instruction.Opcode & 0x80) != 0 ? TypeBackground : TypeForeground);
+                    if (obj >> 8 == TypeActor)
+                    {
+                        throw new InvalidOperationException($"Actor {obj & 0xFF} cannot be renamed with setObjectName.");
+                    }
+
+                    _newNames[obj] = Encoding.Latin1.GetString(instruction.Operands[1].Text!);
+                    RedrawInventory();
+                    return true;
+                }
+
             // o_doSentence: 0xFF and 0xFE are the running sentence's objects, else the opcode's bits give the types
             case "o_doSentence":
                 {

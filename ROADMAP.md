@@ -284,9 +284,18 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   for reaching the last box (`areBoxesNeighbors`) reads the neighbour lists from 4 bytes in, as
   ScummVM does; the C64 plans its routes another way (`walkboxes/walkbox_waypoint_planner.asm`).
   The C64's actor state is not yet saved, nor put back by a restart.
-- Next: the inventory (`o_pickupObject`, `o_setOwnerOf`, `o_setObjectName`), and playing into the
-  house, checked against ScummVM 2.7.0 as the DOS releases were. Then the SID player, saves, and
-  the time ScummVM adds for the C64's redraw (`DelayCalculateDelta`).
+- Done: the C64's inventory: `o_pickupObject`, `o_setOwnerOf` and `o_setObjectName`, 0 meaning
+  the running sentence's object, the name's object typed by the opcode's bit 0x80; the inventory
+  is cleared a pixel right and down, as `redrawV2Inventory` does on the C64. Every version 0
+  instruction now has a handler. Checked: Dave goes from the street to the porch, pulls the door
+  mat, picks up the key (which the inventory shows), unlocks the front door with it, which opens
+  it, and walks into the hall.
+- Not checked against ScummVM 2.7.0 yet: a C64 run there needs clicks (the kid selection), and
+  its window takes no synthesized input. The check comes with C64 saves, which ScummVM can load
+  from the launcher, as the DOS saves were checked.
+- Next: C64 saves (`Actor_v0`'s fields and version 0's own state in ScummVM's format), then the
+  check against ScummVM; then the SID player, and the time ScummVM adds for the C64's redraw
+  (`DelayCalculateDelta`).
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).
