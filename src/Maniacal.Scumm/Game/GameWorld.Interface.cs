@@ -48,8 +48,9 @@ public sealed partial class GameWorld
     // Mirrors MBS_LEFT_CLICK and MBS_MAX_KEY.
     private const int LeftClick = 0x8000, MaxKey = 0x200;
 
-    // the cursor's colours as it animates (default_cursor_colors)
+    // the cursor's colours as it animates (default_cursor_colors), and the C64's (default_v0_cursor_colors)
     private static readonly byte[] CursorColors = [15, 15, 7, 8];
+    private static readonly byte[] CursorColorsV0 = [1, 1, 12, 11];
 
     private readonly List<Sentence> _sentences = [];
     private readonly List<int> _inventory = [];
@@ -98,7 +99,7 @@ public sealed partial class GameWorld
 
     /// <summary>
     /// Draws the cursor on a screen: the version 2 crosshair, its hotspot at the mouse, in the
-    /// colour its animation is at. Mirrors <c>ScummEngine_v2::setBuiltinCursor</c> for DOS.
+    /// colour its animation is at. Mirrors <c>ScummEngine_v2::setBuiltinCursor</c> for DOS and the C64.
     /// </summary>
     public void DrawCursor(Surface8 screen)
     {
@@ -107,7 +108,7 @@ public sealed partial class GameWorld
             return;
         }
 
-        byte color = CursorColors[(_cursorFrame >> 1) & 3];
+        byte color = (Version == 0 ? CursorColorsV0 : CursorColors)[(_cursorFrame >> 1) & 3];
         var (x, y) = Mouse;
         void Plot(int dx, int dy)
         {

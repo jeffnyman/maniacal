@@ -283,18 +283,30 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   (`clamp_to_diagonal_edge` in `walkboxes/walkbox_snap.asm`); Maniacal follows the C64. The test
   for reaching the last box (`areBoxesNeighbors`) reads the neighbour lists from 4 bytes in, as
   ScummVM does; the C64 plans its routes another way (`walkboxes/walkbox_waypoint_planner.asm`).
-  The C64's actor state is not yet saved, nor put back by a restart.
 - Done: the C64's inventory: `o_pickupObject`, `o_setOwnerOf` and `o_setObjectName`, 0 meaning
   the running sentence's object, the name's object typed by the opcode's bit 0x80; the inventory
   is cleared a pixel right and down, as `redrawV2Inventory` does on the C64. Every version 0
   instruction now has a handler. Checked: Dave goes from the street to the porch, pulls the door
   mat, picks up the key (which the inventory shows), unlocks the front door with it, which opens
   it, and walks into the hall.
-- Not checked against ScummVM 2.7.0 yet: a C64 run there needs clicks (the kid selection), and
-  its window takes no synthesized input. The check comes with C64 saves, which ScummVM can load
-  from the launcher, as the DOS saves were checked.
-- Next: C64 saves (`Actor_v0`'s fields and version 0's own state in ScummVM's format), then the
-  check against ScummVM; then the SID player, and the time ScummVM adds for the C64's redraw
+- Done: C64 saves, in ScummVM's format. Each actor saves `Actor_v0`'s fields after `Actor`'s, in
+  place of version 2's step fields, and starts its clip again when loaded as
+  `Actor_v0::saveLoadWithSerializer` does; the engine's mode, lights, sentence and walk follow
+  version 2's fields (`ScummEngine_v0::saveLoadWithSerializer`), and a read before save version
+  124 leaves room for them after the music engine's block. The bit variables, the cutscene's mode
+  and room, the C64's palette and its boxes as `resetRoomSubBlocks` keeps them go in too; its actor
+  names are the engine's, not resources. F5 opens the game's own save screen (script 2) and F7
+  skips a cutscene (`ScummEngine_v2::processKeyboard`); a load from outside it in the save room ends
+  the save screen (`ScummEngine_v0::terminateSaveMenuScript`). The cursor takes the C64's colours
+  (`default_v0_cursor_colors`). A restart now puts the C64's actors back as well.
+- Checked against ScummVM 2.7.0: a save made with the C64's save screen in the hall loads there
+  from the launcher (its MD5 and version accepted, the save screen shown), and ScummVM writes it
+  again; that save loads here into the hall with Dave where he was, and the two saves differ only
+  in a script's delay and the talk delay (ScummVM saved a moment later), the mouse (ScummVM had
+  none), the actors' clips (which its load starts again) and the cursor's colours, which are the
+  DOS ones in 2.7.0 and the C64's in ScummVM now. The C64 was only checked through saves, which
+  need no input, not by playing it there.
+- Next: the SID player (`players/player_sid.cpp`), and the time ScummVM adds for the C64's redraw
   (`DelayCalculateDelta`).
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.

@@ -48,6 +48,48 @@ public sealed class V0CostumeState
     /// <summary>Whether a limb is drawn mirrored (<c>_limb_flipped</c>).</summary>
     public bool Flipped(int limb) => _flipped[limb];
 
+    /// <summary>Copies the limbs into a save: <c>curpos</c>, <c>start</c>, <c>frame</c> and <c>animType</c>, and the clip with its repeats.</summary>
+    internal void SaveTo(Saves.ScummState.ActorState a)
+    {
+        for (int limb = 0; limb < V0Costume.Limbs; limb++)
+        {
+            a.CurPos[limb] = _position[limb];
+            a.Start[limb] = _start[limb];
+            a.CostumeFrame[limb] = _frame[limb];
+            a.AnimType[limb] = _animType[limb];
+            a.LimbFrameRepeat[limb] = _repeat[limb];
+            a.LimbFrameRepeatNew[limb] = _repeatNew[limb];
+        }
+
+        a.CostCommand = Clip;
+        a.AnimFrameRepeat = Repeat;
+    }
+
+    /// <summary>
+    /// Takes the limbs from a save. The new clip and the limbs' mirroring are not saved and start
+    /// as <c>Actor_v0::initActor</c> leaves them: none, and not mirrored.
+    /// </summary>
+    internal void LoadFrom(Saves.ScummState.ActorState a)
+    {
+        for (int limb = 0; limb < V0Costume.Limbs; limb++)
+        {
+            _position[limb] = a.CurPos[limb];
+            _start[limb] = a.Start[limb];
+            _frame[limb] = a.CostumeFrame[limb];
+            _animType[limb] = a.AnimType[limb];
+            _repeat[limb] = (sbyte)a.LimbFrameRepeat[limb];
+            _repeatNew[limb] = (sbyte)a.LimbFrameRepeatNew[limb];
+        }
+
+        Array.Clear(_flipped);
+        Clip = a.CostCommand;
+        NewClip = NoClip;
+        Repeat = (sbyte)a.AnimFrameRepeat;
+    }
+
+    /// <summary>Forgets the clip, so the next one asked for sets the limbs even if it is the same.</summary>
+    internal void ForgetClip() => Clip = NoClip;
+
     /// <summary>Mirrors <c>CostumeData::reset</c>: no positions, starts or sequences.</summary>
     public void Reset()
     {

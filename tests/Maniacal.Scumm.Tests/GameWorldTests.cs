@@ -120,7 +120,7 @@ public class GameWorldTests
     }
 
     /// <summary>Boots the C64, picks Syd and Razor with Dave, and plays the intro until the kids stand in front of the mansion.</summary>
-    private static GameWorld? AfterTheC64Intro()
+    internal static GameWorld? AfterTheC64Intro()
     {
         if (Open(C64Folder) is not { } world)
         {

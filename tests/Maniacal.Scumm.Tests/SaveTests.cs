@@ -53,6 +53,34 @@ public class SaveSerializerTests
         Assert.True(read.Resources.ContainsKey((ScummState.TypeSound, 58)));
     }
 
+    /// <summary>
+    /// A C64 state: each actor's <c>Actor_v0</c> fields in place of version 2's step fields, and
+    /// the engine's own after version 2's, which a read before version 124 finds after the music
+    /// engine's block by its size.
+    /// </summary>
+    [Theory]
+    [InlineData(SaveFile.CompatibleVersion)]
+    [InlineData(SaveFile.CurrentVersion)]
+    public void A_c64_state_reads_back_as_it_was_written(int version)
+    {
+        var state = new ScummState(256, c64: true) { CurrentMode = 3, CurrentLights = 11, ActiveVerb = 13, CmdObject = 0x109, WalkToObjectState = 2 };
+        state.SoundEngineData = [1, 2, 3];
+        state.Actors[3].CostCommand = 6;
+        state.Actors[3].MiscFlags = 0x40;
+        state.Actors[3].AnimFrameRepeat = -1;
+        state.Actors[3].NewWalkToX = 7;
+        state.Actors[3].WalkboxQueue[1] = 4;
+        state.Actors[3].WalkboxQueueIndex = 2;
+
+        var file = SaveFile.Write(state, "c64", TimeSpan.Zero, new DateTime(2026, 10, 24), version);
+        var (_, read) = SaveFile.Read(file, 256, c64: true);
+
+        Assert.Equal((3, 11, 13, 0x109, 2), (read.CurrentMode, read.CurrentLights, read.ActiveVerb, read.CmdObject, read.WalkToObjectState));
+        Assert.Equal([1, 2, 3], read.SoundEngineData);
+        var dave = read.Actors[3];
+        Assert.Equal((6, 0x40, -1, 7, 4, 2), (dave.CostCommand, dave.MiscFlags, dave.AnimFrameRepeat, dave.NewWalkToX, (int)dave.WalkboxQueue[1], dave.WalkboxQueueIndex));
+    }
+
     [Fact]
     public void Saves_are_gzip_with_a_ScummVM_header()
     {
@@ -75,7 +103,7 @@ public class SaveGameTests
     private static (GameWorld World, SaveInfo Info) Restored(string path, byte[] file)
     {
         var world = Fresh(path);
-        var (info, state) = SaveFile.Read(file, world.Engine.ObjectOwners.Length);
+        var (info, state) = SaveFile.Read(file, world.Engine.ObjectOwners.Length, world.Version == 0);
         world.Restore(state);
         return (world, info);
     }
@@ -153,6 +181,87 @@ public class SaveGameTests
         Assert.Equal(44, fresh.CurrentRoom?.Number);
         Assert.Equal(x, fresh.Actors[3].X);
     }
+
+    /// <summary>
+    /// A C64 game saved and restored plays on as the original: the room, variables and actors are
+    /// the same, the kid's clip starts again as the save's load has it, and the screens match step
+    /// for step but for the sentence line, which a load leaves clear.
+    /// </summary>
+    [Fact]
+    public void A_c64_game_loaded_from_its_save_plays_on_as_the_original()
+    {
+        if (GameFolders.Find(C64Folder) is not { } path || GameWorldTests.AfterTheC64Intro() is not { } world)
+        {
+            return;
+        }
+
+        world.Click(60, 130);
+        Steps(world, 60);
+        var file = world.Save("in the street", DateTime.Now);
+        var (loaded, _) = Restored(path, file);
+
+        Assert.Equal(world.CurrentRoom?.Number, loaded.CurrentRoom?.Number);
+        Assert.Equal(world.Engine.Variables, loaded.Engine.Variables);
+        Assert.Equal(world.Engine.BitVariables, loaded.Engine.BitVariables);
+        Assert.Equal((world.CurrentMode, world.CurrentLights, world.ActiveVerb), (loaded.CurrentMode, loaded.CurrentLights, loaded.ActiveVerb));
+        Assert.Equal(world.Actors.Select(a => (a.Room, a.X, a.Y, a.Facing, a.Moving, a.Name)), loaded.Actors.Select(a => (a.Room, a.X, a.Y, a.Facing, a.Moving, a.Name)));
+
+        int roomStart = MessageLine.Height * 320, sentenceStart = world.Verbs.Top * 320, sentenceEnd = (world.Verbs.Top + 9) * 320;
+        for (int step = 0; step < 200; step++)
+        {
+            world.Step();
+            loaded.Step();
+            var a = world.Screen().Pixels;
+            var b = loaded.Screen().Pixels;
+            Assert.True(a.AsSpan(roomStart, sentenceStart - roomStart).SequenceEqual(b.AsSpan(roomStart, sentenceStart - roomStart))
+                && a.AsSpan(sentenceEnd).SequenceEqual(b.AsSpan(sentenceEnd)), $"the screens differ at step {step}");
+        }
+    }
+
+    /// <summary>
+    /// The C64's save screen (F5, script 2): Save this game, and the save is in the store; in a
+    /// fresh game, Load a saved game, and the save screen ends where the kid was when it was saved.
+    /// </summary>
+    [Fact]
+    public void The_c64_save_screen_saves_and_loads()
+    {
+        if (GameWorldTests.AfterTheC64Intro() is not { } world)
+        {
+            return;
+        }
+
+        var store = new Daventry.Core.Storage.MemorySaveStore();
+        world.SaveStore = store;
+        world.Click(60, 130);
+        Steps(world, 60);
+        Assert.Equal((7, 64), (world.Actors[3].X, world.Actors[3].Y));
+
+        // the save screen's buttons, objects 442 and 443 at the left of its lines
+        UseC64SaveScreen(world, 24, 117);
+        Assert.Equal(["maniac.s01"], store.List("maniac."));
+        Assert.Equal("The game was saved.", world.Messages.Plain().Trim());
+
+        var fresh = GameWorldTests.AfterTheC64Intro()!;
+        fresh.SaveStore = store;
+        UseC64SaveScreen(fresh, 48, 125);
+        Steps(fresh, 60);
+        Assert.Equal(44, fresh.CurrentRoom?.Number);
+        Assert.Equal(GameWorld.ModeNormal, fresh.CurrentMode);
+        Assert.Equal((7, 64), (fresh.Actors[3].X, fresh.Actors[3].Y));
+        Assert.Empty(fresh.Unhandled);
+    }
+
+    /// <summary>F5, then a button of the C64's save screen, at a screen point.</summary>
+    private static void UseC64SaveScreen(GameWorld world, int x, int y)
+    {
+        world.PressKey(GameWorld.KeyF1 + 4);
+        Steps(world, 30);
+        Assert.Equal(GameWorld.SaveRoom, world.CurrentRoom?.Number);
+        world.Click(x, y);
+        Steps(world, 200);
+    }
+
+    private const string C64Folder = "maniac_mansion_c64";
 
     /// <summary>F5, then a button of the save screen (at a screen line), then Game A.</summary>
     private static void UseSaveScreen(GameWorld world, int button)

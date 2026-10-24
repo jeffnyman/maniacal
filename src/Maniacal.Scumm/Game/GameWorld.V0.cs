@@ -28,6 +28,9 @@ public sealed partial class GameWorld
     // the variables the kids are in (VAR(97 + slot)), and the script for verbs no object has a script for
     private const int VarKids = 97, V0FallbackScript = 3;
 
+    // the keys of the C64's save screen and cutscene skip, and the script of that save screen (saveMenuScript)
+    private const int KeyF5 = KeyF1 + 4, KeyF7 = KeyF1 + 6, V0SaveScreenScript = 2;
+
     // the kid version 0 starts with, Dave (ScummEngine_v0::resetScummVars)
     private const int V0FirstKid = 3;
 
@@ -73,29 +76,8 @@ public sealed partial class GameWorld
                 engine.Override = null;
                 return true;
 
-            // o_endCutscene: the mode comes back; after the keypad the room does too, else the camera follows the kid
             case "o_endCutscene":
-                engine.Variables[engine.Vars.Override] = 0;
-                engine.Override = null;
-                SetMode(_beforeV0Cutscene.Mode);
-                if (CurrentMode == ModeKeypad)
-                {
-                    StartScene(_beforeV0Cutscene.Room);
-                    engine.UnfreezeScripts();
-                }
-                else
-                {
-                    engine.UnfreezeScripts();
-                    int ego = engine.Variables[ScriptEngine.VarEgo];
-                    if (ego is > 0 and < ActorCount)
-                    {
-                        FollowActor(Actors[ego]);
-                    }
-
-                    SetMode(_beforeV0Cutscene.Mode);
-                    _redrawSentenceLine = true;
-                }
-
+                EndCutsceneV0();
                 return true;
 
             case "o_setMode":
@@ -279,6 +261,83 @@ public sealed partial class GameWorld
     private ActorV0 ActorV0Of(int number) => (ActorV0)ActorOf(number);
 
     /// <summary>
+    /// The mode before the cutscene comes back; after the keypad the room does too, else the camera
+    /// follows the kid. Mirrors <c>ScummEngine_v0::o_endCutscene</c>.
+    /// </summary>
+    private void EndCutsceneV0()
+    {
+        Engine.Variables[Engine.Vars.Override] = 0;
+        Engine.Override = null;
+        SetMode(_beforeV0Cutscene.Mode);
+        if (CurrentMode == ModeKeypad)
+        {
+            StartScene(_beforeV0Cutscene.Room);
+            Engine.UnfreezeScripts();
+        }
+        else
+        {
+            Engine.UnfreezeScripts();
+            int ego = Engine.Variables[ScriptEngine.VarEgo];
+            if (ego is > 0 and < ActorCount)
+            {
+                FollowActor(Actors[ego]);
+            }
+
+            SetMode(_beforeV0Cutscene.Mode);
+            _redrawSentenceLine = true;
+        }
+    }
+
+    /// <summary>Version 0's own fields of a save. Mirrors what <c>ScummEngine_v0::saveLoadWithSerializer</c> writes.</summary>
+    private void CaptureV0(Saves.ScummState s)
+    {
+        s.CutSceneData[0] = _beforeV0Cutscene.Mode;
+        s.CutSceneData[2] = _beforeV0Cutscene.Room;
+        Array.Copy(Engine.BitVariables, s.BitVariables, Math.Min(Engine.BitVariables.Length, s.BitVariables.Length));
+        (s.CurrentMode, s.CurrentLights) = (CurrentMode, CurrentLights);
+        (s.ActiveVerb, s.ActiveObject, s.ActiveObject2) = (ActiveVerb, ActiveObject, ActiveObject2);
+        (s.CmdVerb, s.CmdObject, s.CmdObject2) = (Engine.CommandVerb, Engine.CommandObject, Engine.CommandObject2);
+        (s.WalkToObject, s.WalkToObjectState) = (_walkToObject, _walkToObjectState);
+
+        // the sentence line's text slot (flushSentenceLine)
+        (s.Strings[2].Charset, s.Strings[2].Color, s.Strings[2].X, s.Strings[2].Y, s.Strings[2].Right) = (1, 16, 1, Verbs.Top + 1, 320);
+    }
+
+    /// <summary>Takes version 0's own fields from a save; the mode is set without the redraw <c>setMode</c> does.</summary>
+    private void RestoreV0(Saves.ScummState s)
+    {
+        _beforeV0Cutscene = (s.CutSceneData[0], s.CutSceneData[2]);
+        Array.Copy(s.BitVariables, Engine.BitVariables, Math.Min(Engine.BitVariables.Length, s.BitVariables.Length));
+        CurrentMode = s.CurrentMode;
+        CurrentLights = s.CurrentLights;
+        (ActiveVerb, ActiveObject, ActiveObject2) = (s.ActiveVerb, s.ActiveObject, s.ActiveObject2);
+        (Engine.CommandVerb, Engine.CommandObject, Engine.CommandObject2) = (s.CmdVerb, s.CmdObject, s.CmdObject2);
+        (_walkToObject, _walkToObjectState) = (s.WalkToObject, s.WalkToObjectState);
+        _sentenceNestedCount = 0;
+        _redrawSentenceLine = false;
+    }
+
+    /// <summary>
+    /// After a load from outside the save screen: a save made in the save room ends the save
+    /// screen, its strings' script, its cutscene and the script that was running; elsewhere the C64
+    /// needs nothing. Mirrors <c>ScummEngine_v0::terminateSaveMenuScript</c> and the C64's part of
+    /// <c>ScummEngine_v3::scummLoop_handleSaveLoad</c>.
+    /// </summary>
+    private void AfterLoadV0(Saves.ScummState state)
+    {
+        const int SaveMenuStrings = 128;
+        if (CurrentRoom?.Number == SaveRoom)
+        {
+            Engine.StopScript(SaveMenuStrings);
+            EndCutsceneV0();
+            if (state.CurrentScript < Saves.ScummState.SlotCount && !Engine.Slots[state.CurrentScript].IsDead)
+            {
+                Engine.StopObjectCode(state.CurrentScript);
+            }
+        }
+    }
+
+    /// <summary>
     /// Each frame, before the actors are drawn: a talking actor's mouth opens or shuts, and every
     /// actor in the room but a hidden kid takes an animation step. Mirrors <c>processActors</c> for version 0.
     /// </summary>
@@ -401,8 +460,9 @@ public sealed partial class GameWorld
     }
 
     /// <summary>
-    /// The step's input: F1 to F3 switch to a kid, the right button or Escape skips a cutscene, the
-    /// period skips a line of speech, and a left click is noted for <see cref="CheckExecVerbsV0"/>.
+    /// The step's input: F1 to F3 switch to a kid, F5 opens the save screen, the right button,
+    /// Escape or F7 skips a cutscene, the period skips a line of speech, and a left click is noted
+    /// for <see cref="CheckExecVerbsV0"/>.
     /// Mirrors <c>ScummEngine_v0::processInput</c> and what it shares with <c>processKeyboard</c>.
     /// </summary>
     private void ProcessInputV0()
@@ -411,6 +471,16 @@ public sealed partial class GameWorld
         int key = _rightClicked ? KeyEscape : _key;
         _clicked = _rightClicked = false;
         _key = 0;
+
+        // ScummEngine_v2::processKeyboard on the C64: F5 opens the game's own save screen, F7 skips a cutscene
+        if (key == KeyF5)
+        {
+            Engine.RunScript(V0SaveScreenScript);
+        }
+        else if (key == KeyF7)
+        {
+            key = KeyEscape;
+        }
 
         if (key is >= KeyF1 and < KeyF1 + 3)
         {

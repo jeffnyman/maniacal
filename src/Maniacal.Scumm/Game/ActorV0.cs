@@ -833,6 +833,67 @@ public sealed class ActorV0 : Actor
         _newWalkBoxEntered = _tmpNewWalkBoxEntered;
     }
 
+    /// <summary>
+    /// Copies the actor into a save: <c>Actor</c>'s fields, the limbs, and <c>Actor_v0</c>'s own.
+    /// Version 0 never sets the walk's current and next points, which stay as <c>initActor</c> left them.
+    /// </summary>
+    internal override void SaveTo(Saves.ScummState.ActorState a)
+    {
+        base.SaveTo(a);
+        (a.CurX, a.CurY, a.NextX, a.NextY) = (0, 0, 0, 0);
+        Limbs.SaveTo(a);
+        a.MiscFlags = MiscFlags;
+        a.Speaking = Speaking;
+        (a.CurrentWalkToX, a.CurrentWalkToY, a.NewWalkToX, a.NewWalkToY) = (_currentWalkTo.X, _currentWalkTo.Y, _newWalkTo.X, _newWalkTo.Y);
+        a.WalkCountModulo = (sbyte)_walkCountModulo;
+        a.NewWalkBoxEntered = _newWalkBoxEntered;
+        (a.WalkDirX, a.WalkDirY, a.WalkYCountGreaterThanXCount) = (_walkDirX, _walkDirY, _walkYCountGreaterThanXCount ? 1 : 0);
+        (a.WalkXCount, a.WalkXCountInc, a.WalkYCount, a.WalkYCountInc) = (_walkXCount, _walkXCountInc, _walkYCount, _walkYCountInc);
+        a.WalkMaxXYCountInc = _walkCountModulo;
+        _queue.CopyTo(a.WalkboxQueue, 0);
+        a.WalkboxQueueIndex = _queueIndex;
+    }
+
+    /// <summary>
+    /// Takes the actor from a save, then starts its limbs again as <c>Actor_v0::saveLoadWithSerializer</c>
+    /// does: an actor in a clip with no walk queued stands facing its way, one walking turns and walks on.
+    /// </summary>
+    internal override void LoadFrom(Saves.ScummState.ActorState a)
+    {
+        base.LoadFrom(a);
+        Limbs.LoadFrom(a);
+        MiscFlags = a.MiscFlags;
+        Speaking = a.Speaking;
+        _currentWalkTo = new Point(a.CurrentWalkToX, a.CurrentWalkToY);
+        _newWalkTo = new Point(a.NewWalkToX, a.NewWalkToY);
+        _walkCountModulo = (byte)a.WalkCountModulo;
+        _newWalkBoxEntered = a.NewWalkBoxEntered;
+        (_walkDirX, _walkDirY, _walkYCountGreaterThanXCount) = (a.WalkDirX, a.WalkDirY, a.WalkYCountGreaterThanXCount != 0);
+        (_walkXCount, _walkXCountInc, _walkYCount, _walkYCountInc) = ((byte)a.WalkXCount, (byte)a.WalkXCountInc, (byte)a.WalkYCount, (byte)a.WalkYCountInc);
+        a.WalkboxQueue.CopyTo(_queue, 0);
+        _queueIndex = a.WalkboxQueueIndex;
+        _history.Clear();
+        (_tmpPos, _tmpNewPos, _tmpWalkBox, _tmpNewWalkBoxEntered) = (default, default, 0, false);
+
+        if (Limbs.Clip == V0CostumeState.NoClip)
+        {
+            return;
+        }
+
+        if (_queueIndex < 1)
+        {
+            Limbs.ForgetClip();
+            SetDirection(Facing);
+            SpeakCheck();
+        }
+        else
+        {
+            Facing = 0;
+            DirectionUpdate();
+            Animate(OldDirection);
+        }
+    }
+
     /// <summary>The mouth's clip for the way the actor faces, unless it has no mouth. Mirrors <c>speakCheck</c>.</summary>
     private void SpeakCheck()
     {

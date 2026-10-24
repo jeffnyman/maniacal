@@ -48,7 +48,7 @@ public sealed partial class GameWorld
     /// </summary>
     public SaveInfo Load(byte[] file)
     {
-        var (info, state) = SaveFile.Read(file, Engine.ObjectOwners.Length);
+        var (info, state) = SaveFile.Read(file, Engine.ObjectOwners.Length, Version == 0);
         Restore(state);
         AfterLoad(state);
         return info;
@@ -64,7 +64,11 @@ public sealed partial class GameWorld
     private void AfterLoad(ScummState state)
     {
         const int SaveMenuScript = 133, VarGameStarted = 164, VarSaveAllowed = 21;
-        if (CurrentRoom?.Number == SaveRoom)
+        if (Version == 0)
+        {
+            AfterLoadV0(state);
+        }
+        else if (CurrentRoom?.Number == SaveRoom)
         {
             if (Version == 1)
             {
@@ -119,7 +123,7 @@ public sealed partial class GameWorld
     /// <summary>The world as a ScummVM save state. Mirrors the state <c>saveLoadWithSerializer</c> writes.</summary>
     public ScummState Capture()
     {
-        var s = new ScummState(Engine.ObjectOwners.Length);
+        var s = new ScummState(Engine.ObjectOwners.Length, Version == 0);
         var room = CurrentRoom;
         var layout = ScreenLayout.ForVersion(Version);
 
@@ -137,10 +141,13 @@ public sealed partial class GameWorld
             s.CutSceneScript[0] = (byte)skip.Slot;
         }
 
-        s.CutSceneData[0] = Engine.SavedForCutscene.UserState;
-        s.CutSceneData[1] = Engine.SavedForCutscene.CursorState;
-        s.CutSceneData[2] = _beforeCutscene.Room;
-        s.CutSceneData[3] = (int)_beforeCutscene.Mode;
+        if (Version >= 1)
+        {
+            s.CutSceneData[0] = Engine.SavedForCutscene.UserState;
+            s.CutSceneData[1] = Engine.SavedForCutscene.CursorState;
+            s.CutSceneData[2] = _beforeCutscene.Room;
+            s.CutSceneData[3] = (int)_beforeCutscene.Mode;
+        }
 
         s.UserPut = s.CursorState = Engine.CursorOn ? 1 : 0;
         s.UserState = Engine.Interface;
@@ -157,12 +164,14 @@ public sealed partial class GameWorld
         s.ScreenEffectFlag = 1;
         s.ScreenB = layout.RoomTop;
         s.ScreenH = layout.RoomBottom;
-        var ega = Palettes.Ega;
-        for (int i = 0; i < ega.Length; i++)
+
+        // the palette resetPalette set: the EGA's on DOS, the C64's own
+        var palette = Palettes.ForVersion(Version);
+        for (int i = 0; i < palette.Length; i++)
         {
-            s.CurrentPalette[i * 3] = s.DarkenPalette[i * 3] = ega[i].R;
-            s.CurrentPalette[i * 3 + 1] = s.DarkenPalette[i * 3 + 1] = ega[i].G;
-            s.CurrentPalette[i * 3 + 2] = s.DarkenPalette[i * 3 + 2] = ega[i].B;
+            s.CurrentPalette[i * 3] = s.DarkenPalette[i * 3] = palette[i].R;
+            s.CurrentPalette[i * 3 + 1] = s.DarkenPalette[i * 3 + 1] = palette[i].G;
+            s.CurrentPalette[i * 3 + 2] = s.DarkenPalette[i * 3 + 2] = palette[i].B;
         }
 
         for (int i = 0; i < 256; i++)
@@ -173,8 +182,9 @@ public sealed partial class GameWorld
 
         for (int i = 0; i < ScummState.ActorCount; i++)
         {
+            // version 0's names are the engine's own, not resources (getActorName)
             Actors[i].SaveTo(s.Actors[i]);
-            if (Actors[i].Name.Length > 0)
+            if (Version >= 1 && Actors[i].Name.Length > 0)
             {
                 s.Resources[(ScummState.TypeActorName, i)] = new ScummState.Resource([.. Encoding.Latin1.GetBytes(Actors[i].Name), 0]);
             }
@@ -214,6 +224,11 @@ public sealed partial class GameWorld
         }
 
         (s.FlashlightStrips, s.FlashlightRows) = _flashlight;
+        if (Version == 0)
+        {
+            CaptureV0(s);
+        }
+
         return s;
     }
 
@@ -240,7 +255,8 @@ public sealed partial class GameWorld
         _boxFlags = room?.WalkBoxes.Boxes.Select(b => b.Flags).ToArray() ?? [];
         if (room is not null)
         {
-            if (s.Resources.TryGetValue((ScummState.TypeMatrix, 2), out var boxes))
+            // version 0's boxes have no flags (getBoxFlags)
+            if (Version >= 1 && s.Resources.TryGetValue((ScummState.TypeMatrix, 2), out var boxes))
             {
                 for (int i = 0; i < _boxFlags.Length && 1 + i * WalkBox.Size + 7 < boxes.Data.Length; i++)
                 {
@@ -264,7 +280,10 @@ public sealed partial class GameWorld
         for (int i = 0; i < ScummState.ActorCount; i++)
         {
             Actors[i].LoadFrom(s.Actors[i]);
-            Actors[i].Name = s.Resources.TryGetValue((ScummState.TypeActorName, i), out var name) ? Text(name.Data) : string.Empty;
+            if (Version >= 1)
+            {
+                Actors[i].Name = s.Resources.TryGetValue((ScummState.TypeActorName, i), out var name) ? Text(name.Data) : string.Empty;
+            }
         }
 
         RestoreInventoryAndNames(s);
@@ -276,8 +295,16 @@ public sealed partial class GameWorld
         Engine.Override = s.CutScenePtr[0] != 0 && s.CutSceneScript[0] < ScummState.SlotCount && !Engine.Slots[s.CutSceneScript[0]].IsDead
             ? (s.CutSceneScript[0], s.CutScenePtr[0] - BaseOffset(Engine.Slots[s.CutSceneScript[0]]))
             : null;
-        Engine.SavedForCutscene = (s.CutSceneData[0], s.CutSceneData[1]);
-        _beforeCutscene = (s.CutSceneData[2], Enum.IsDefined((CameraMode)s.CutSceneData[3]) ? (CameraMode)s.CutSceneData[3] : CameraMode.Normal);
+        if (Version == 0)
+        {
+            RestoreV0(s);
+        }
+        else
+        {
+            Engine.SavedForCutscene = (s.CutSceneData[0], s.CutSceneData[1]);
+            _beforeCutscene = (s.CutSceneData[2], Enum.IsDefined((CameraMode)s.CutSceneData[3]) ? (CameraMode)s.CutSceneData[3] : CameraMode.Normal);
+        }
+
         Engine.Interface = s.UserState & VerbArea.ShowSentence | s.UserState & VerbArea.ShowInventory | s.UserState & VerbArea.ShowVerbs;
         Engine.CursorOn = s.UserPut > 0;
 
@@ -367,7 +394,7 @@ public sealed partial class GameWorld
                     ScummState state;
                     try
                     {
-                        (_, state) = SaveFile.Read(file, Engine.ObjectOwners.Length);
+                        (_, state) = SaveFile.Read(file, Engine.ObjectOwners.Length, Version == 0);
                     }
                     catch (InvalidDataException)
                     {
@@ -531,7 +558,11 @@ public sealed partial class GameWorld
             s.Resources[(ScummState.TypeObjectName, nameIndex++)] = new ScummState.Resource([.. Encoding.Latin1.GetBytes(name), 0], obj);
         }
 
-        if (room is not null && room.BoxOffset != 0)
+        if (Version == 0)
+        {
+            SaveBoxesV0(s, room);
+        }
+        else if (room is not null && room.BoxOffset != 0)
         {
             var data = room.Data.Span;
             int count = data[room.BoxOffset];
@@ -555,6 +586,28 @@ public sealed partial class GameWorld
             {
                 s.Resources[(ScummState.TypeSound, sound)] = new ScummState.Resource([]);
             }
+        }
+    }
+
+    /// <summary>
+    /// Version 0's boxes as ScummVM keeps them: their count, then the boxes up to and with their
+    /// 0xFF, and the neighbour lists. Mirrors the version 0 box loading of <c>resetRoomSubBlocks</c>.
+    /// </summary>
+    private static void SaveBoxesV0(ScummState s, Room? room)
+    {
+        if (room is null || room.BoxOffset == 0)
+        {
+            return;
+        }
+
+        var data = room.Data.Span;
+        int count = room.WalkBoxes.Count;
+        int size = count * WalkBox.SizeV0 + 1;
+        s.Resources[(ScummState.TypeMatrix, 2)] = new ScummState.Resource([(byte)count, .. data.Slice(room.BoxOffset, size)]);
+        int lists = room.WalkBoxes.Neighbours!.Sum(n => n.Count + 1);
+        if (lists > 0)
+        {
+            s.Resources[(ScummState.TypeMatrix, 1)] = new ScummState.Resource(data.Slice(room.BoxOffset + size, lists).ToArray());
         }
     }
 

@@ -1,12 +1,13 @@
 namespace Maniacal.Scumm.Saves;
 
 /// <summary>
-/// The engine state a ScummVM save holds for Maniac Mansion versions 1 and 2, field for field and
+/// The engine state a ScummVM save holds for Maniac Mansion versions 0 to 2, field for field and
 /// in ScummVM's order, so a save made here loads in ScummVM and one made there loads here. Mirrors
-/// <c>ScummEngine::saveLoadWithSerializer</c> and <c>ScummEngine_v2::saveLoadWithSerializer</c>
-/// with the structures they sync (<c>Actor</c>, <c>ScriptSlot</c>, <c>ObjectData</c>,
-/// <c>VerbSlot</c>, <c>NestedScript</c>, <c>SentenceTab</c>, <c>StringTab</c>, <c>ColorCycle</c>),
-/// for the branches these versions on DOS take.
+/// <c>ScummEngine::saveLoadWithSerializer</c>, <c>ScummEngine_v2::saveLoadWithSerializer</c> and
+/// <c>ScummEngine_v0::saveLoadWithSerializer</c> with the structures they sync (<c>Actor</c>,
+/// <c>Actor_v0</c>, <c>ScriptSlot</c>, <c>ObjectData</c>, <c>VerbSlot</c>, <c>NestedScript</c>,
+/// <c>SentenceTab</c>, <c>StringTab</c>, <c>ColorCycle</c>), for the branches these versions take
+/// on DOS and the C64.
 /// </summary>
 /// <remarks>
 /// Versions are ScummVM's save versions: 108 is what ScummVM 2.7 writes, 124 what it writes now.
@@ -27,9 +28,12 @@ public sealed class ScummState
     /// <summary>The resource types a save lists: those not read from the game files, without the temporary ones.</summary>
     public static readonly int[] SavedTypes = [TypeSound, TypeInventory, TypeString, TypeVerb, TypeActorName, TypeScaleTable, TypeFlObject, TypeMatrix, TypeBox, TypeObjectName, TypeSpoolBuffer];
 
-    public ScummState(int globalObjects)
+    /// <param name="globalObjects">How many objects the game has.</param>
+    /// <param name="c64">Whether the game is version 0's, whose actors and engine save more.</param>
+    public ScummState(int globalObjects, bool c64 = false)
     {
         GlobalObjects = globalObjects;
+        IsC64 = c64;
         ObjectOwners = new byte[globalObjects];
         ObjectStates = new byte[globalObjects];
         ClassData = new int[globalObjects];
@@ -70,6 +74,9 @@ public sealed class ScummState
     }
 
     public int GlobalObjects { get; }
+
+    /// <summary>Whether this is a version 0 state: its actors are <c>Actor_v0</c>s, and the engine's own fields follow version 2's.</summary>
+    public bool IsC64 { get; }
 
     public byte[] GameMd5 = new byte[16];
     public int CurrentPaletteIndex, CurrentRoom, RoomResource, ObjectsInRoom, CurrentScript = 0xFF;
@@ -135,6 +142,9 @@ public sealed class ScummState
     public int CharsetId, CharsetRendererColor;
     public int InventoryOffset;
     public int FlashlightStrips = 6, FlashlightRows = 4;
+
+    // version 0's mode and lights, the sentence chosen and the one running, and the walk before it
+    public int CurrentMode, CurrentLights, ActiveVerb, ActiveObject, ActiveObject2, CmdVerb, CmdObject, CmdObject2, WalkToObject, WalkToObjectState;
 
     /// <summary>A resource the save carries. Mirrors <c>saveResource</c> for dynamic resources; a sound carries nothing but its number.</summary>
     public sealed record Resource(byte[] Data, int Number = 0);
@@ -269,7 +279,7 @@ public sealed class ScummState
 
         foreach (var actor in Actors)
         {
-            actor.Sync(s);
+            actor.Sync(s, IsC64);
         }
 
         // Sound::saveLoadWithSerializer
@@ -355,6 +365,21 @@ public sealed class ScummState
         s.Uint16(ref InventoryOffset, 79);
         s.Byte(ref FlashlightStrips, 99);
         s.Byte(ref FlashlightRows, 99);
+
+        // ScummEngine_v0::saveLoadWithSerializer
+        if (IsC64)
+        {
+            s.Byte(ref CurrentMode, 78);
+            s.Byte(ref CurrentLights, 78);
+            s.Byte(ref ActiveVerb, 92);
+            s.Uint16(ref ActiveObject, 92);
+            s.Uint16(ref ActiveObject2, 92);
+            s.Byte(ref CmdVerb, 92);
+            s.Uint16(ref CmdObject, 92);
+            s.Uint16(ref CmdObject2, 92);
+            s.Uint16(ref WalkToObject, 92);
+            s.Byte(ref WalkToObjectState, 92);
+        }
     }
 
     /// <summary>The oldest save version read: the layouts before it (local variables, resources) are not ported.</summary>
@@ -499,7 +524,8 @@ public sealed class ScummState
 
     /// <summary>
     /// The music engine's block: from version 124 its size comes first; before that it is whatever
-    /// lies between here and the fixed-size tail (the charset state and the version 2 fields). The
+    /// lies between here and the fixed-size tail (the charset state, the version 2 fields and version
+    /// 0's). The
     /// players of these versions save nothing. Mirrors the sound part of <c>saveLoadWithSerializer</c>
     /// and <c>checkSoundEngineSaveDataSize</c>.
     /// </summary>
@@ -515,6 +541,11 @@ public sealed class ScummState
             else
             {
                 int tail = (s.Has(74) ? 4 : s.Has(73) ? 1 : 0) + (s.Has(73) ? 1 : 0) + (s.Has(79) ? 2 : 0) + (s.Has(99) ? 2 : 0);
+                if (IsC64)
+                {
+                    tail += (s.Has(78) ? 2 : 0) + (s.Has(92) ? 13 : 0);
+                }
+
                 size = (int)(s.Length - s.Position) - tail;
             }
 
@@ -527,7 +558,11 @@ public sealed class ScummState
         s.Bytes(SoundEngineData, size);
     }
 
-    /// <summary>An actor. Mirrors <c>Actor::saveLoadWithSerializer</c> and <c>Actor_v3::saveLoadWithSerializer</c> for version 2's revision.</summary>
+    /// <summary>
+    /// An actor. Mirrors <c>Actor::saveLoadWithSerializer</c>, then for versions 1 and 2
+    /// <c>Actor_v3::saveLoadWithSerializer</c> at version 2's revision, and for version 0
+    /// <c>Actor_v0::saveLoadWithSerializer</c>, which follows <c>Actor</c>'s directly.
+    /// </summary>
     public sealed class ActorState
     {
         public int X, Y, HeOffsX, HeOffsY, Top, Bottom, Elevation, Width = 24, Facing = 180, Costume, Room, TalkColor = 15;
@@ -547,7 +582,16 @@ public sealed class ScummState
         public int[] HeJumpOffsets = new int[16], HeJumpCounts = new int[16], HeCondMasks = new int[16];
         public int XAdd, YAdd, StepX = 1, StepThreshold;
 
-        public void Sync(SaveSerializer s)
+        // Actor_v0: its clip and flags, the mouth, the repeats, and the walk with its queue of boxes
+        public int CostCommand = 0xFF, MiscFlags, Speaking, AnimFrameRepeat;
+        public int[] LimbFrameRepeatNew = new int[8], LimbFrameRepeat = new int[8];
+        public int CurrentWalkToX, CurrentWalkToY, NewWalkToX, NewWalkToY, WalkCountModulo;
+        public bool NewWalkBoxEntered;
+        public int WalkDirX, WalkDirY, WalkYCountGreaterThanXCount, WalkXCount, WalkXCountInc, WalkYCount, WalkYCountInc, WalkMaxXYCountInc;
+        public byte[] WalkboxQueue = [.. Enumerable.Repeat((byte)0xFF, 16)];
+        public int WalkboxQueueIndex;
+
+        public void Sync(SaveSerializer s, bool c64 = false)
         {
             s.Int16(ref X, 8);
             s.Int16(ref Y, 8);
@@ -633,11 +677,47 @@ public sealed class ScummState
             s.Array(HeJumpCounts, 16, (x, i) => x.Uint16(ref HeJumpCounts[i]), 65);
             s.Array(HeCondMasks, 16, (x, i) => x.Uint32(ref HeCondMasks[i]), 65);
 
+            if (c64)
+            {
+                SyncV0(s);
+                return;
+            }
+
             // Actor_v3, at version 2's revision
             s.Uint16(ref XAdd, 102);
             s.Uint16(ref YAdd, 102);
             s.Uint16(ref StepX, 102);
             s.Uint16(ref StepThreshold, 102);
+        }
+
+        /// <summary>Mirrors <c>Actor_v0::saveLoadWithSerializer</c> after <c>Actor</c>'s fields, for the versions read here.</summary>
+        private void SyncV0(SaveSerializer s)
+        {
+            s.Byte(ref CostCommand, 84);
+            s.Skip(1, 84, 89);
+            s.Byte(ref MiscFlags, 84);
+            s.Byte(ref Speaking, 84);
+            s.Skip(1, 84, 89);
+            s.Skip(1, 89, 89);
+            s.SByte(ref AnimFrameRepeat, 89);
+            s.Array(LimbFrameRepeatNew, 8, (x, i) => x.SByte(ref LimbFrameRepeatNew[i]), 89);
+            s.Array(LimbFrameRepeat, 8, (x, i) => x.SByte(ref LimbFrameRepeat[i]), 90);
+            s.Int16(ref CurrentWalkToX, 97);
+            s.Int16(ref CurrentWalkToY, 97);
+            s.Int16(ref NewWalkToX, 97);
+            s.Int16(ref NewWalkToY, 97);
+            s.SByte(ref WalkCountModulo, 97);
+            s.Bool(ref NewWalkBoxEntered, 97);
+            s.Byte(ref WalkDirX, 97);
+            s.Byte(ref WalkDirY, 97);
+            s.Byte(ref WalkYCountGreaterThanXCount, 97);
+            s.Byte(ref WalkXCount, 97);
+            s.Byte(ref WalkXCountInc, 97);
+            s.Byte(ref WalkYCount, 97);
+            s.Byte(ref WalkYCountInc, 97);
+            s.Byte(ref WalkMaxXYCountInc, 97);
+            s.Bytes(WalkboxQueue, 16, 98);
+            s.Byte(ref WalkboxQueueIndex, 98);
         }
     }
 

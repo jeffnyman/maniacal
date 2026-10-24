@@ -42,7 +42,7 @@ file.png` the game headless, with clicks and keys given at chosen steps (`--clic
 |---|---|---|---|
 | DOS V1 (1987) | 1 | `00.LFL` to `52.LFL`, XOR-encoded | Playable, with sound and saves |
 | DOS V2 "enhanced" (1988) | 2 | `00.LFL` to `53.LFL`, XOR-encoded | Playable, with sound and saves |
-| Commodore 64 (1987) | 0 | `maniac1.d64`, `maniac2.d64` disk images | The kids are picked, the intro plays, and the kids walk, take things and get into the house; no sound or saves yet |
+| Commodore 64 (1987) | 0 | `maniac1.d64`, `maniac2.d64` disk images | The kids are picked, the intro plays, the kids walk, take things and get into the house, and saves work both ways with ScummVM; no sound yet |
 | NES (1990) | 1 (NES dialect) | `.prg` extracted from the ROM | Later, if at all |
 
 ## Layout

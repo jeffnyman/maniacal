@@ -688,7 +688,7 @@ public class Actor
     /// and its leg, and the fields this interpreter does not keep at their <c>Actor_v2::initActor</c>
     /// values. Mirrors what <c>Actor::saveLoadWithSerializer</c> writes.
     /// </summary>
-    internal void SaveTo(Saves.ScummState.ActorState a)
+    internal virtual void SaveTo(Saves.ScummState.ActorState a)
     {
         a.X = X;
         a.Y = Y;
@@ -735,7 +735,7 @@ public class Actor
     }
 
     /// <summary>Takes the actor from a save; the costume loads when it is next drawn.</summary>
-    internal void LoadFrom(Saves.ScummState.ActorState a)
+    internal virtual void LoadFrom(Saves.ScummState.ActorState a)
     {
         X = a.X;
         Y = a.Y;
