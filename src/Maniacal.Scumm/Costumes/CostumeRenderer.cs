@@ -26,11 +26,45 @@ public static class CostumeRenderer
     private static readonly byte[] V1SkinColors = [8, 8, 8, 8, 4, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8];
     private static readonly byte[] V1ClothesColors = [0, 7, 2, 6, 9, 1, 3, 7, 7, 1, 1, 9, 1, 4, 5, 5, 4, 1, 0, 5, 4, 2, 2, 7, 7];
 
+    private static readonly byte[] IdentityPalette = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+
     /// <summary>
-    /// Draws one cel. Version 1 colours depend on the actor showing the costume; for the kids and
-    /// most characters the actor number is the costume number.
+    /// The colours a costume is drawn with. Version 1 takes them from the actor number (for the kids
+    /// and most characters the costume number); version 2 from the actor's 16-entry palette, or
+    /// all grey but black in the dark. Mirrors <c>ClassicCostumeRenderer::setPalette</c> and the palette of <c>byleRLEDecode_C64</c>.
     /// </summary>
+    public static byte[] Palette(Costume costume, int actor, ReadOnlySpan<byte> actorPalette = default, bool actorColors = true)
+    {
+        if (costume.IsVersion1)
+        {
+            var map = Palettes.ManiacV1ToEga;
+            int index = Math.Clamp(actor, 0, V1SkinColors.Length - 1);
+            return actorColors
+                ? [Transparent, map[V1SkinColors[index]], map[V1ClothesColors[index]], 0]
+                : [Transparent, 0, map[11], map[11]];
+        }
+
+        var palette = new byte[16];
+        if (actorColors)
+        {
+            (actorPalette.IsEmpty ? IdentityPalette : actorPalette)[..16].CopyTo(palette);
+            palette[12] = 0x0C;
+        }
+        else
+        {
+            Array.Fill(palette, (byte)8);
+            palette[12] = 0;
+        }
+
+        palette[costume.ColorIndex & 0x0F] = palette[0];
+        return palette;
+    }
+
+    /// <summary>Draws one cel, with <see cref="Palette"/>'s colours for the actor.</summary>
     public static Surface8 DrawCel(Costume costume, CostumeCel cel, int actor, bool mirror = false)
+        => DrawCel(costume, cel, Palette(costume, actor), mirror);
+
+    public static Surface8 DrawCel(Costume costume, CostumeCel cel, byte[] palette, bool mirror)
     {
         var surface = new Surface8(Math.Max(cel.Width, 1), Math.Max(cel.Height, 1));
         surface.Fill(Transparent);
@@ -41,55 +75,40 @@ public static class CostumeRenderer
 
         if (costume.IsVersion1)
         {
-            DrawV1(costume.Data.Span, cel, V1Palette(actor), surface, mirror);
+            DrawV1(costume.Data.Span, cel, palette, surface, mirror);
         }
         else
         {
-            DrawV2(costume.Data.Span, cel, V2Palette(costume), surface, mirror);
+            DrawV2(costume.Data.Span, cel, palette, surface, mirror);
         }
 
         return surface;
     }
 
     /// <summary>
-    /// Draws the figure the given animation frames build, applied in order (an actor starts with
-    /// the init frame, then the frame it shows): each frame sets the limbs it lists, and the others
-    /// keep what an earlier frame gave them. Each limb shows the command <paramref name="step"/>
-    /// steps into its run. Facing left mirrors facing right unless the costume has its own left
-    /// pictures. Mirrors <c>costumeDecodeData</c>, <c>increaseAnim</c> and <c>drawLimb</c>.
+    /// Draws the figure a costume state shows: each limb with a command that is not stopped, in
+    /// limb order, every cel placed from where the one before left the running position. Facing
+    /// left mirrors facing right unless the costume has its own left pictures. Mirrors
+    /// <c>BaseCostumeRenderer::drawCostume</c> and <c>ClassicCostumeRenderer::drawLimb</c>.
     /// </summary>
-    public static CostumeFrame DrawFrame(Costume costume, int direction, IEnumerable<int> frames, int actor, int step = 0)
+    public static CostumeFrame DrawLimbs(Costume costume, CostumeState state, int direction, byte[] palette)
     {
-        var limbs = new Dictionary<int, LimbAnimation>();
-        foreach (int frame in frames)
-        {
-            foreach (var limb in costume.Animation(frame * 4 + direction))
-            {
-                if (limb.Start is not { } start)
-                {
-                    limbs.Remove(limb.Limb);
-                }
-                else if (costume.Command(start) is not (Costume.Stop or Costume.Start))
-                {
-                    limbs[limb.Limb] = limb;
-                }
-            }
-        }
-
         bool toRight = direction != Left || costume.HasOwnLeftPictures;
         var parts = new List<(Surface8 Image, int X, int Y)>();
+
         // version 2 cel offsets count from 72 pixels left of and 100 above the actor's feet
         // (BaseCostumeRenderer::drawCostume sets _xMove and _yMove so for GF_OLD_BUNDLE)
         int moveX = costume.IsVersion1 ? 0 : -72;
         int moveY = costume.IsVersion1 ? 0 : -100;
         for (int limb = 0; limb < costume.LimbCount; limb++)
         {
-            if (!limbs.TryGetValue(limb, out var animation))
+            int position = state.Position(limb);
+            if (position == CostumeState.None || state.IsStopped(limb))
             {
                 continue;
             }
 
-            int code = costume.Command(Advance(costume, animation, step)) & 0x7F;
+            int code = costume.Command(position & ~CostumeState.NoLoop) & 0x7F;
             if (code == Costume.Hide)
             {
                 continue;
@@ -102,7 +121,7 @@ public static class CostumeRenderer
             moveY -= cel.MoveY;
 
             int left = toRight ? x : -x - cel.Width;
-            parts.Add((DrawCel(costume, cel, actor, !toRight), left, y));
+            parts.Add((DrawCel(costume, cel, palette, !toRight), left, y));
         }
 
         if (parts.Count == 0)
@@ -135,53 +154,24 @@ public static class CostumeRenderer
         return new CostumeFrame(pixels, -minX, -minY);
     }
 
-    /// <summary>The command a limb shows after some steps: runs loop or stop at their end, and sound and counter commands are passed over.</summary>
-    private static int Advance(Costume costume, LimbAnimation animation, int steps)
+    /// <summary>
+    /// Draws the figure the given animation frames build, started in order on a fresh state, after
+    /// <paramref name="step"/> animation steps. For looking at a costume; actors keep their own state.
+    /// </summary>
+    public static CostumeFrame DrawFrame(Costume costume, int direction, IEnumerable<int> frames, int actor, int step = 0)
     {
-        int start = animation.Start!.Value;
-        int end = start + animation.Length;
-        int position = start;
-        for (int i = 0; i < steps; i++)
+        var state = new CostumeState();
+        foreach (int frame in frames)
         {
-            // bounded, in case a run holds nothing but sound and counter commands
-            for (int guard = 0; guard <= animation.Length; guard++)
-            {
-                if (animation.Loop)
-                {
-                    position = position >= end ? start : position + 1;
-                }
-                else if (position != end)
-                {
-                    position++;
-                }
-
-                if (costume.Command(position) is not (Costume.Sound or Costume.Counter) || start == end)
-                {
-                    break;
-                }
-            }
+            state.Decode(costume, frame * 4 + direction);
         }
 
-        return position;
-    }
-
-    private static byte[] V1Palette(int actor)
-    {
-        var map = Palettes.ManiacV1ToEga;
-        int index = Math.Clamp(actor, 0, V1SkinColors.Length - 1);
-        return [Transparent, map[V1SkinColors[index]], map[V1ClothesColors[index]], 0];
-    }
-
-    private static byte[] V2Palette(Costume costume)
-    {
-        var palette = new byte[16];
-        for (int i = 0; i < palette.Length; i++)
+        for (int i = 0; i < step; i++)
         {
-            palette[i] = (byte)i;
+            state.Increase(costume);
         }
 
-        palette[costume.ColorIndex & 0x0F] = palette[0];
-        return palette;
+        return DrawLimbs(costume, state, direction, Palette(costume, actor));
     }
 
     /// <summary>
@@ -223,7 +213,7 @@ public static class CostumeRenderer
     /// <summary>
     /// Version 1: columns 8 pixels wide, a byte being one row of four 2-bit pixels each drawn
     /// 2 wide. A length byte with bit 7 set repeats the next byte, otherwise that many bytes follow.
-    /// Pixel 0 is transparent; 1 and 2 are the actor's colours and 3 black.
+    /// Pixel 0 is transparent; 1 to 3 take the palette's colours.
     /// </summary>
     private static void DrawV1(ReadOnlySpan<byte> data, CostumeCel cel, byte[] palette, Surface8 surface, bool mirror)
     {
@@ -246,7 +236,7 @@ public static class CostumeRenderer
                 for (int pair = 0; pair < 4; pair++)
                 {
                     int pixel = (value >> (6 - 2 * pair)) & 3;
-                    if (pixel == 0)
+                    if (pixel == 0 || palette[pixel] == Transparent)
                     {
                         continue;
                     }

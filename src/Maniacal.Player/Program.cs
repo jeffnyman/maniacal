@@ -29,6 +29,8 @@ internal static class Program
         int? roomScripts = null;
         int? runSteps = null;
         string? screenshot = null;
+        var settings = new List<(int Variable, int Value)>();
+        var skips = new List<int>();
         int? cameraX = null;
         var actors = new List<(int Costume, int X, int Y, int Direction)>();
         string? text = null;
@@ -94,6 +96,15 @@ internal static class Program
                 case "--screenshot" when i + 1 < args.Length:
                     screenshot = args[++i];
                     break;
+                case "--skip" when i + 1 < args.Length && int.TryParse(args[i + 1], out int skipStep):
+                    skips.Add(skipStep);
+                    i++;
+                    break;
+                case "--set" when i + 1 < args.Length && args[i + 1].Split('=') is [var name, var value]
+                    && int.TryParse(name, out int variable) && int.TryParse(value, out int number):
+                    settings.Add((variable, number));
+                    i++;
+                    break;
                 case "--font":
                     font = true;
                     break;
@@ -145,7 +156,7 @@ internal static class Program
 
         if (runSteps is { } stepCount)
         {
-            return RunHeadless(container, stepCount, screenshot, zoom);
+            return RunHeadless(container, stepCount, screenshot, zoom, settings, skips);
         }
 
         if (script is not null || roomScripts is not null)
@@ -296,7 +307,7 @@ internal static class Program
     /// does) and every running script runs once. Prints what the scripts asked of the world, the
     /// slots still alive and the variables that are not 0.
     /// </summary>
-    private static int RunHeadless(IGameContainer container, int steps, string? screenshot, int zoom)
+    private static int RunHeadless(IGameContainer container, int steps, string? screenshot, int zoom, List<(int Variable, int Value)> settings, List<int> skips)
     {
         var world = new Maniacal.Scumm.Game.GameWorld(ResourceLoader.Open(container));
         var engine = world.Engine;
@@ -304,8 +315,21 @@ internal static class Program
         try
         {
             world.Boot();
+
+            // variables set after the boot stand in for input there is no way to give yet
+            foreach (var (variable, value) in settings)
+            {
+                engine.WriteVar(variable, value);
+            }
+
             for (int step = 0; step < steps; step++)
             {
+                // a skip presses the cutscene key: the cutscene's override jump is taken
+                if (skips.Contains(step))
+                {
+                    engine.AbortCutscene();
+                }
+
                 world.Step();
             }
         }
@@ -321,6 +345,8 @@ internal static class Program
 
         Console.WriteLine();
         Console.WriteLine($"Room {world.CurrentRoom?.Number ?? 0}, camera at {world.Camera.X}, {world.Steps} steps");
+        Console.WriteLine("Actors here: " + string.Join(", ", world.Actors.Skip(1).Where(a => a.InCurrentRoom)
+            .Select(a => $"{a.Number} \"{a.Name}\" costume {a.CostumeNumber} at ({a.X}, {a.Y}) facing {a.Facing}{(a.Visible ? "" : " hidden")}")));
         if (screenshot is not null)
         {
             using var file = File.Create(screenshot);
@@ -583,7 +609,7 @@ internal static class Program
         Console.Error.WriteLine("       maniacal <game folder> --costume N [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --view N [--camera X] [--actor costume,x,y[,left|right|front|back]]... [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --script N | --room-scripts N");
-        Console.Error.WriteLine("       maniacal <game folder> --run [steps] [--screenshot file.png] [--zoom N]");
+        Console.Error.WriteLine("       maniacal <game folder> --run [steps] [--set var=value]... [--skip step]... [--screenshot file.png] [--zoom N]");
         Console.Error.WriteLine("       maniacal <game folder> --font | --text \"words\" [--zoom N] [--output file.png]");
     }
 }

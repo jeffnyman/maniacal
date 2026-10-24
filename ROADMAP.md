@@ -110,8 +110,17 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   script, then script 5), `setCameraAt`, `panCameraTo`, the camera limits of `roomOps`, and `lights`;
   a main-loop step (delays, scripts, camera); and the screen drawn from the object states.
   `maniacal <folder> --run [steps] --screenshot file.png` shows the title screen in both releases.
-- Next: the other world instructions, subsystem by subsystem: actors (put, walk, animate, costumes),
-  then verbs and the sentence, text, objects (`drawObject` positions, pick up), sound, and dark rooms.
+- Done: actors without walking (`Actor`, `CostumeState`): the per-limb costume state of
+  `costumeDecodeData` and `increaseAnim`; `putActor`, `showActor`, `hideActor`, `setActorCostume`,
+  `animateActor`, `setDirection` and `animateCostume`; V1's default costumes and talk colours;
+  `actorOps`, the put and query instructions, `actorFollowCamera` and `loadRoomWithEgo`; drawing
+  the actors in the room back to front, in their palette under the current lights. With the kid
+  selection stood in for by `--set` and the intro skipped by `--skip`, both releases reach the start
+  of the game with the three kids on the driveway.
+- Next: walking. ScummVM's walkbox code (`adjustXYToBeInBox`, `checkXYInBoxBounds`,
+  `getClosestPtOnBox`, the box path search) and `Actor::walkActor` with turning; then `getDist`,
+  `getClosestObjActor` and `actorFromPos`. The intro's meteor waits on it.
+- Then: verbs and the sentence, text, objects (`drawObject` positions, pick up), sound, and dark rooms.
 - `script.cpp`: script slots, `runScript`, `runObjectScript`, `runEntryScript`/`runExitScript`,
   cutscenes, `stopScript`, freeze and unfreeze, the bit variables.
 - `script_v2.cpp`: the V2 opcode table (also used by V1) and every handler.
