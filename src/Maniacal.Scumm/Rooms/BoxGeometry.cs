@@ -163,10 +163,10 @@ public static class BoxGeometry
 
     /// <summary>
     /// The nearest point of a box to a point, inside or on it, and a rough distance to it (0 when
-    /// the point is in the box; lines count a quarter of columns). Mirrors the static
-    /// <c>checkXYInBoxBounds</c> of <c>actor.cpp</c> for versions 1 and 2.
+    /// the point is in the box; lines count a quarter of columns, and in version 0 columns count
+    /// double). Mirrors the static <c>checkXYInBoxBounds</c> of <c>actor.cpp</c>.
     /// </summary>
-    public static (int Distance, Point Point) NearestInBox(BoxCorners box, int x, int y)
+    public static (int Distance, Point Point) NearestInBox(BoxCorners box, int x, int y, bool doubleColumns = false)
     {
         int destX = x;
         int destY;
@@ -219,7 +219,7 @@ public static class BoxGeometry
 
         destX = x < xmin ? xmin : x > xmax ? xmax : x;
 
-        int xDist = Math.Abs(x - destX);
+        int xDist = Math.Abs(x - destX) * (doubleColumns ? 2 : 1);
         int yDist = Math.Abs(y - destY) / 4;
         int dist = xDist < yDist ? (xDist >> 1) + yDist : (yDist >> 1) + xDist;
         return (dist, new Point(destX, destY));

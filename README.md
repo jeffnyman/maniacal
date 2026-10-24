@@ -42,7 +42,7 @@ file.png` the game headless, with clicks and keys given at chosen steps (`--clic
 |---|---|---|---|
 | DOS V1 (1987) | 1 | `00.LFL` to `52.LFL`, XOR-encoded | Playable, with sound and saves |
 | DOS V2 "enhanced" (1988) | 2 | `00.LFL` to `53.LFL`, XOR-encoded | Playable, with sound and saves |
-| Commodore 64 (1987) | 0 | `maniac1.d64`, `maniac2.d64` disk images | The kids are picked and the intro starts; costumes and walking still to come |
+| Commodore 64 (1987) | 0 | `maniac1.d64`, `maniac2.d64` disk images | The kids are picked, the intro plays, and the kids walk, read and take sentences; no sound or saves yet |
 | NES (1990) | 1 (NES dialect) | `.prg` extracted from the ROM | Later, if at all |
 
 ## Layout
@@ -52,7 +52,7 @@ file.png` the game headless, with clicks and keys given at chosen steps (`--clic
 | `src/Maniacal.Scumm` | The interpreter: detection, resources, script VM, rooms, actors, walkboxes, costumes, verbs, text, sound, saves. |
 | `src/Maniacal.Player` | The `maniacal` command line player on the SDL host. |
 | `tests/Maniacal.Scumm.Tests` | Unit tests, and tests that run against the real game data when it is present. |
-| `tools` | Generators that port tables from the ScummVM source (`port_md5_table.py`, `port_fonts.py`, `port_opcodes.py`, `port_sound_tables.py`, `port_disk_tables.py`, `port_palettes.py`, `port_v0_verbs.py`). |
+| `tools` | Generators that port tables from the ScummVM source (`port_md5_table.py`, `port_fonts.py`, `port_opcodes.py`, `port_sound_tables.py`, `port_disk_tables.py`, `port_palettes.py`, `port_v0_verbs.py`, `port_v0_actors.py`). |
 | `docs` | How Maniac Mansion works and how an interpreter for it is built: the commented C64 engine, the game's scripts, the boot loader, the NES data, and the game itself. Start at [docs/README.md](docs/README.md). |
 
 The host contract (`Daventry.Core`), the audio mixer (`Daventry.Audio`) and the SDL host
@@ -78,11 +78,12 @@ dotnet run --project src/Maniacal.Player -- <game folder> --run [steps] [--click
 ## Game data
 
 Maniacal ships no game data. Point it at a folder holding a release. The tests look for the folders
-`maniac_mansion_original_DOS.com` (V1) and `maniac_mansion_enhanced_DOS.com` (V2), in the folder
+`maniac_mansion_original_DOS.com` (V1), `maniac_mansion_enhanced_DOS.com` (V2) and `maniac_mansion_c64` (V0), in the folder
 named by the `MANIACAL_GAMES` environment variable or in any folder above the test binary. The
 `.gitignore` keeps game files out of the repository.
 
-The C64 release must be renamed `maniac1.d64` and `maniac2.d64`, as ScummVM expects.
+The C64 release's disk images are found by ScummVM's names, `maniac1.d64` and `maniac2.d64`, or by
+the bytes each disk starts with.
 
 ## Documentation
 

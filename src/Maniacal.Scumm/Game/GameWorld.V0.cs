@@ -28,6 +28,12 @@ public sealed partial class GameWorld
     // the variables the kids are in (VAR(97 + slot)), and the script for verbs no object has a script for
     private const int VarKids = 97, V0FallbackScript = 3;
 
+    // the kid version 0 starts with, Dave (ScummEngine_v0::resetScummVars)
+    private const int V0FirstKid = 3;
+
+    // the plant, which version 0 draws behind all and never turns to a kid (processActors, checkPendingWalkAction)
+    private const int V0Plant = 19;
+
     // where the ego stands, walking to an object for a sentence (_walkToObjectState)
     private const int WalkDone = 0, WalkWalking = 1, WalkTurning = 2;
 
@@ -116,6 +122,101 @@ public sealed partial class GameWorld
                 PrintV0(engine.Variables[ScriptEngine.VarEgo], instruction.Operands[0].Text!);
                 return true;
 
+            // o_animateActor: a clip, with its repeats; 0xFE holds the mouth open, 0xFD stops it, 0xFF stops the actor
+            case "o_animateActor":
+                {
+                    var actor = ActorV0Of(arguments[0]);
+                    actor.Limbs.Repeat = (sbyte)arguments[2];
+                    switch (arguments[1])
+                    {
+                        case 0xFE:
+                            actor.Speaking = 0x80;
+                            break;
+                        case 0xFD:
+                            actor.Speaking = 0;
+                            break;
+                        case 0xFF:
+                            actor.StopMoving();
+                            break;
+                        default:
+                            actor.Animate(arguments[1]);
+                            break;
+                    }
+
+                    return true;
+                }
+
+            // o_getActorMoving: 2 for an actor standing still
+            case "o_getActorMoving":
+                result = ActorOf(arguments[0]).Moving;
+                return true;
+
+            // o_setActorBitVar: an actor's flags; one that freezes it stops it (script 158, the tentacle's "Oomph!")
+            case "o_setActorBitVar":
+                if ((byte)arguments[0] < ActorCount)
+                {
+                    var actor = ActorV0Of(arguments[0]);
+                    int mask = (byte)arguments[1];
+                    actor.MiscFlags = arguments[2] != 0 ? actor.MiscFlags | mask : actor.MiscFlags & ~mask;
+                    if ((actor.MiscFlags & ActorV0.MiscFlagFreeze) != 0)
+                    {
+                        actor.StopMoving();
+                    }
+                }
+
+                return true;
+            case "o_getActorBitVar":
+                result = (ActorV0Of(arguments[0]).MiscFlags & (byte)arguments[1]) != 0 ? 1 : 0;
+                return true;
+
+            // o_putActorAtObject, o_walkActorToObject: the opcode's bit 0x40 makes the object part of the room
+            case "o_putActorAtObject":
+                {
+                    var actor = ActorOf(arguments[0]);
+                    int obj = V0Object(arguments[1], (instruction.Opcode & 0x40) != 0 ? TypeBackground : TypeForeground);
+                    var (x, y) = (30, 60);
+                    if (WhereIs(obj) != 0 && ObjectPosition(obj) is { } position)
+                    {
+                        var (point, _) = actor.AdjustToBox(position.X, position.Y);
+                        (x, y) = (point.X, point.Y);
+                    }
+
+                    PutActor(actor, x, y);
+                    return true;
+                }
+
+            case "o_walkActorToObject":
+                {
+                    int obj = V0Object(arguments[1], (instruction.Opcode & 0x40) != 0 ? TypeBackground : TypeForeground);
+                    if (WhereIs(obj) != 0)
+                    {
+                        WalkActorToObject(ActorOf(arguments[0]), obj);
+                    }
+
+                    return true;
+                }
+
+            case "o_loadRoomWithEgo":
+                LoadRoomWithEgoV0(engine, V0Object(arguments[0], TypeForeground), arguments[1]);
+                return true;
+
+            // o_getClosestActor: of actors 7 down to 1 (or with bit 0x40, 25 down: there is no 25), the nearest, or 0xFF
+            case "o_getClosestActor":
+                {
+                    int closest = 0xFF, closestDistance = 0xFF;
+                    for (int other = (instruction.Opcode & 0x40) != 0 ? 25 : 7; other > 0; other--)
+                    {
+                        int distance = other < ActorCount ? Distance(arguments[0], other) : 0xFF;
+                        if (distance < closestDistance)
+                        {
+                            (closest, closestDistance) = (other, distance);
+                        }
+                    }
+
+                    result = closest;
+                    return true;
+                }
+
             // o_doSentence: 0xFF and 0xFE are the running sentence's objects, else the opcode's bits give the types
             case "o_doSentence":
                 {
@@ -132,6 +233,57 @@ public sealed partial class GameWorld
 
             default:
                 return false;
+        }
+    }
+
+    private ActorV0 ActorV0Of(int number) => (ActorV0)ActorOf(number);
+
+    /// <summary>
+    /// Each frame, before the actors are drawn: a talking actor's mouth opens or shuts, and every
+    /// actor in the room but a hidden kid takes an animation step. Mirrors <c>processActors</c> for version 0.
+    /// </summary>
+    private void AnimateActorsV0()
+    {
+        foreach (var actor in ActorsInRoom().Cast<ActorV0>())
+        {
+            actor.FlipMouth();
+            if ((actor.MiscFlags & ActorV0.MiscFlagHide) == 0 && actor.CostumeNumber != 0)
+            {
+                actor.AnimateCostume();
+            }
+        }
+    }
+
+    /// <summary>
+    /// The kid goes into a room at an object: put there first at where they stood, then at the
+    /// object's walk-to point in a walkbox, the camera following. A frozen kid goes nowhere, and the
+    /// script stops. Mirrors <c>ScummEngine_v0::o_loadRoomWithEgo</c>.
+    /// </summary>
+    private void LoadRoomWithEgoV0(ScriptEngine engine, int obj, int room)
+    {
+        var ego = ActorV0Of(engine.Variables[ScriptEngine.VarEgo]);
+        if ((ego.MiscFlags & ActorV0.MiscFlagFreeze) != 0)
+        {
+            engine.StopObjectCode(engine.CurrentSlot);
+            return;
+        }
+
+        // the original puts the kid in the new room where they were in the old (for script 158 in room 12)
+        PutActor(ego, ego.X, ego.Y, room);
+        StartScene(ego.Room);
+        if (ObjectPosition(obj) is not { } target)
+        {
+            return;
+        }
+
+        var (point, _) = ego.AdjustToBox(target.X, target.Y);
+        PutActor(ego, point.X, point.Y, CurrentRoom!.Number);
+        Camera.SetAtEx(ego.X * 8);
+        Camera.Follow(ego.Number, ego.X * 8, setCamera: true);
+        ResetSentenceV0();
+        if (point.X >= 0 && point.Y >= 0)
+        {
+            ego.StartWalk(point.X, point.Y, -1);
         }
     }
 
@@ -464,13 +616,13 @@ public sealed partial class GameWorld
             return;
         }
 
-        // the room, in actor units (VAR(6) and VAR(7) hold where the kid goes)
+        // the room, in actor units (VAR(6) and VAR(7) hold where the kid goes); a frozen kid stays
         var layout = ScreenLayout.ForVersion(Version);
         int walkX = (Mouse.X + Camera.Left) / 8, walkY = (Mouse.Y - layout.RoomTop) / 2;
         Engine.Variables[6] = walkX;
         Engine.Variables[7] = walkY;
         int ego = Engine.Variables[ScriptEngine.VarEgo];
-        if (ego is > 0 and < ActorCount)
+        if (ego is > 0 and < ActorCount && (ActorV0Of(ego).MiscFlags & ActorV0.MiscFlagFreeze) == 0)
         {
             Actors[ego].StartWalk(walkX, walkY, -1);
         }
@@ -658,8 +810,8 @@ public sealed partial class GameWorld
     }
 
     /// <summary>
-    /// The kid walks to the sentence's object or actor first. Mirrors <c>walkToActorOrObject</c>,
-    /// with the walking of versions 1 and 2 until version 0's is ported.
+    /// The kid walks to the sentence's object first, or beside its actor; VAR(6) and VAR(7) hold the
+    /// object's point, or the kid's own. A frozen kid stays. Mirrors <c>walkToActorOrObject</c>.
     /// </summary>
     private void WalkToActorOrObject(int obj)
     {
@@ -669,34 +821,38 @@ public sealed partial class GameWorld
             return;
         }
 
-        var actor = Actors[ego];
+        var actor = ActorV0Of(ego);
         _walkToObject = obj;
         _walkToObjectState = WalkWalking;
         if (obj >> 8 == TypeActor)
         {
-            var other = Actors[obj & 0xFF];
-            actor.StartWalk(other.X, other.Y, -1);
-            Engine.Variables[6] = other.X;
-            Engine.Variables[7] = other.Y;
+            WalkActorToActor(actor, Actors[obj & 0xFF], 4);
+            Engine.Variables[6] = actor.X;
+            Engine.Variables[7] = actor.Y;
         }
-        else if (ObjectPosition(obj) is { } target)
+        else
         {
-            var (point, _) = actor.AdjustToBox(target.X, target.Y);
-            actor.StartWalk(point.X, point.Y, target.Direction);
-            Engine.Variables[6] = target.X;
-            Engine.Variables[7] = target.Y;
+            WalkActorToObject(actor, obj);
+            if (ObjectPosition(obj) is { } target)
+            {
+                Engine.Variables[6] = target.X;
+                Engine.Variables[7] = target.Y;
+            }
+        }
+
+        if ((actor.MiscFlags & ActorV0.MiscFlagFreeze) != 0)
+        {
+            actor.Halt();
         }
     }
 
     /// <summary>
     /// Whether the sentence still waits for the kid: walking, then, once near the object, turning
     /// to it (or kid and actor to each other, but for the plant), after which its script runs. A
-    /// kid who stopped short gives the sentence up. Mirrors <c>checkPendingWalkAction</c>, with
-    /// arriving taken as having stopped until version 0's walking is ported.
+    /// kid who stopped short gives the sentence up. Mirrors <c>checkPendingWalkAction</c>.
     /// </summary>
     private bool CheckPendingWalkAction()
     {
-        const int Plant = 19;
         if (_walkToObjectState == WalkDone)
         {
             return false;
@@ -710,7 +866,7 @@ public sealed partial class GameWorld
         }
 
         var actor = Actors[ego];
-        if (actor.Moving != 0)
+        if (actor.Moving != ActorV0.Standing)
         {
             return true;
         }
@@ -744,7 +900,7 @@ public sealed partial class GameWorld
                     {
                         var other = Actors[_walkToObject & 0xFF];
                         actor.FaceTowards(other.X, other.Y);
-                        if (other.Number != Plant)
+                        if (other.Number != V0Plant)
                         {
                             other.FaceTowards(actor.X, actor.Y);
                         }

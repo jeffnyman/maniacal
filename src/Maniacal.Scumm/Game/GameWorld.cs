@@ -46,6 +46,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     private readonly Saves.ScummState _initial;
     private readonly RecordingHost _recorder = new();
     private readonly Dictionary<int, Costume?> _costumes = [];
+    private readonly Dictionary<int, V0Costume?> _costumesV0 = [];
     private readonly Dictionary<int, byte[]?> _sounds = [];
     private Surface8? _frame;
     private byte[] _boxFlags = [];
@@ -75,13 +76,19 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         Actors = new Actor[ActorCount];
         for (int i = 0; i < ActorCount; i++)
         {
-            Actors[i] = new Actor(i, this);
+            Actors[i] = Version == 0 ? new ActorV0(i, this) : new Actor(i, this);
 
-            // resetScumm: version 1 actors start in the costume of their number, and with their own talk colours
+            // resetScumm: version 0 and 1 actors start in the costume of their number, and with their own
+            // talk colours; version 0's names are the engine's own (getActorName)
             if (Version <= 1)
             {
                 Actors[i].SetCostume(i);
-                Actors[i].TalkColor = V1TalkColors[i];
+                Actors[i].TalkColor = Version == 0 ? V0Actors.TalkColors[i] : V1TalkColors[i];
+            }
+
+            if (Version == 0 && i > 0)
+            {
+                Actors[i].Name = V0Actors.NamesEnglish[i - 1];
             }
         }
 
@@ -89,10 +96,12 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         Messages = new MessageLine(font, Engine, n => n is > 0 and < ActorCount ? Actors[n] : null, NameOf, VerbName);
         Verbs = new VerbArea(font, ScreenLayout.ForVersion(Version).RoomBottom, () => Engine.Interface, c64: Version == 0);
 
-        // ScummEngine_v0::resetScumm: the C64's engine makes its verbs itself
+        // ScummEngine_v0::resetScumm: the C64's engine makes its verbs itself, and resetScummVars
+        // starts it with Dave as the kid
         if (Version == 0)
         {
             ResetVerbsV0();
+            Engine.Variables[ScriptEngine.VarEgo] = V0FirstKid;
         }
         _initial = Capture();
     }
@@ -195,6 +204,25 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
     Costume? IActorWorld.LoadCostume(int costume) => LoadCostume(costume);
 
+    int IActorWorld.BoxMask(int box) => CurrentRoom is { } room && box >= 0 && box < room.WalkBoxes.Count ? room.WalkBoxes.Boxes[box].Mask : 0;
+
+    IReadOnlyList<byte> IActorWorld.BoxNeighbours(int box)
+        => CurrentRoom?.WalkBoxes.Neighbours is { } neighbours && box >= 0 && box < neighbours.Count ? neighbours[box] : [];
+
+    bool IActorWorld.AreBoxesNeighbours(int box1, int box2)
+        => CurrentRoom is { } room && box1 >= 0 && box1 < room.WalkBoxes.Count && room.WalkBoxes.AreNeighboursV0(box1, box2);
+
+    V0Costume? IActorWorld.LoadCostumeV0(int costume)
+    {
+        if (!_costumesV0.TryGetValue(costume, out var loaded))
+        {
+            loaded = _loader.LoadCostumeV0(costume);
+            _costumesV0[costume] = loaded;
+        }
+
+        return loaded;
+    }
+
     /// <summary>Starts the game: runs script 1, as <c>runBootscript</c> does for the full game.</summary>
     public void Boot() => Engine.RunScript(1);
 
@@ -203,9 +231,9 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// script delays down by the step's length (<c>VAR_TIMER_NEXT</c> ticks, at least 1), move the
     /// message on, take the input, run every script once, hand the input to the input script, run a
     /// waiting sentence, walk the actors, move the camera, draw the frame, animate the actors in the
-    /// room (which <c>processActors</c> does after drawing them), then move the highlights to the
-    /// mouse. Before the scripts run, the variables the engine keeps for them are brought up to date
-    /// (<c>scummLoop_updateScummVars</c>).
+    /// room (which <c>processActors</c> does after drawing them, and in version 0 before), then move
+    /// the highlights to the mouse. Before the scripts run, the variables the engine keeps for them
+    /// are brought up to date (<c>scummLoop_updateScummVars</c>).
     /// </summary>
     public void Step()
     {
@@ -262,10 +290,18 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         SyncCameraLimits();
         var followed = Camera.Mode == CameraMode.FollowActor ? Actors[Camera.Follows] : null;
         Camera.Move(followed is null ? null : () => followed.X * 8);
-        _frame = Draw();
-        foreach (var actor in ActorsInRoom())
+        if (Version == 0)
         {
-            actor.AnimateCostume();
+            AnimateActorsV0();
+        }
+
+        _frame = Draw();
+        if (Version >= 1)
+        {
+            foreach (var actor in ActorsInRoom())
+            {
+                actor.AnimateCostume();
+            }
         }
 
         HandleMouseOver(oldEgo != Engine.Variables[ScriptEngine.VarEgo]);
@@ -382,7 +418,11 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
                     actor.Room = arguments[1];
                     if (arguments[1] == 0)
                     {
-                        if (Version <= 1)
+                        if (Version == 0)
+                        {
+                            actor.SetFacing(180);
+                        }
+                        else if (Version == 1)
                         {
                             actor.SetDirection(180);
                         }
@@ -412,15 +452,8 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
                 ActorOf(arguments[0]).StartWalk(arguments[1], arguments[2], -1);
                 return 0;
 
-            // walkActorToObject: to the object's walk-to point in a walkbox, to face the way the object says
             case "o2_walkActorToObject":
-                if (ObjectPosition(arguments[1]) is { } target)
-                {
-                    var actor = ActorOf(arguments[0]);
-                    var (point, _) = actor.AdjustToBox(target.X, target.Y);
-                    actor.StartWalk(point.X, point.Y, target.Direction);
-                }
-
+                WalkActorToObject(ActorOf(arguments[0]), arguments[1]);
                 return 0;
 
             // o5_walkActorToActor: beside the other actor, so many columns off on this side of it
@@ -433,14 +466,11 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
                     var actor = Actors[arguments[0]];
                     var other = Actors[arguments[1]];
-                    if (!actor.InCurrentRoom || !other.InCurrentRoom)
+                    if (actor.InCurrentRoom && other.InCurrentRoom)
                     {
-                        return 0;
+                        WalkActorToActor(actor, other, arguments[2]);
                     }
 
-                    int x = other.X * 8 + (other.X * 8 < actor.X * 8 ? arguments[2] * 8 : -arguments[2] * 8);
-                    var (point, _) = actor.AdjustToBox(x / 8, other.Y);
-                    actor.StartWalk(point.X, point.Y, -1);
                     return 0;
                 }
 
@@ -792,13 +822,34 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
             Flashlight.Darken(view.Pixels, Version, light);
         }
-        foreach (var actor in ActorsInRoom().Where(a => a.Visible && a.Costume is not null).OrderBy(a => a.Y))
+        foreach (var actor in ActorsInRoom().Where(a => a.Visible).OrderBy(SortKey))
         {
-            var costume = actor.Costume!;
-            var palette = CostumeRenderer.Palette(costume, actor.Number, actor.Palette, colors);
-            var frame = CostumeRenderer.DrawLimbs(costume, actor.State, actor.OldDirection, palette);
+            CostumeFrame frame;
             int box = actor.Walkbox;
-            bool behind = box == BoxGeometry.NoBox || (box < room.WalkBoxes.Count && room.WalkBoxes.Boxes[box].Mask != 0);
+            int mask = box < room.WalkBoxes.Count ? room.WalkBoxes.Boxes[box].Mask : 0;
+            if (actor is ActorV0 c64)
+            {
+                // version 0 skips hidden kids, and the mask's low 2 bits are its layer (prepareDrawActorCostume)
+                if ((c64.MiscFlags & ActorV0.MiscFlagHide) != 0 || c64.CostumeV0 is not { } costumeV0)
+                {
+                    continue;
+                }
+
+                frame = V0CostumeRenderer.DrawLimbs(costumeV0, c64.Limbs, V0CostumeRenderer.Palette(actor.Number, colors, (lights & Flashlight.FlashlightOn) != 0));
+                mask &= 3;
+            }
+            else
+            {
+                if (actor.Costume is not { } costume)
+                {
+                    continue;
+                }
+
+                var palette = CostumeRenderer.Palette(costume, actor.Number, actor.Palette, colors);
+                frame = CostumeRenderer.DrawLimbs(costume, actor.State, actor.OldDirection, palette);
+            }
+
+            bool behind = box == BoxGeometry.NoBox || mask != 0;
             var (left, right) = RoomView.DrawActor(view, Version, Camera, new ActorDrawing(frame, actor.X, actor.Y, actor.Facing == 270, behind, actor.Elevation));
 
             // markRectAsDirty: the room strips the figure covers, for getActorFromPos
@@ -815,6 +866,24 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         }
 
         return screen;
+    }
+
+    /// <summary>To an object's walk-to point in a walkbox, to face the way the object says. Mirrors <c>ScummEngine_v2::walkActorToObject</c>.</summary>
+    private void WalkActorToObject(Actor actor, int obj)
+    {
+        if (ObjectPosition(obj) is { } target)
+        {
+            var (point, _) = actor.AdjustToBox(target.X, target.Y);
+            actor.StartWalk(point.X, point.Y, target.Direction);
+        }
+    }
+
+    /// <summary>Beside another actor, so many columns off on this side of it. Mirrors <c>ScummEngine_v5::walkActorToActor</c> for versions up to 2.</summary>
+    private static void WalkActorToActor(Actor actor, Actor other, int distance)
+    {
+        int x = other.X * 8 + (other.X * 8 < actor.X * 8 ? distance * 8 : -distance * 8);
+        var (point, _) = actor.AdjustToBox(x / 8, other.Y);
+        actor.StartWalk(point.X, point.Y, -1);
     }
 
     /// <summary>Puts an actor, stopping its speech when it leaves the current room. Mirrors the start of <c>putActor</c>.</summary>
@@ -872,6 +941,12 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     }
 
     private IEnumerable<Actor> ActorsInRoom() => Actors.Skip(1).Where(a => a.InCurrentRoom);
+
+    /// <summary>
+    /// The order actors are drawn in: from the back (top of the screen) to the front, but version
+    /// 0 draws the plant first wherever it is. Mirrors <c>processActors</c>' sort.
+    /// </summary>
+    private int SortKey(Actor actor) => Version == 0 && actor.Number == V0Plant ? 0 : actor.Y;
 
     /// <summary>A sound resource, or null when there is none; some index entries point past their room file, and play nothing.</summary>
     private byte[]? LoadSound(int number)

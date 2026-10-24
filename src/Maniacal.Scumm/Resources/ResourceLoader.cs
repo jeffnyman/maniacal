@@ -81,4 +81,8 @@ public sealed class ResourceLoader
     /// <summary>Loads and parses a costume, or returns null when the index has no such costume.</summary>
     public Costume? LoadCostume(int costume)
         => Load(ResourceType.Costume, costume) is { } data ? Costume.Parse(costume, data) : null;
+
+    /// <summary>Loads and parses a C64 costume, or returns null when the index has no such costume.</summary>
+    public V0Costume? LoadCostumeV0(int costume)
+        => Load(ResourceType.Costume, costume) is { } data ? V0Costume.Parse(costume, data) : null;
 }

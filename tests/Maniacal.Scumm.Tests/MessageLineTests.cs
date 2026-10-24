@@ -31,6 +31,14 @@ public class MessageLineTests
         public bool IsPlayer(int actor) => false;
 
         public Costume? LoadCostume(int costume) => null;
+
+        public int BoxMask(int box) => 0;
+
+        public IReadOnlyList<byte> BoxNeighbours(int box) => [];
+
+        public bool AreBoxesNeighbours(int box1, int box2) => false;
+
+        public V0Costume? LoadCostumeV0(int costume) => null;
     }
 
     private static (MessageLine Line, ScriptEngine Engine, Actor[] Actors) Line()

@@ -258,9 +258,35 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   portraits' What is scripts answer the keypad's Push. Objects carry their type in their number
   (`OBJECT_V0`), and only an actor-type number is an actor (`objIsActor`). Checked: the kids are
   picked by clicking, and START starts the intro, which stops at its first costume.
-- Next: the C64's costumes (`V0CostumeLoader`, `V0CostumeRenderer`) and actors (`Actor_v0`,
-  with its walking), so the intro plays; the walk to an object before a sentence uses the walking
-  of versions 1 and 2 until then.
+- Done: the C64's costumes and actors. `V0Costume` reads the format of
+  `V0CostumeLoader::loadCostume`: 8 limbs, each with sequences of cels, and clips that each start a
+  sequence on every limb, mirrored or not. `V0CostumeState` plays them (`costumeDecodeData`,
+  `limbFrameCheck`, `increaseAnims`, each clip with its repeats) and `V0CostumeRenderer` draws them
+  as `drawLimb` does, 2-wide pixels in the actor's own colours, generated with the actors' names,
+  talk colours and talk flags by `tools/port_v0_actors.py`. `ActorV0` is `Actor_v0`: clips in
+  place of frames (`animateActor`, `startAnimActor`, `setDirection`, `turnToDirection` turning at
+  once), 2 for standing in `_moving`, the mouth's clips (`speakCheck`, opened and shut each frame by
+  `processActors`, which animates the actors before drawing them and draws the plant first), and
+  its own walking: the boxes on the way planned as it sets off (`walkBoxQueuePrepare`), a point in
+  each next box (`walkboxFindTarget`), and a column or line a step that goes round a box's edge
+  when it must (`walkActor`, `calcWalkDistances`, `actorWalkXCalculate`, `updateWalkbox`). Points
+  are moved into the boxes from box 0 up, columns counting double, and off slanted boxes' diagonals
+  (`adjustPosInBorderWalkbox`). The instructions: `o_animateActor`, `o_getActorMoving`,
+  `o_setActorBitVar` and `o_getActorBitVar` (a frozen kid stops), `o_putActorAtObject`,
+  `o_walkActorToObject`, `o_loadRoomWithEgo` and `o_getClosestActor`; the walk before a sentence
+  is `walkToActorOrObject`'s. The game starts with Dave (`resetScummVars`), and verbs are drawn a
+  pixel right and down, as `drawVerb` does on the C64. `--costume N` draws the C64's costumes too.
+  Checked: every clip of every costume decodes; the intro plays to the mansion's drive, where Dave
+  walks where the room is clicked and reads the sign, and the screen there looks right by eye.
+- Differences from ScummVM: in a slanted box, `adjustPosInBorderWalkbox` makes every column up to
+  160 on the diagonal 0, where the C64 keeps it and makes only a column past 160 0
+  (`clamp_to_diagonal_edge` in `walkboxes/walkbox_snap.asm`); Maniacal follows the C64. The test
+  for reaching the last box (`areBoxesNeighbors`) reads the neighbour lists from 4 bytes in, as
+  ScummVM does; the C64 plans its routes another way (`walkboxes/walkbox_waypoint_planner.asm`).
+  The C64's actor state is not yet saved, nor put back by a restart.
+- Next: the inventory (`o_pickupObject`, `o_setOwnerOf`, `o_setObjectName`), and playing into the
+  house, checked against ScummVM 2.7.0 as the DOS releases were. Then the SID player, saves, and
+  the time ScummVM adds for the C64's redraw (`DelayCalculateDelta`).
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).

@@ -77,6 +77,36 @@ public sealed class WalkBoxes
 
     public static readonly WalkBoxes Empty = new([], []);
 
+    /// <summary>
+    /// Version 0: whether a box is among another's neighbours, as ScummVM's <c>areBoxesNeighbors</c>
+    /// reads the lists: from 4 bytes into them, as if they had a header (its "TODO: what are the
+    /// first bytes for"), so each box's list is looked for 4 bytes on. Past the lists counts as their end.
+    /// </summary>
+    public bool AreNeighboursV0(int box1, int box2)
+    {
+        byte At(int i) => i < _matrix.Length ? _matrix[i] : EndOfList;
+        int position = 4;
+        for (int i = 0; i < box1; i++)
+        {
+            while (At(position) != EndOfList)
+            {
+                position++;
+            }
+
+            position++;
+        }
+
+        for (; At(position) != EndOfList; position++)
+        {
+            if (At(position) == box2)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>For version 0, the boxes each box joins directly; null for the other versions.</summary>
     public IReadOnlyList<IReadOnlyList<byte>>? Neighbours => _neighbours;
 
@@ -164,6 +194,7 @@ public sealed class WalkBoxes
         }
 
         position++;
+        int lists = position;
         var neighbours = new byte[boxes.Count][];
         for (int i = 0; i < boxes.Count; i++)
         {
@@ -177,6 +208,6 @@ public sealed class WalkBoxes
             position += end + 1;
         }
 
-        return new WalkBoxes([.. boxes], [], neighbours);
+        return new WalkBoxes([.. boxes], data[lists..position].ToArray(), neighbours);
     }
 }

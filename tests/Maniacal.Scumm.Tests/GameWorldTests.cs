@@ -119,6 +119,101 @@ public class GameWorldTests
         Assert.Empty(world.Unhandled);
     }
 
+    /// <summary>Boots the C64, picks Syd and Razor with Dave, and plays the intro until the kids stand in front of the mansion.</summary>
+    private static GameWorld? AfterTheC64Intro()
+    {
+        if (Open(C64Folder) is not { } world)
+        {
+            return null;
+        }
+
+        world.Boot();
+        for (int i = 0; i < IntroSteps; i++)
+        {
+            switch (i)
+            {
+                case 100:
+                    world.Click(76, 121);
+                    break;
+                case 150:
+                    world.Click(236, 121);
+                    break;
+                case 200:
+                    world.Click(290, 69);
+                    break;
+            }
+
+            world.Step();
+        }
+
+        return world;
+    }
+
+    private const int IntroSteps = 2200;
+
+    /// <summary>
+    /// The C64's intro plays: the kids' costumes animate, they walk to the mansion's drive, and
+    /// the game starts with Dave, the verbs showing. Every actor stands (version 0's 2). Pinned
+    /// after checking the screen by eye.
+    /// </summary>
+    [Fact]
+    public void The_c64_intro_plays()
+    {
+        if (AfterTheC64Intro() is not { } world)
+        {
+            return;
+        }
+
+        Assert.Equal(44, world.CurrentRoom?.Number);
+        Assert.Equal(GameWorld.ModeNormal, world.CurrentMode);
+        Assert.Equal(3, world.Engine.Variables[ScriptEngine.VarEgo]);
+        Assert.Equal([1, 2, 3], world.Actors.Where(a => a.InCurrentRoom && a.Visible).Select(a => a.Number));
+        Assert.All(world.Actors.Where(a => a.InCurrentRoom), a => Assert.Equal(ActorV0.Standing, a.Moving));
+        Assert.Equal(["Syd", "Razor", "Dave"], world.Actors[1..4].Select(a => a.Name));
+        Assert.Empty(world.Unhandled);
+        Assert.Equal("6de357bb82197929d5f4a21348470826", Md5.ComputeHex(world.Screen().Pixels));
+    }
+
+    /// <summary>
+    /// After the intro, Dave walks where the room is clicked, a column a step, and stands facing
+    /// the way he went; Read and the sign walk him to it, turn him to it, and its script shows its text.
+    /// </summary>
+    [Fact]
+    public void The_c64_kid_walks_and_reads()
+    {
+        if (AfterTheC64Intro() is not { } world)
+        {
+            return;
+        }
+
+        var dave = world.Actors[3];
+        void Steps(int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                world.Step();
+            }
+        }
+
+        // (60, 130) on the screen is column 7, line 60 of the room, which the walkboxes move to line 64
+        world.Click(60, 130);
+        Steps(5);
+        Assert.NotEqual(ActorV0.Standing, dave.Moving);
+        Steps(45);
+        Assert.Equal((7, 64, 270, ActorV0.Standing), (dave.X, dave.Y, dave.Facing, dave.Moving));
+
+        // Read, then the sign twice: the second click carries the sentence out
+        world.Click(70, 170);
+        Steps(5);
+        world.Click(24, 100);
+        Steps(5);
+        world.Click(24, 100);
+        Steps(40);
+        Assert.Equal((3, 64, 0), (dave.X, dave.Y, dave.Facing));
+        Assert.StartsWith("WARNING!!", world.Messages.Plain());
+        Assert.Empty(world.Unhandled);
+    }
+
     /// <summary>
     /// The C64's engine makes its 15 verbs itself, at columns and rows under the sentence line, in
     /// its colours; Give takes "to", Unlock and Fix "with", and Use the preposition of its object.
@@ -137,9 +232,9 @@ public class GameWorldTests
         Assert.Equal(15, verbs.Slots.Count(v => v.Id != 0));
         var newKid = verbs.Slots[verbs.SlotOf(NewKid)];
         Assert.Equal("New Kid", System.Text.Encoding.Latin1.GetString(newKid.Name));
-        Assert.Equal((24 * 8, 8), (newKid.X, newKid.Y));
+        Assert.Equal((24 * 8, 145 + 8), (newKid.X, newKid.Y));
         Assert.Equal((5, 7, 11), (newKid.Color, newKid.HiColor, newKid.DimColor));
-        Assert.Equal((15 * 8, 8), (verbs.Slots[verbs.SlotOf(WalkTo)].X, verbs.Slots[verbs.SlotOf(WalkTo)].Y));
+        Assert.Equal((15 * 8, 145 + 8), (verbs.Slots[verbs.SlotOf(WalkTo)].X, verbs.Slots[verbs.SlotOf(WalkTo)].Y));
         Assert.Equal(4, verbs.Slots[verbs.SlotOf(Give)].Preposition);
         Assert.Equal((2, 2), (verbs.Slots[verbs.SlotOf(Unlock)].Preposition, verbs.Slots[verbs.SlotOf(Fix)].Preposition));
         Assert.Equal(0xFF, verbs.Slots[verbs.SlotOf(Use)].Preposition);

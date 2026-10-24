@@ -28,6 +28,17 @@ public interface IActorWorld
     bool IsPlayer(int actor);
 
     Costume? LoadCostume(int costume);
+
+    /// <summary>Version 0: a box's mask, which holds its drawing layer, slant and ladder bits, or 0 for no box. Mirrors <c>getMaskFromBox</c>.</summary>
+    int BoxMask(int box);
+
+    /// <summary>Version 0: the boxes a box joins directly, none for no box. Mirrors <c>getBoxConnectionBase</c>.</summary>
+    IReadOnlyList<byte> BoxNeighbours(int box);
+
+    /// <summary>Version 0: whether two boxes are neighbours, as ScummVM tests it. Mirrors <c>areBoxesNeighbors</c>.</summary>
+    bool AreBoxesNeighbours(int box1, int box2);
+
+    Costumes.V0Costume? LoadCostumeV0(int costume);
 }
 
 /// <summary>
@@ -39,7 +50,7 @@ public interface IActorWorld
 /// <c>startWalkActor</c>, <c>walkActor</c>, <c>calcMovementFactor</c>, <c>actorWalkStep</c>,
 /// <c>updateActorDirection</c>, <c>remapDirection</c>, <c>adjustXYToBeInBox</c>, <c>adjustActorPos</c>).
 /// </summary>
-public sealed class Actor
+public class Actor
 {
     /// <summary>The bits of <see cref="Moving"/>. Mirrors <c>MF_NEW_LEG</c>, <c>MF_IN_LEG</c>, <c>MF_TURN</c> and <c>MF_LAST_LEG</c>.</summary>
     public const int NewLeg = 1, InLeg = 2, Turn = 4, LastLeg = 8;
@@ -71,18 +82,18 @@ public sealed class Actor
         0x03, 0x00, 0x03, 0x00, 0x01, 0x03, 0x02, 0x00,
     ];
 
-    private static readonly byte[] TurnInterpolation = [0, 2, 2, 3, 2, 1, 2, 3, 0, 1, 2, 1, 0, 1, 0, 3];
+    protected static readonly byte[] TurnInterpolation = [0, 2, 2, 3, 2, 1, 2, 3, 0, 1, 2, 1, 0, 1, 0, 3];
 
-    private readonly IActorWorld _world;
+    protected readonly IActorWorld _world;
     private Costume? _costume;
     private bool _costumeLoaded = true;
     private int _animProgress;
 
     // the walk (ScummVM's ActorWalkData)
-    private Point _dest;
-    private int _destBox = BoxGeometry.NoBox;
-    private int _destDir = -1;
-    private int _curBox = BoxGeometry.NoBox;
+    protected Point _dest;
+    protected int _destBox = BoxGeometry.NoBox;
+    protected int _destDir = -1;
+    protected int _curBox = BoxGeometry.NoBox;
     private Point _next;
     private int _xfrac, _yfrac, _xAdd, _yAdd, _deltaX, _deltaY, _stepThreshold;
     private int _walkFacing;
@@ -101,15 +112,15 @@ public sealed class Actor
 
     public int Room { get; set; }
 
-    public int X { get; private set; }
+    public int X { get; protected set; }
 
-    public int Y { get; private set; }
+    public int Y { get; protected set; }
 
     /// <summary>The facing in degrees: 0 back, 90 right, 180 front, 270 left. <c>initActor</c> starts at 180.</summary>
-    public int Facing { get; private set; } = 180;
+    public int Facing { get; protected set; } = 180;
 
     /// <summary>The facing a turn is heading for. Mirrors <c>_targetFacing</c>.</summary>
-    public int TargetFacing { get; private set; } = 180;
+    public int TargetFacing { get; protected set; } = 180;
 
     public int CostumeNumber { get; private set; }
 
@@ -139,7 +150,7 @@ public sealed class Actor
     public int Elevation { get; set; }
 
     /// <summary>Drawn in its room. Mirrors <c>_visible</c>.</summary>
-    public bool Visible { get; private set; }
+    public bool Visible { get; protected set; }
 
     /// <summary>The frame last started. Mirrors <c>_frame</c>.</summary>
     public int Frame { get; private set; }
@@ -153,10 +164,10 @@ public sealed class Actor
     public CostumeState State { get; } = new();
 
     /// <summary>Walking and turning, as <see cref="NewLeg"/>, <see cref="InLeg"/>, <see cref="Turn"/> and <see cref="LastLeg"/> bits; 0 when still. Mirrors <c>_moving</c>.</summary>
-    public int Moving { get; private set; }
+    public int Moving { get; protected set; }
 
     /// <summary>The box the actor stands in, or <see cref="BoxGeometry.NoBox"/>. Mirrors <c>_walkbox</c>.</summary>
-    public int Walkbox { get; private set; } = BoxGeometry.NoBox;
+    public int Walkbox { get; protected set; } = BoxGeometry.NoBox;
 
     public bool InCurrentRoom => Room != 0 && Room == _world.CurrentRoom;
 
@@ -212,14 +223,20 @@ public sealed class Actor
             Show();
         }
 
+        AfterPut();
         if (_world.Version <= 1)
         {
             SetDirection(180);
         }
     }
 
+    /// <summary>What a version does more when an actor is put, before version 1's turn to the front.</summary>
+    protected virtual void AfterPut()
+    {
+    }
+
     /// <summary>Mirrors <c>showActor</c> for versions 1 and 2: into a walkbox, then the stand, init and talk-stop frames, in that order.</summary>
-    public void Show()
+    public virtual void Show()
     {
         if (_world.CurrentRoom == 0 || Visible)
         {
@@ -258,22 +275,25 @@ public sealed class Actor
         if (Visible)
         {
             Hide();
-            State.Reset();
+            ResetCostume();
             SelectCostume(costume);
             Show();
         }
         else
         {
             SelectCostume(costume);
-            State.Reset();
+            ResetCostume();
         }
     }
+
+    /// <summary>The limbs lose their animations. Mirrors <c>_cost.reset()</c>.</summary>
+    protected virtual void ResetCostume() => State.Reset();
 
     /// <summary>
     /// What the scripts' <c>animateActor</c> asks: <c>frame * 4 + direction</c>, with frames 0x3F,
     /// 0x3E and 0x3D meaning stop walking, face the direction now, and turn to it. Mirrors <c>animateActor</c>.
     /// </summary>
-    public void Animate(int animation)
+    public virtual void Animate(int animation)
     {
         int chore = 0x3F - (animation >> 2) + 2;
         int direction = OldDirToNewDir(animation & 3);
@@ -297,7 +317,7 @@ public sealed class Actor
     }
 
     /// <summary>Starts a frame in the current direction, when the actor is in the current room. Mirrors <c>startAnimActor</c>.</summary>
-    public void StartAnim(int frame)
+    public virtual void StartAnim(int frame)
     {
         if (InCurrentRoom && Costume is { } costume)
         {
@@ -311,7 +331,7 @@ public sealed class Actor
     /// Turns to a facing at once. Every limb whose animation is for another direction, or another
     /// frame, is started again in the new direction. Mirrors <c>setDirection</c> for versions 1 and 2.
     /// </summary>
-    public void SetDirection(int direction)
+    public virtual void SetDirection(int direction)
     {
         direction = (direction + 360) % 360;
         if (Facing == direction)
@@ -344,8 +364,11 @@ public sealed class Actor
         }
     }
 
+    /// <summary>Faces a way without changing the limbs. Mirrors <c>setFacing</c>.</summary>
+    public void SetFacing(int facing) => Facing = OldDirToNewDir(NewDirToOldDir((facing + 360) % 360));
+
     /// <summary>Turns to a facing a quarter at a time, as the walk does each frame. Mirrors <c>turnToDirection</c> for versions 1 and 2.</summary>
-    public void TurnTo(int direction)
+    public virtual void TurnTo(int direction)
     {
         if (direction == -1)
         {
@@ -377,7 +400,7 @@ public sealed class Actor
     }
 
     /// <summary>One frame of animation: every <see cref="AnimSpeed"/> + 1 frames the limbs step on. Mirrors <c>animateCostume</c>.</summary>
-    public void AnimateCostume()
+    public virtual void AnimateCostume()
     {
         if (Costume is not { } costume)
         {
@@ -391,14 +414,14 @@ public sealed class Actor
         }
     }
 
-    public void StopMoving() => Moving = 0;
+    public virtual void StopMoving() => Moving = 0;
 
     /// <summary>
     /// Sets off towards a point in actor units, to stand facing <paramref name="direction"/> there
     /// (-1: as it arrives). The point is moved into the nearest walkbox. An actor outside the
     /// current room is simply put there. Mirrors <c>startWalkActor</c> for versions 1 and 2.
     /// </summary>
-    public void StartWalk(int x, int y, int direction)
+    public virtual void StartWalk(int x, int y, int direction)
     {
         if (!InCurrentRoom)
         {
@@ -430,7 +453,7 @@ public sealed class Actor
     /// a leg, the next one: straight to the destination in its box, or to where the next box on the
     /// way meets this one. Mirrors <c>Actor_v2::walkActor</c>.
     /// </summary>
-    public void Walk()
+    public virtual void Walk()
     {
         if ((Moving & Turn) != 0)
         {
@@ -503,7 +526,7 @@ public sealed class Actor
     /// containing it, searched from the last box, or else the nearest. Invisible boxes are passed
     /// over, except player-only ones for actors the player does not control. Mirrors <c>Actor_v2::adjustXYToBeInBox</c>.
     /// </summary>
-    public (Point Point, int Box) AdjustToBox(int x, int y)
+    public virtual (Point Point, int Box) AdjustToBox(int x, int y)
     {
         var result = (new Point(x, y), BoxGeometry.NoBox);
         int bestDist = 0xFF;
@@ -532,7 +555,7 @@ public sealed class Actor
     }
 
     /// <summary>Moves the actor into a walkbox and stops it. Mirrors <c>adjustActorPos</c>.</summary>
-    private void AdjustPosition()
+    protected void AdjustPosition()
     {
         var (point, box) = AdjustToBox(X, Y);
         X = point.X;
@@ -750,7 +773,7 @@ public sealed class Actor
         State.LoadFrom(a.CurPos, a.Start, a.End, a.CostumeFrame, a.Stopped);
     }
 
-    private void SelectCostume(int costume)
+    protected virtual void SelectCostume(int costume)
     {
         CostumeNumber = costume;
         _costume = null;

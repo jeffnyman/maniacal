@@ -317,13 +317,19 @@ internal static class Program
 
     /// <summary>
     /// Writes a sheet of a costume's figures as a PNG: standing in the four directions, then the
-    /// walk cycle facing right. Version 1 colours are those of the actor with the costume's number.
+    /// walk cycle facing right. Version 0 and 1 colours are those of the actor with the costume's number.
     /// </summary>
     private static int WriteCostume(IGameContainer container, int number, int zoom, string path)
     {
         try
         {
-            if (ResourceLoader.Open(container).LoadCostume(number) is not { } costume)
+            var loader = ResourceLoader.Open(container);
+            if (loader.Index.Version == 0)
+            {
+                return WriteCostumeV0(loader, number, zoom, path);
+            }
+
+            if (loader.LoadCostume(number) is not { } costume)
             {
                 Console.Error.WriteLine($"There is no costume {number}");
                 return 1;
@@ -358,6 +364,35 @@ internal static class Program
             return 3;
         }
     }
+
+    /// <summary>The C64's costume sheet: the standing clips facing left, right, front and back, then the walk to the right.</summary>
+    private static int WriteCostumeV0(ResourceLoader loader, int number, int zoom, string path)
+    {
+        if (loader.LoadCostumeV0(number) is not { } costume)
+        {
+            Console.Error.WriteLine($"There is no costume {number}");
+            return 1;
+        }
+
+        int walkSteps = V0CostumeRenderer.ClipLength(costume, V0WalkRight);
+        var rows = new List<List<CostumeFrame>>
+        {
+            Enumerable.Range(V0StandLeft, 4).Select(clip => V0CostumeRenderer.DrawClip(costume, clip, number)).ToList(),
+            Enumerable.Range(0, walkSteps).Select(step => V0CostumeRenderer.DrawClip(costume, V0WalkRight, number, step)).ToList(),
+        };
+
+        var palette = new Rgb[256];
+        Palettes.ForVersion(0).CopyTo(palette);
+        palette[CostumeRenderer.Transparent] = new Rgb(0x40, 0x40, 0x60);
+
+        using var file = File.Create(path);
+        PngWriter.Write(file, Sheet(rows), palette, zoom, zoom);
+        Console.WriteLine($"Costume {number}: {costume.ClipCount} clips, {walkSteps} walk steps, written to {path}");
+        return 0;
+    }
+
+    // the C64's clips: walking right, and standing facing left (then right, front and back)
+    private const int V0WalkRight = 1, V0StandLeft = 4;
 
     /// <summary>
     /// Runs the boot script headless, then the given number of main-loop steps: script delays count
@@ -647,15 +682,32 @@ internal static class Program
             var image = RoomView.Window(RoomRenderer.Render(room, n => n < states.Count ? states[n] : 0), camera);
             foreach (var (costumeNumber, x, y, direction) in actors.OrderBy(a => a.Y))
             {
-                if (loader.LoadCostume(costumeNumber) is not { } costume)
+                CostumeFrame frame;
+                if (room.Version == 0)
                 {
-                    Console.Error.WriteLine($"There is no costume {costumeNumber}");
-                    return 1;
+                    if (loader.LoadCostumeV0(costumeNumber) is not { } costumeV0)
+                    {
+                        Console.Error.WriteLine($"There is no costume {costumeNumber}");
+                        return 1;
+                    }
+
+                    frame = V0CostumeRenderer.DrawClip(costumeV0, V0StandLeft + direction, costumeNumber);
+                }
+                else
+                {
+                    if (loader.LoadCostume(costumeNumber) is not { } costume)
+                    {
+                        Console.Error.WriteLine($"There is no costume {costumeNumber}");
+                        return 1;
+                    }
+
+                    frame = CostumeRenderer.DrawFrame(costume, direction, [CostumeRenderer.InitFrame, CostumeRenderer.StandFrame], costumeNumber);
                 }
 
-                var frame = CostumeRenderer.DrawFrame(costume, direction, [CostumeRenderer.InitFrame, CostumeRenderer.StandFrame], costumeNumber);
+                // version 0's layer is the mask's low 2 bits
                 int box = room.WalkBoxes.FindBox(x, y);
-                bool behind = box >= 0 && room.WalkBoxes.Boxes[box].Mask != 0;
+                int mask = box >= 0 ? room.WalkBoxes.Boxes[box].Mask : 0;
+                bool behind = (room.Version == 0 ? mask & 3 : mask) != 0;
                 RoomView.DrawActor(image, room.Version, camera, new ActorDrawing(frame, x, y, direction == CostumeRenderer.Left, behind));
                 Console.WriteLine($"Costume {costumeNumber} at ({x}, {y}): walkbox {box}{(behind ? ", behind the mask" : "")}");
             }

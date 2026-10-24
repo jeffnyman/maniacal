@@ -171,7 +171,7 @@ public sealed class VerbArea
         verb.Preposition = preposition;
         verb.Name = System.Text.Encoding.Latin1.GetBytes(name);
         verb.X = column * 8;
-        verb.Y = row * 8 + 8;
+        verb.Y = Top + row * 8 + 8;
         Draw(slot, false);
     }
 
@@ -212,7 +212,7 @@ public sealed class VerbArea
     /// <summary>
     /// Draws a verb, highlighted or not, after clearing where it last showed; a hidden or empty verb
     /// is only cleared. Its clickable area runs a character for each byte of its name. Mirrors
-    /// <c>drawVerb</c> for versions 1 and 2.
+    /// <c>drawVerb</c> for versions 0 to 2, with the C64's pixel offsets.
     /// </summary>
     public void Draw(int slot, bool highlighted)
     {
@@ -228,10 +228,11 @@ public sealed class VerbArea
             return;
         }
 
+        // the C64 draws a verb a pixel right and down, and its area reaches a pixel further
         int color = verb.Mode == 2 ? verb.DimColor : highlighted && verb.HiColor != 0 ? verb.HiColor : verb.Color;
-        var drawn = DrawString(verb.Name, verb.X, verb.Y, Width - 1, color);
-        verb.Right = Math.Min(verb.X + verb.Name.Length * 8, Width);
-        verb.Bottom = drawn.Bottom;
+        var drawn = DrawString(verb.Name, verb.X + _offset, verb.Y + _offset, Width - 1 + _offset, color);
+        verb.Right = _offset + Math.Min(verb.X + verb.Name.Length * 8, Width);
+        verb.Bottom = drawn.Bottom + _offset;
         verb.Drawn = drawn;
     }
 
