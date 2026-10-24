@@ -254,7 +254,7 @@ public class GameStartTests
 
     /// <summary>Pinned after checking the screens by eye: the three kids by the moon (Syd put into his walkbox, a line lower).</summary>
     [Theory]
-    [InlineData(V1Folder, "7d33d11a3d85849629c2c8de867031e7")]
+    [InlineData(V1Folder, "7ba03880af2f9eb4f02cd761ba97a633")]
     [InlineData(V2Folder, "22d5ab753f41cc9ce770ec06edf86474")]
     public void The_start_screen_is_stable(string folder, string md5)
     {

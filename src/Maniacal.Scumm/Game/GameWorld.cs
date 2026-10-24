@@ -5,6 +5,7 @@ using Maniacal.Scumm.Graphics;
 using Maniacal.Scumm.Resources;
 using Maniacal.Scumm.Rooms;
 using Maniacal.Scumm.Scripts;
+using Maniacal.Scumm.Sound;
 using Maniacal.Scumm.View;
 
 namespace Maniacal.Scumm.Game;
@@ -18,8 +19,11 @@ namespace Maniacal.Scumm.Game;
 public sealed partial class GameWorld : IScriptHost, IActorWorld
 {
     // engine variables of version 2 (ScummEngine_v2::setupScummVars)
-    public const int VarCameraPosX = 2, VarCurrentLights = 12, VarActorRangeMin = 19, VarActorRangeMax = 20,
-        VarCameraMinX = 23, VarCameraMaxX = 24;
+    public const int VarCameraPosX = 2, VarCurrentLights = 12, VarMusicTimer = 17, VarActorRangeMin = 19, VarActorRangeMax = 20,
+        VarCameraMinX = 23, VarCameraMaxX = 24, VarLastSound = 37;
+
+    /// <summary>The sample rate the world's sound is made at when no host says otherwise.</summary>
+    public const int DefaultSampleRate = 22050;
 
     /// <summary>The script <c>startScene</c> runs after every room's entry script in versions 1 and 2.</summary>
     public const int AfterEntryScript = 5;
@@ -36,6 +40,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     private readonly ResourceLoader _loader;
     private readonly RecordingHost _recorder = new();
     private readonly Dictionary<int, Costume?> _costumes = [];
+    private readonly Dictionary<int, byte[]?> _sounds = [];
     private Surface8? _frame;
     private byte[] _boxFlags = [];
 
@@ -46,9 +51,14 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     private readonly Dictionary<int, string> _newNames = [];
     private (int Strips, int Rows) _flashlight = (Flashlight.DefaultStrips, Flashlight.DefaultRows);
 
-    public GameWorld(ResourceLoader loader, int seed = 1)
+    /// <param name="loader">The release's resources.</param>
+    /// <param name="seed">The seed of the scripts' random numbers.</param>
+    /// <param name="sampleRate">The rate the sound is made at.</param>
+    /// <param name="pcjr">Whether the sound is the PCjr's rather than the PC speaker's.</param>
+    public GameWorld(ResourceLoader loader, int seed = 1, int sampleRate = DefaultSampleRate, bool pcjr = true)
     {
         _loader = loader;
+        Sound = new SoundSystem(loader.Index.Version, LoadSound, sampleRate, pcjr);
         Engine = new ScriptEngine(
             loader.Index.Version,
             n => loader.Index.Locate(ResourceType.Script, n).IsPresent ? loader.Load(ResourceType.Script, n) : null,
@@ -75,6 +85,34 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     }
 
     public ScriptEngine Engine { get; }
+
+    /// <summary>The music and sound effects.</summary>
+    public SoundSystem Sound { get; }
+
+    /// <summary>
+    /// How fast the game's clock runs, in quarter-frames a second: 1193182 / 5041 for version 2,
+    /// and for version 1 twelve a tick of the PC's 18.2 Hz timer. Mirrors <c>setTimerAndShakeFrequency</c>.
+    /// </summary>
+    public double TimerFrequency => Version <= 1 ? 1193182.0 / 65536 * 12 : 1193182.0 / 5041;
+
+    /// <summary>
+    /// The ticks the next step lasts: <c>VAR_TIMER_NEXT</c>, at least 1, and in version 1 rounded
+    /// up to a multiple of 3. Mirrors the <c>delta</c> of <c>ScummEngine::go</c>.
+    /// </summary>
+    public int StepTicks
+    {
+        get
+        {
+            int delta = Math.Max(1, Engine.Variables[ScriptEngine.VarTimerNext]);
+            return Version <= 1 ? (delta + 2) / 3 * 3 : delta;
+        }
+    }
+
+    /// <summary>How long the next step lasts: four quarter-frames a tick. Mirrors <c>waitForTimer(delta * 4)</c>.</summary>
+    public TimeSpan StepLength => TimeSpan.FromSeconds(StepTicks * 4 / TimerFrequency);
+
+    /// <summary>The game time the steps so far have taken.</summary>
+    public TimeSpan Time { get; private set; }
 
     public Camera Camera { get; } = new();
 
@@ -150,7 +188,8 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
         // scummLoop: the step's ticks, at most 15, count the script delays and the message down;
         // then the message moves on (displayDialog, which versions up to 3 run before input)
-        int ticks = Math.Clamp(Engine.Variables[ScriptEngine.VarTimerNext], 1, 15);
+        Time += StepLength;
+        int ticks = Math.Min(StepTicks, 15);
         Engine.DecreaseScriptDelay(ticks);
         Messages.CountDown(ticks);
         Messages.Display();
@@ -160,6 +199,9 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         Engine.Variables[VarCameraPosX] = Camera.X >> 3;
         Engine.Variables[ScriptEngine.VarHaveMessage] = Messages.HaveMessage;
         UpdateVirtualMouse();
+
+        // updateMusicTimer: the player's timer, in quarter-frames of 240 a second
+        Engine.Variables[VarMusicTimer] = (int)(Sound.Player.MusicTimer * TimerFrequency / 240.0);
 
         Engine.RunAllScripts();
         CheckExecVerbs();
@@ -179,6 +221,10 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         }
 
         HandleMouseOver(oldEgo != Engine.Variables[ScriptEngine.VarEgo]);
+
+        // scummLoop_handleSound: the sounds asked for go to the player
+        Sound.ProcessQueue();
+        Sound.Update(Time);
         _cursorFrame++;
         Steps++;
     }
@@ -412,6 +458,25 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
             case "o5_getDist":
                 return Distance(arguments[0], arguments[1]);
+
+            // o5_startSound restarts the music timer; both note the sound in VAR_LAST_SOUND (Sound::startSound)
+            case "o5_startSound":
+                engine.Variables[VarMusicTimer] = 0;
+                engine.Variables[VarLastSound] = arguments[0];
+                Sound.Start(arguments[0]);
+                return 0;
+            case "o5_startMusic":
+                engine.Variables[VarLastSound] = arguments[0];
+                Sound.Start(arguments[0]);
+                return 0;
+            case "o5_stopSound":
+                Sound.Stop(arguments[0]);
+                return 0;
+            case "o5_stopMusic":
+                Sound.StopAll();
+                return 0;
+            case "o5_isSoundRunning":
+                return arguments[0] != 0 && Sound.IsRunning(arguments[0]) ? 1 : 0;
 
             case "o3_setBoxFlags":
                 if (arguments[0] >= 0 && arguments[0] < _boxFlags.Length)
@@ -739,6 +804,26 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     }
 
     private IEnumerable<Actor> ActorsInRoom() => Actors.Skip(1).Where(a => a.InCurrentRoom);
+
+    /// <summary>A sound resource, or null when there is none; some index entries point past their room file, and play nothing.</summary>
+    private byte[]? LoadSound(int number)
+    {
+        if (!_sounds.TryGetValue(number, out var data))
+        {
+            try
+            {
+                data = _loader.Index.Locate(ResourceType.Sound, number).IsPresent ? _loader.Load(ResourceType.Sound, number)?.ToArray() : null;
+            }
+            catch (InvalidDataException)
+            {
+                data = null;
+            }
+
+            _sounds[number] = data;
+        }
+
+        return data;
+    }
 
     private Costume? LoadCostume(int number)
     {

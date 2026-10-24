@@ -30,6 +30,8 @@ internal static class Program
         int? roomScripts = null;
         int? runSteps = null;
         string? screenshot = null;
+        string? wav = null;
+        bool speaker = false;
         var settings = new List<(int Variable, int Value)>();
         var skips = new List<int>();
         var inputs = new List<(int Step, Action<Maniacal.Scumm.Game.GameWorld> Give)>();
@@ -102,6 +104,12 @@ internal static class Program
                 case "--screenshot" when i + 1 < args.Length:
                     screenshot = args[++i];
                     break;
+                case "--wav" when i + 1 < args.Length:
+                    wav = args[++i];
+                    break;
+                case "--speaker":
+                    speaker = true;
+                    break;
                 case "--click" when i + 1 < args.Length && ParseClick(args[i + 1]) is { } click:
                     inputs.Add((click.Step, w => w.Click(click.X, click.Y)));
                     i++;
@@ -170,7 +178,7 @@ internal static class Program
 
         if (runSteps is { } stepCount)
         {
-            return RunHeadless(container, stepCount, screenshot, zoom, settings, skips, inputs);
+            return RunHeadless(container, stepCount, screenshot, wav, speaker, zoom, settings, skips, inputs);
         }
 
         if (script is not null || roomScripts is not null)
@@ -223,6 +231,11 @@ internal static class Program
 
         using (engine)
         {
+            if (engine is ScummEngine scumm)
+            {
+                scumm.Pcjr = !speaker;
+            }
+
             // the game draws its own cursor, the crosshair
             SDL.SDL3.SDL_HideCursor();
             host.Run(engine, frames);
@@ -327,11 +340,32 @@ internal static class Program
     /// does) and every running script runs once. Prints what the scripts asked of the world, the
     /// slots still alive and the variables that are not 0.
     /// </summary>
-    private static int RunHeadless(IGameContainer container, int steps, string? screenshot, int zoom, List<(int Variable, int Value)> settings, List<int> skips,
+    private static int RunHeadless(IGameContainer container, int steps, string? screenshot, string? wav, bool speaker, int zoom, List<(int Variable, int Value)> settings, List<int> skips,
         List<(int Step, Action<Maniacal.Scumm.Game.GameWorld> Give)> inputs)
     {
-        var world = new Maniacal.Scumm.Game.GameWorld(ResourceLoader.Open(container));
+        var world = new Maniacal.Scumm.Game.GameWorld(ResourceLoader.Open(container), pcjr: !speaker);
         var engine = world.Engine;
+
+        // with a WAV to write, the run reads the sound as a host would, a step's worth after each step
+        var audio = new List<short>();
+        long framesRead = 0;
+        void ReadAudio()
+        {
+            long due = (long)(world.Time.TotalSeconds * Maniacal.Scumm.Game.GameWorld.DefaultSampleRate);
+            if (wav is null || due <= framesRead)
+            {
+                return;
+            }
+
+            var buffer = new short[(due - framesRead) * 2];
+            world.Sound.Output.Read(buffer);
+            for (int i = 0; i < buffer.Length; i += 2)
+            {
+                audio.Add(buffer[i]);
+            }
+
+            framesRead = due;
+        }
 
         try
         {
@@ -357,6 +391,7 @@ internal static class Program
                 }
 
                 world.Step();
+                ReadAudio();
             }
         }
         catch (Exception ex) when (ex is InvalidOperationException or InvalidDataException)
@@ -369,8 +404,14 @@ internal static class Program
             Console.WriteLine(call);
         }
 
+        if (wav is not null)
+        {
+            File.WriteAllBytes(wav, Daventry.Audio.WavWriter.Encode(audio.ToArray(), Maniacal.Scumm.Game.GameWorld.DefaultSampleRate, 1));
+            Console.WriteLine($"Sound written to {wav}: {audio.Count / (double)Maniacal.Scumm.Game.GameWorld.DefaultSampleRate:F1} seconds, peak {audio.DefaultIfEmpty().Max(s => Math.Abs((int)s))}");
+        }
+
         Console.WriteLine();
-        Console.WriteLine($"Room {world.CurrentRoom?.Number ?? 0}, camera at {world.Camera.X}, {world.Steps} steps");
+        Console.WriteLine($"Room {world.CurrentRoom?.Number ?? 0}, camera at {world.Camera.X}, {world.Steps} steps, {world.Time.TotalSeconds:F1} seconds");
         Console.WriteLine("Actors here: " + string.Join(", ", world.Actors.Skip(1).Where(a => a.InCurrentRoom)
             .Select(a => $"{a.Number} \"{a.Name}\" costume {a.CostumeNumber} at ({a.X}, {a.Y}) facing {a.Facing}{(a.Visible ? "" : " hidden")}")));
         if (screenshot is not null)
@@ -659,12 +700,12 @@ internal static class Program
 
     private static void PrintUsage()
     {
-        Console.Error.WriteLine("usage: maniacal <game folder> [--list] [--scale N] [--fullscreen] [--frames N] [--verbose]");
+        Console.Error.WriteLine("usage: maniacal <game folder> [--list] [--scale N] [--fullscreen] [--speaker] [--frames N] [--verbose]");
         Console.Error.WriteLine("       maniacal <game folder> --room N [--objects none|initial|all] [--mask] [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --costume N [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --view N [--camera X] [--actor costume,x,y[,left|right|front|back]]... [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --script N | --room-scripts N");
-        Console.Error.WriteLine("       maniacal <game folder> --run [steps] [--click step:x,y]... [--key step:key]... [--set var=value]... [--skip step]... [--screenshot file.png] [--zoom N]");
+        Console.Error.WriteLine("       maniacal <game folder> --run [steps] [--click step:x,y]... [--key step:key]... [--set var=value]... [--skip step]... [--screenshot file.png] [--wav file.wav [--speaker]] [--zoom N]");
         Console.Error.WriteLine("       maniacal <game folder> --font | --text \"words\" [--zoom N] [--output file.png]");
     }
 }

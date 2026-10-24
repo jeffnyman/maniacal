@@ -17,7 +17,8 @@ scripts run, change rooms, set the camera and object states, and put, walk and a
 message line shows what is said, and the verbs, the sentence line and the inventory work with the
 mouse and the keys. Kids are picked by clicking, the intro plays, and the kids walk from room to
 room and pick things up; dark rooms are black but for the flashlight. The game beyond the front
-door is not checked yet, and there is no sound yet.
+door is not checked yet. The music and sound effects play as the PCjr made them, or as the PC
+speaker did with `--speaker`.
 
 A verb is clicked, then an object; clicking the object again, or clicking the sentence line,
 carries the sentence out, as in the original. The right button, Escape or F4 skip a cutscene, and
@@ -33,8 +34,8 @@ file.png` the game headless, with clicks and keys given at chosen steps (`--clic
 
 | Release | SCUMM version | Data | State |
 |---|---|---|---|
-| DOS V1 (1987) | 1 | `00.LFL` to `52.LFL`, XOR-encoded | Playable, without sound |
-| DOS V2 "enhanced" (1988) | 2 | `00.LFL` to `53.LFL`, XOR-encoded | Playable, without sound |
+| DOS V1 (1987) | 1 | `00.LFL` to `52.LFL`, XOR-encoded | Playable, with sound; no saves yet |
+| DOS V2 "enhanced" (1988) | 2 | `00.LFL` to `53.LFL`, XOR-encoded | Playable, with sound; no saves yet |
 | Commodore 64 (1987) | 0 | `maniac1.d64`, `maniac2.d64` disk images | Not yet: needs the disk image reader |
 | NES (1990) | 1 (NES dialect) | `.prg` extracted from the ROM | Later, if at all |
 
@@ -45,7 +46,7 @@ file.png` the game headless, with clicks and keys given at chosen steps (`--clic
 | `src/Maniacal.Scumm` | The interpreter: detection, resources, script VM, rooms, actors, walkboxes, costumes, verbs, text, sound, saves. |
 | `src/Maniacal.Player` | The `maniacal` command line player on the SDL host. |
 | `tests/Maniacal.Scumm.Tests` | Unit tests, and tests that run against the real game data when it is present. |
-| `tools` | Generators that port tables from the ScummVM source (`port_md5_table.py`, `port_fonts.py`, `port_opcodes.py`). |
+| `tools` | Generators that port tables from the ScummVM source (`port_md5_table.py`, `port_fonts.py`, `port_opcodes.py`, `port_sound_tables.py`). |
 | `docs` | How Maniac Mansion works and how an interpreter for it is built: the commented C64 engine, the game's scripts, the boot loader, the NES data, and the game itself. Start at [docs/README.md](docs/README.md). |
 
 The host contract (`Daventry.Core`), the audio mixer (`Daventry.Audio`) and the SDL host
@@ -59,13 +60,13 @@ Needs the .NET 10 SDK.
 ```
 dotnet build Maniacal.slnx
 dotnet test Maniacal.slnx
-dotnet run --project src/Maniacal.Player -- <game folder> [--list] [--scale N] [--fullscreen] [--frames N]
+dotnet run --project src/Maniacal.Player -- <game folder> [--list] [--scale N] [--fullscreen] [--speaker] [--frames N]
 dotnet run --project src/Maniacal.Player -- <game folder> --room N [--objects none|initial|all] [--mask] [--zoom N] [--output file.png]
 dotnet run --project src/Maniacal.Player -- <game folder> --view N [--camera X] [--actor costume,x,y[,direction]]... [--zoom N]
 dotnet run --project src/Maniacal.Player -- <game folder> --costume N [--zoom N] [--output file.png]
 dotnet run --project src/Maniacal.Player -- <game folder> --font | --text "words" [--zoom N] [--output file.png]
 dotnet run --project src/Maniacal.Player -- <game folder> --script N | --room-scripts N
-dotnet run --project src/Maniacal.Player -- <game folder> --run [steps] [--click step:x,y]... [--key step:key]... [--set var=value]... [--skip step]... [--screenshot file.png] [--zoom N]
+dotnet run --project src/Maniacal.Player -- <game folder> --run [steps] [--click step:x,y]... [--key step:key]... [--set var=value]... [--skip step]... [--screenshot file.png] [--wav file.wav [--speaker]] [--zoom N]
 ```
 
 ## Game data

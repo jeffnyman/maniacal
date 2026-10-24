@@ -11,13 +11,11 @@ namespace Maniacal.Scumm;
 
 /// <summary>
 /// Maniac Mansion for a host: a step of the world each tick, the host's mouse and keys as the
-/// game's input, and the screen with the cursor presented. Mirrors ScummVM's <c>ScummEngine::go</c>
-/// loop, which waits <c>VAR_TIMER_NEXT</c> sixtieths of a second between steps.
+/// game's input, the screen with the cursor presented, and the sound played. Mirrors ScummVM's
+/// <c>ScummEngine::go</c> loop, which waits a step's ticks of the game's clock between steps.
 /// </summary>
 public sealed class ScummEngine : Engine
 {
-    private const double TicksPerSecond = 60;
-
     private GameWorld? _world;
 
     public ScummEngine(IHost host, IGameContainer game, DetectedGame detected)
@@ -25,15 +23,19 @@ public sealed class ScummEngine : Engine
     {
     }
 
+    /// <summary>Whether the sound is the PCjr's, as ScummVM chooses by default, or the PC speaker's. Set before <see cref="Initialize"/>.</summary>
+    public bool Pcjr { get; set; } = true;
+
     /// <summary>The world being played, from <see cref="Initialize"/> on.</summary>
     public GameWorld World => _world ?? throw new InvalidOperationException("The engine is not initialized.");
 
     public override void Initialize()
     {
-        _world = new GameWorld(ResourceLoader.Open(Game), Host.RandomSeed ?? Environment.TickCount);
+        _world = new GameWorld(ResourceLoader.Open(Game), Host.RandomSeed ?? Environment.TickCount, Host.Audio.SampleRate, Pcjr);
         Host.Graphics.SetMode(ScreenLayout.Width, ScreenLayout.Height);
         Host.Graphics.SetTitle($"Maniacal - {Detected.Title}");
         Host.Graphics.SetPalette(Palettes.Ega);
+        StartAudio(_world);
         _world.Boot();
     }
 
@@ -63,8 +65,26 @@ public sealed class ScummEngine : Engine
         world.DrawCursor(screen);
         Host.Graphics.Present(screen);
 
-        int ticks = Math.Clamp(world.Engine.Variables[Scripts.ScriptEngine.VarTimerNext], 1, 15);
-        return TickResult.After(TimeSpan.FromSeconds(ticks / TicksPerSecond));
+        return TickResult.After(world.StepLength);
+    }
+
+    public override void Dispose()
+    {
+        Host.Audio.Stop();
+        base.Dispose();
+    }
+
+    /// <summary>No audio device is not fatal: the sound clocks itself, so scripts that wait for music still go on.</summary>
+    private void StartAudio(GameWorld world)
+    {
+        try
+        {
+            Host.Audio.Start(world.Sound.Output);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            Host.Log.Warning("maniacal.sound", $"Audio output unavailable, running silent: {ex.Message}");
+        }
     }
 
     /// <summary>
