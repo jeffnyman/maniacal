@@ -6,6 +6,7 @@ using Maniacal.Scumm;
 using Maniacal.Scumm.Costumes;
 using Maniacal.Scumm.Graphics;
 using Maniacal.Scumm.Resources;
+using Maniacal.Scumm.Scripts;
 using Maniacal.Scumm.View;
 
 namespace Maniacal.Player;
@@ -24,6 +25,8 @@ internal static class Program
         int zoom = 1;
         bool font = false;
         int? view = null;
+        int? script = null;
+        int? roomScripts = null;
         int? cameraX = null;
         var actors = new List<(int Costume, int X, int Y, int Direction)>();
         string? text = null;
@@ -68,6 +71,14 @@ internal static class Program
                     break;
                 case "--actor" when i + 1 < args.Length && ParseActor(args[i + 1]) is { } actor:
                     actors.Add(actor);
+                    i++;
+                    break;
+                case "--script" when i + 1 < args.Length && int.TryParse(args[i + 1], out int scriptNumber):
+                    script = scriptNumber;
+                    i++;
+                    break;
+                case "--room-scripts" when i + 1 < args.Length && int.TryParse(args[i + 1], out int scriptsRoom):
+                    roomScripts = scriptsRoom;
                     i++;
                     break;
                 case "--font":
@@ -117,6 +128,11 @@ internal static class Program
         if (listOnly)
         {
             return 0;
+        }
+
+        if (script is not null || roomScripts is not null)
+        {
+            return Disassemble(container, script, roomScripts);
         }
 
         if (view is { } viewNumber)
@@ -247,6 +263,100 @@ internal static class Program
             using var file = File.Create(path);
             PngWriter.Write(file, sheet, palette, zoom, zoom);
             Console.WriteLine($"Costume {number}: format 0x{costume.Format:X2}, {costume.AnimationCount} animations, {walkSteps} walk steps, written to {path}");
+            return 0;
+        }
+        catch (InvalidDataException ex)
+        {
+            Console.Error.WriteLine(ex.Message);
+            return 3;
+        }
+    }
+
+    /// <summary>
+    /// Prints the instructions of a global script, or of a room's entry and exit scripts and its
+    /// objects' verb code. Decoding stops at the first instruction that does not decode, with the
+    /// bytes from there.
+    /// </summary>
+    private static int Disassemble(IGameContainer container, int? script, int? roomNumber)
+    {
+        var loader = ResourceLoader.Open(container);
+        var decoder = new ScriptDecoder(loader.Index.Version);
+
+        static void Print(ScriptDecoder decoder, string title, ReadOnlyMemory<byte> code, int start, IReadOnlyList<Maniacal.Scumm.Rooms.VerbEntry>? verbs = null)
+        {
+            Console.WriteLine(title);
+            try
+            {
+                // only what execution can reach is decoded; the bytes between are shown as such
+                var entries = verbs?.Select(v => v.Offset).ToList() ?? [start];
+                int covered = start;
+                foreach (var instruction in decoder.DecodeReachable(code, entries).Values)
+                {
+                    if (instruction.Offset > covered)
+                    {
+                        Console.WriteLine($"    [{covered:X4}] {instruction.Offset - covered} unreachable bytes");
+                    }
+
+                    foreach (var verb in verbs?.Where(v => v.Offset == instruction.Offset) ?? [])
+                    {
+                        Console.WriteLine($"  verb {verb.Verb}:");
+                    }
+
+                    Console.WriteLine("    " + instruction);
+                    covered = Math.Max(covered, instruction.End);
+                }
+
+                if (covered < code.Length)
+                {
+                    Console.WriteLine($"    [{covered:X4}] {code.Length - covered} unreachable bytes");
+                }
+            }
+            catch (InvalidDataException ex)
+            {
+                Console.WriteLine($"    {ex.Message}");
+            }
+
+            Console.WriteLine();
+        }
+
+        try
+        {
+            if (script is { } number)
+            {
+                if (loader.Load(ResourceType.Script, number) is not { } data)
+                {
+                    Console.Error.WriteLine($"There is no script {number}");
+                    return 1;
+                }
+
+                // global script code starts after the 4-byte resource header (_resourceHeaderSize)
+                Print(decoder, $"Script {number} ({data.Length} bytes)", data, 4);
+            }
+
+            if (roomNumber is { } n)
+            {
+                if (loader.LoadRoom(n) is not { } room)
+                {
+                    Console.Error.WriteLine($"There is no room {n}");
+                    return 1;
+                }
+
+                if (!room.EntryScript.IsEmpty)
+                {
+                    Print(decoder, $"Room {n} entry", room.EntryScript, 0);
+                }
+
+                if (!room.ExitScript.IsEmpty)
+                {
+                    Print(decoder, $"Room {n} exit", room.ExitScript, 0);
+                }
+
+                foreach (var obj in room.Objects.Where(o => o.Verbs.Count > 0))
+                {
+                    Print(decoder, $"Object {obj.Number} \"{obj.Name}\"", obj.Code, obj.Verbs.Min(v => v.Offset), obj.Verbs);
+                }
+            }
+
             return 0;
         }
         catch (InvalidDataException ex)
@@ -409,6 +519,7 @@ internal static class Program
         Console.Error.WriteLine("       maniacal <game folder> --room N [--objects none|initial|all] [--mask] [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --costume N [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --view N [--camera X] [--actor costume,x,y[,left|right|front|back]]... [--zoom N] [--output file.png]");
+        Console.Error.WriteLine("       maniacal <game folder> --script N | --room-scripts N");
         Console.Error.WriteLine("       maniacal <game folder> --font | --text \"words\" [--zoom N] [--output file.png]");
     }
 }

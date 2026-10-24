@@ -11,12 +11,12 @@ the same engine generations and would come nearly for free, but it is not a goal
 ## Status
 
 Early. Releases are identified by ScummVM's MD5 table. For both DOS releases the index, rooms
-(objects, walkboxes), room pictures, object images and costumes are read; scripts and sounds are
-located but not yet interpreted or played.
+(objects, walkboxes), room pictures, object images and costumes are read, and every script
+decodes; scripts are not yet run, and sounds are located but not played.
 There is no interpreter yet: `maniacal <folder>` names the release and stops. `--room N` writes a
 room as a PNG, with its objects as the game starts, `--view N` the 320x200 screen with the camera
-and standing actors, `--costume N` a sheet of a costume's figures, and `--font` or `--text "words"`
-the built-in font.
+and standing actors, `--costume N` a sheet of a costume's figures, `--font` or `--text "words"` the
+built-in font, and `--script N` or `--room-scripts N` a disassembly.
 [ROADMAP.md](ROADMAP.md) gives the order of work.
 
 | Release | SCUMM version | Data | State |
@@ -33,7 +33,7 @@ the built-in font.
 | `src/Maniacal.Scumm` | The interpreter: detection, resources, script VM, rooms, actors, walkboxes, costumes, verbs, text, sound, saves. |
 | `src/Maniacal.Player` | The `maniacal` command line player on the SDL host. |
 | `tests/Maniacal.Scumm.Tests` | Unit tests, and tests that run against the real game data when it is present. |
-| `tools` | Generators that port tables from the ScummVM source (`port_md5_table.py`, `port_fonts.py`). |
+| `tools` | Generators that port tables from the ScummVM source (`port_md5_table.py`, `port_fonts.py`, `port_opcodes.py`). |
 | `docs` | How Maniac Mansion works and how an interpreter for it is built: the commented C64 engine, the game's scripts, the boot loader, the NES data, and the game itself. Start at [docs/README.md](docs/README.md). |
 
 The host contract (`Daventry.Core`), the audio mixer (`Daventry.Audio`) and the SDL host
@@ -52,6 +52,7 @@ dotnet run --project src/Maniacal.Player -- <game folder> --room N [--objects no
 dotnet run --project src/Maniacal.Player -- <game folder> --view N [--camera X] [--actor costume,x,y[,direction]]... [--zoom N]
 dotnet run --project src/Maniacal.Player -- <game folder> --costume N [--zoom N] [--output file.png]
 dotnet run --project src/Maniacal.Player -- <game folder> --font | --text "words" [--zoom N] [--output file.png]
+dotnet run --project src/Maniacal.Player -- <game folder> --script N | --room-scripts N
 ```
 
 ## Game data
