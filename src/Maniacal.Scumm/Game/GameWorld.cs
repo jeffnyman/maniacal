@@ -15,10 +15,10 @@ namespace Maniacal.Scumm.Game;
 /// instructions that work on rooms, the camera and actors; the others are recorded in
 /// <see cref="Unhandled"/> until their subsystems exist.
 /// </summary>
-public sealed class GameWorld : IScriptHost
+public sealed class GameWorld : IScriptHost, IActorWorld
 {
     // engine variables of version 2 (ScummEngine_v2::setupScummVars)
-    public const int VarCurrentLights = 12, VarCameraMinX = 23, VarCameraMaxX = 24;
+    public const int VarCameraPosX = 2, VarCurrentLights = 12, VarCameraMinX = 23, VarCameraMaxX = 24;
 
     /// <summary>The script <c>startScene</c> runs after every room's entry script in versions 1 and 2.</summary>
     public const int AfterEntryScript = 5;
@@ -36,6 +36,7 @@ public sealed class GameWorld : IScriptHost
     private readonly RecordingHost _recorder = new();
     private readonly Dictionary<int, Costume?> _costumes = [];
     private Surface8? _frame;
+    private byte[] _boxFlags = [];
 
     public GameWorld(ResourceLoader loader, int seed = 1)
     {
@@ -50,7 +51,7 @@ public sealed class GameWorld : IScriptHost
         Actors = new Actor[ActorCount];
         for (int i = 0; i < ActorCount; i++)
         {
-            Actors[i] = new Actor(i, LoadCostume, () => CurrentRoom?.Number ?? 0);
+            Actors[i] = new Actor(i, this);
 
             // resetScumm: version 1 actors start in the costume of their number, and with their own talk colours
             if (Version <= 1)
@@ -80,19 +81,69 @@ public sealed class GameWorld : IScriptHost
 
     public int Steps { get; private set; }
 
+    int IActorWorld.CurrentRoom => CurrentRoom?.Number ?? 0;
+
+    int IActorWorld.BoxCount => CurrentRoom?.WalkBoxes.Count ?? 0;
+
+    BoxCorners IActorWorld.BoxCorners(int box) => Rooms.BoxCorners.Of(CurrentRoom!.WalkBoxes.Boxes[box]);
+
+    /// <summary>A box's flags as the scripts have left them (<c>setBoxFlags</c>), or 0 for no box.</summary>
+    public int BoxFlags(int box) => box >= 0 && box < _boxFlags.Length ? _boxFlags[box] : 0;
+
+    int IActorWorld.NextBox(int from, int to)
+    {
+        if (from == to)
+        {
+            return to;
+        }
+
+        if (to == BoxGeometry.NoBox)
+        {
+            return -1;
+        }
+
+        if (from == BoxGeometry.NoBox)
+        {
+            return to;
+        }
+
+        return CurrentRoom!.WalkBoxes.NextBox(from, to);
+    }
+
+    /// <summary>
+    /// Whether the player controls an actor: in version 1 the kid being played, in version 2 the
+    /// actors from Var[42] to Var[43]. Mirrors <c>Actor_v2::isPlayer</c>.
+    /// </summary>
+    public bool IsPlayer(int actor) => Version == 1
+        ? actor == Engine.Variables[ScriptEngine.VarEgo]
+        : Engine.Variables[42] <= actor && actor <= Engine.Variables[43];
+
+    Costume? IActorWorld.LoadCostume(int costume) => LoadCostume(costume);
+
     /// <summary>Starts the game: runs script 1, as <c>runBootscript</c> does for the full game.</summary>
     public void Boot() => Engine.RunScript(1);
 
     /// <summary>
     /// One step of the main loop, in the order of <c>scummLoop</c> for these versions: count the
     /// script delays down by the step's length (<c>VAR_TIMER_NEXT</c> ticks, at least 1), run every
-    /// script once, move the camera, draw the frame, then animate the actors in the room, which
-    /// <c>processActors</c> does after drawing them.
+    /// script once, walk the actors, move the camera, draw the frame, then animate the actors in the
+    /// room, which <c>processActors</c> does after drawing them. Before the scripts run, the
+    /// variables the engine keeps for them are brought up to date (<c>scummLoop_updateScummVars</c>).
     /// </summary>
     public void Step()
     {
         Engine.DecreaseScriptDelay(Math.Max(1, Engine.Variables[ScriptEngine.VarTimerNext]));
+
+        // scummLoop_updateScummVars: the camera's column, and whether a message shows (none yet)
+        Engine.Variables[VarCameraPosX] = Camera.X >> 3;
+        Engine.Variables[ScriptEngine.VarHaveMessage] = 0;
+
         Engine.RunAllScripts();
+        foreach (var actor in ActorsInRoom())
+        {
+            actor.Walk();
+        }
+
         SyncCameraLimits();
         var followed = Camera.Mode == CameraMode.FollowActor ? Actors[Camera.Follows] : null;
         Camera.Move(followed is null ? null : () => followed.X * 8);
@@ -162,7 +213,7 @@ public sealed class GameWorld : IScriptHost
                 return 0;
 
             case "o2_putActor":
-                ActorOf(arguments[0]).Put(arguments[1], arguments[2], version: Version);
+                ActorOf(arguments[0]).Put(arguments[1], arguments[2]);
                 return 0;
 
             // o2_putActorInRoom: only the room changes, unless it is room 0, which puts the actor nowhere
@@ -177,20 +228,110 @@ public sealed class GameWorld : IScriptHost
                             actor.SetDirection(180);
                         }
 
-                        actor.Put(0, 0, 0, Version);
+                        actor.Put(0, 0, 0);
                     }
 
                     return 0;
                 }
 
-            // o2_putActorAtObject: at the object's walk-to point, or (30, 60) when the object is not here
+            // o2_putActorAtObject: at the object's walk-to point moved into a walkbox, or (30, 60) when the object is not here
             case "o2_putActorAtObject":
                 {
                     var actor = ActorOf(arguments[0]);
-                    var (x, y) = CurrentRoom?.FindObject(arguments[1]) is { } obj ? (obj.WalkX / 8, obj.WalkY / 2) : (30, 60);
-                    actor.Put(x, y, version: Version);
+                    var (x, y) = (30, 60);
+                    if (ObjectPosition(arguments[1]) is { } position)
+                    {
+                        var (point, _) = actor.AdjustToBox(position.X, position.Y);
+                        (x, y) = (point.X, point.Y);
+                    }
+
+                    actor.Put(x, y);
                     return 0;
                 }
+
+            case "o2_walkActorTo":
+                ActorOf(arguments[0]).StartWalk(arguments[1], arguments[2], -1);
+                return 0;
+
+            // walkActorToObject: to the object's walk-to point in a walkbox, to face the way the object says
+            case "o2_walkActorToObject":
+                if (ObjectPosition(arguments[1]) is { } target)
+                {
+                    var actor = ActorOf(arguments[0]);
+                    var (point, _) = actor.AdjustToBox(target.X, target.Y);
+                    actor.StartWalk(point.X, point.Y, target.Direction);
+                }
+
+                return 0;
+
+            // o5_walkActorToActor: beside the other actor, so many columns off on this side of it
+            case "o5_walkActorToActor":
+                {
+                    if (arguments[0] is <= 0 or >= ActorCount || arguments[1] is <= 0 or >= ActorCount)
+                    {
+                        return 0;
+                    }
+
+                    var actor = Actors[arguments[0]];
+                    var other = Actors[arguments[1]];
+                    if (!actor.InCurrentRoom || !other.InCurrentRoom)
+                    {
+                        return 0;
+                    }
+
+                    int x = other.X * 8 + (other.X * 8 < actor.X * 8 ? arguments[2] * 8 : -arguments[2] * 8);
+                    var (point, _) = actor.AdjustToBox(x / 8, other.Y);
+                    actor.StartWalk(point.X, point.Y, -1);
+                    return 0;
+                }
+
+            // o2_waitForActor: the script waits here while the actor walks or turns
+            case "o2_waitForActor":
+                if (ActorOf(arguments[0]).Moving != 0)
+                {
+                    engine.Repeat();
+                }
+
+                return 0;
+
+            case "o5_faceActor":
+                if (arguments[0] is > 0 and < ActorCount && ObjectOrActorPosition(arguments[1]) is { } facing)
+                {
+                    Actors[arguments[0]].FaceTowards(facing.X, facing.Y);
+                }
+
+                return 0;
+
+            // o2_drawObject: the object shows its image, and the objects with exactly its rectangle stop showing theirs;
+            // an x and y other than 255 would move it first, which is not done yet
+            case "o2_drawObject":
+                if (arguments[1] != 0xFF)
+                {
+                    _recorder.Execute(engine, instruction, arguments);
+                }
+
+                if (CurrentRoom?.FindObject(arguments[0]) is { } drawn)
+                {
+                    foreach (var other in CurrentRoom.Objects.Where(o => o.Number != 0 && o.X == drawn.X && o.Y == drawn.Y && o.Width == drawn.Width && o.Height == drawn.Height))
+                    {
+                        engine.PutState(other.Number, engine.GetState(other.Number) & ~ScriptEngine.StateIntrinsic);
+                    }
+
+                    engine.PutState(arguments[0], engine.GetState(arguments[0]) | ScriptEngine.StateIntrinsic);
+                }
+
+                return 0;
+
+            case "o5_getDist":
+                return Distance(arguments[0], arguments[1]);
+
+            case "o3_setBoxFlags":
+                if (arguments[0] >= 0 && arguments[0] < _boxFlags.Length)
+                {
+                    _boxFlags[arguments[0]] = (byte)arguments[1];
+                }
+
+                return 0;
 
             case "o5_animateActor":
                 ActorOf(arguments[0]).Animate(arguments[1]);
@@ -211,7 +352,7 @@ public sealed class GameWorld : IScriptHost
             case "o5_getActorFacing":
                 return ActorOf(arguments[0]).OldDirection;
             case "o5_getActorMoving":
-                return 0;
+                return ActorOf(arguments[0]).Moving;
             case "o2_getActorX":
                 return ActorOf(arguments[0]).X;
             case "o2_getActorY":
@@ -224,7 +365,7 @@ public sealed class GameWorld : IScriptHost
             case "o2_getActorWalkBox":
                 {
                     var actor = ActorOf(arguments[0]);
-                    return actor.InCurrentRoom && CurrentRoom is { } room ? room.WalkBoxes.FindBox(actor.X, actor.Y) & 0xFF : 0xFF;
+                    return actor.InCurrentRoom ? actor.Walkbox : 0xFF;
                 }
 
             default:
@@ -262,6 +403,7 @@ public sealed class GameWorld : IScriptHost
 
         var room = _loader.LoadRoom(number) ?? throw new InvalidOperationException($"Room {number} does not exist.");
         CurrentRoom = room;
+        _boxFlags = room.WalkBoxes.Boxes.Select(b => b.Flags).ToArray();
         Engine.Variables[VarCameraMinX] = ScreenLayout.Width / 2;
         Engine.Variables[VarCameraMaxX] = room.Width - ScreenLayout.Width / 2;
         Camera.SetRoom(room.Width);
@@ -296,20 +438,20 @@ public sealed class GameWorld : IScriptHost
 
     /// <summary>
     /// The kid (<c>VAR_EGO</c>) goes into a room at an object: the scene changes, the kid stands at
-    /// the object's walk-to point facing away from it, and the camera follows. A walk target of
-    /// (x, y) at or above 0 sets the kid walking, once there is walking. Mirrors
-    /// <c>o2_loadRoomWithEgo</c>; snapping the point into a walkbox comes with the walkboxes.
+    /// the object's walk-to point (moved into a walkbox) facing away from it, the camera follows,
+    /// and with a target at or above 0 the kid walks there. Mirrors <c>o2_loadRoomWithEgo</c>.
     /// </summary>
     public void LoadRoomWithEgo(int obj, int room, int walkX, int walkY)
     {
         var ego = ActorOf(Engine.Variables[ScriptEngine.VarEgo]);
-        ego.Put(ego.X, ego.Y, room, Version);
+        ego.Put(ego.X, ego.Y, room);
         StartScene(room);
 
-        if (CurrentRoom?.FindObject(obj) is { } target)
+        if (ObjectPosition(obj) is { } target)
         {
-            ego.Put(target.WalkX / 8, target.WalkY / 2, CurrentRoom.Number, Version);
-            ego.SetDirection(Actor.OldDirToNewDir(target.ActorDir & 3) + 180);
+            var (point, _) = ego.AdjustToBox(target.X, target.Y);
+            ego.Put(point.X, point.Y, CurrentRoom!.Number);
+            ego.SetDirection(target.Direction + 180);
         }
 
         SyncCameraLimits();
@@ -317,10 +459,65 @@ public sealed class GameWorld : IScriptHost
         Camera.Follow(ego.Number, ego.X * 8, setCamera: true);
         if (walkX >= 0 && walkY >= 0)
         {
-            _recorder.Calls.Add($"walk ego to ({walkX}, {walkY}) after loadRoomWithEgo");
+            ego.StartWalk(walkX, walkY, -1);
         }
 
         Engine.RunScript(AfterEntryScript);
+    }
+
+    /// <summary>
+    /// Where an object in the current room is for walking to: its walk-to point in actor units, and
+    /// the facing it asks for. Mirrors <c>getObjectXYPos</c> for versions 1 and 2.
+    /// </summary>
+    public (int X, int Y, int Direction)? ObjectPosition(int obj)
+        => CurrentRoom?.FindObject(obj) is { } o ? (o.WalkX / 8, o.WalkY / 2, Actor.OldDirToNewDir(o.ActorDir & 3)) : null;
+
+    /// <summary>
+    /// Where an actor or object is, in actor units, or null when it is not in the current room. A
+    /// carried object is where the actor carrying it is. Mirrors <c>getObjectOrActorXY</c>.
+    /// </summary>
+    public (int X, int Y)? ObjectOrActorPosition(int obj)
+    {
+        if (obj < ActorCount)
+        {
+            return obj > 0 && Actors[obj].InCurrentRoom ? (Actors[obj].X, Actors[obj].Y) : null;
+        }
+
+        if (ObjectPosition(obj) is { } position)
+        {
+            return (position.X, position.Y);
+        }
+
+        int owner = Engine.GetOwner(obj);
+        return owner is > 0 and < ActorCount && Actors[owner].InCurrentRoom ? (Actors[owner].X, Actors[owner].Y) : null;
+    }
+
+    /// <summary>
+    /// The distance between two actors or objects in actor units, the larger of the two axes; 0xFF
+    /// when one is not here. An object's point is first moved into a walkbox for an actor. Mirrors
+    /// <c>getObjActToObjActDist</c> and <c>getDist</c>.
+    /// </summary>
+    public int Distance(int a, int b)
+    {
+        var actorA = a is > 0 and < ActorCount ? Actors[a] : null;
+        var actorB = b is > 0 and < ActorCount ? Actors[b] : null;
+        if (actorA is not null && actorB is not null && actorA.Room == actorB.Room && actorA.Room != 0 && !actorA.InCurrentRoom)
+        {
+            return 0;
+        }
+
+        if (ObjectOrActorPosition(a) is not { } first || ObjectOrActorPosition(b) is not { } second)
+        {
+            return 0xFF;
+        }
+
+        if (actorA is not null && actorB is null)
+        {
+            var (point, _) = actorA.AdjustToBox(second.X, second.Y);
+            second = (point.X, point.Y);
+        }
+
+        return Math.Max(Math.Abs(first.Y - second.Y), Math.Abs(first.X - second.X));
     }
 
     /// <summary>
@@ -342,8 +539,8 @@ public sealed class GameWorld : IScriptHost
             var costume = actor.Costume!;
             var palette = CostumeRenderer.Palette(costume, actor.Number, actor.Palette, colors);
             var frame = CostumeRenderer.DrawLimbs(costume, actor.State, actor.OldDirection, palette);
-            int box = room.WalkBoxes.FindBox(actor.X, actor.Y);
-            bool behind = box >= 0 && room.WalkBoxes.Boxes[box].Mask != 0;
+            int box = actor.Walkbox;
+            bool behind = box == BoxGeometry.NoBox || (box < room.WalkBoxes.Count && room.WalkBoxes.Boxes[box].Mask != 0);
             RoomView.DrawActor(view, Version, Camera, new ActorDrawing(frame, actor.X, actor.Y, actor.Facing == 270, behind, actor.Elevation));
         }
 

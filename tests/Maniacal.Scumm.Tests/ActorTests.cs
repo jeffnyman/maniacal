@@ -21,7 +21,7 @@ public class ActorTests
         world.StartScene(1);
         var dave = world.Actors[Dave];
         dave.SetCostume(Dave);
-        dave.Put(40, 60, 1, world.Version);
+        dave.Put(40, 60, 1);
         return dave;
     }
 
@@ -44,10 +44,10 @@ public class ActorTests
 
         Assert.True(dave.Visible);
 
-        dave.Put(40, 60, 2, world.Version);
+        dave.Put(40, 60, 2);
         Assert.False(dave.Visible);
 
-        dave.Put(40, 60, 1, world.Version);
+        dave.Put(40, 60, 1);
         Assert.True(dave.Visible);
 
         world.StartScene(45);
@@ -249,13 +249,13 @@ public class GameStartTests
 
         Assert.Equal(44, world.CurrentRoom?.Number);
         var kids = world.Actors.Where(a => a.InCurrentRoom).Select(a => (a.Number, a.Name, a.X, a.Y, a.Visible)).ToList();
-        Assert.Equal([(1, "Syd", 29, 57, true), (2, "Razor", 34, 61, true), (3, "Dave", 24, 59, true)], kids);
+        Assert.Equal([(1, "Syd", 29, 58, true), (2, "Razor", 34, 61, true), (3, "Dave", 24, 59, true)], kids);
     }
 
-    /// <summary>Pinned after checking the screens by eye: the three kids by the moon.</summary>
+    /// <summary>Pinned after checking the screens by eye: the three kids by the moon (Syd put into his walkbox, a line lower).</summary>
     [Theory]
-    [InlineData(V1Folder, "aaa9c8d886a78265478b5a17b8643ecf")]
-    [InlineData(V2Folder, "1d743140547ce22300984c2a10270c2c")]
+    [InlineData(V1Folder, "e4c5e1cfc8c65042fbb7a4c65c49d065")]
+    [InlineData(V2Folder, "8ac28c6029dfc348b2f22c92a16f882b")]
     public void The_start_screen_is_stable(string folder, string md5)
     {
         if (StartGame(folder) is not { } world)

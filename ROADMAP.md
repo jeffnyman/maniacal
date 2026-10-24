@@ -117,10 +117,17 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   the actors in the room back to front, in their palette under the current lights. With the kid
   selection stood in for by `--set` and the intro skipped by `--skip`, both releases reach the start
   of the game with the three kids on the driveway.
-- Next: walking. ScummVM's walkbox code (`adjustXYToBeInBox`, `checkXYInBoxBounds`,
-  `getClosestPtOnBox`, the box path search) and `Actor::walkActor` with turning; then `getDist`,
-  `getClosestObjActor` and `actorFromPos`. The intro's meteor waits on it.
-- Then: verbs and the sentence, text, objects (`drawObject` positions, pick up), sound, and dark rooms.
+- Done: walking (`BoxGeometry`, `Actor`): the box geometry of `boxes.cpp`, V2's
+  `adjustXYToBeInBox` and `adjustActorPos`, `startWalkActor`, `walkActor` leg by leg through the box
+  matrix, `calcMovementFactor` and `actorWalkStep`, turning a quarter at a time
+  (`updateActorDirection`, `remapDirection`), and the box flags `setBoxFlags` changes. The walk,
+  face, wait and distance instructions; `drawObject` without moving; and the per-step engine
+  variables of `scummLoop_updateScummVars` (the camera column). The intro plays through in both
+  releases, from the meteor to the kids on the driveway.
+- Next: verbs, the sentence and input, so the game can be played: the verb area, the inventory,
+  clicking (`checkExecVerbs`, the sentence script), and the text of `print` with the message line.
+- Then: objects (`drawObject` positions, pick up), `getClosestObjActor` and `actorFromPos`, sound,
+  and dark rooms.
 - `script.cpp`: script slots, `runScript`, `runObjectScript`, `runEntryScript`/`runExitScript`,
   cutscenes, `stopScript`, freeze and unfreeze, the bit variables.
 - `script_v2.cpp`: the V2 opcode table (also used by V1) and every handler.
