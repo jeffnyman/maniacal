@@ -10,24 +10,31 @@ the same engine generations and would come nearly for free, but it is not a goal
 
 ## Status
 
-Early. Releases are identified by ScummVM's MD5 table. For both DOS releases the index, rooms
-(objects, walkboxes), room pictures, object images and costumes are read, and every script
-decodes. The game runs headless from its title screen to the start of play: the scripts run,
-change rooms, set the camera and object states, and put, walk and animate actors, and the screen is
-drawn from all that, with the text of the message line; the intro plays through. Verbs and sound
-are not there yet; the player's choices can be stood in for by setting variables (`--set`) and
-skipping cutscenes (`--skip`).
-Nothing is playable yet: `maniacal <folder>` names the release and stops. `--room N` writes a
-room as a PNG, with its objects as the game starts, `--view N` the 320x200 screen with the camera
-and standing actors, `--costume N` a sheet of a costume's figures, `--font` or `--text "words"` the
+Early, but the DOS releases can be played. Releases are identified by ScummVM's MD5 table. For
+both DOS releases the index, rooms (objects, walkboxes), room pictures, object images and
+costumes are read, and every script decodes. `maniacal <folder>` opens the game in a window: the
+scripts run, change rooms, set the camera and object states, and put, walk and animate actors; the
+message line shows what is said, and the verbs, the sentence line and the inventory work with the
+mouse and the keys. Kids are picked by clicking, the intro plays, and the kids walk from room to
+room and pick things up; the game beyond the front door is not checked yet. There is no sound yet, objects that move are not drawn where they move to, and dark rooms
+are drawn as if lit.
+
+A verb is clicked, then an object; clicking the object again, or clicking the sentence line,
+carries the sentence out, as in the original. The right button, Escape or F4 skip a cutscene, and
+the period key skips a line of speech.
+
+The player also has tools for looking inside the game: `--room N` writes a room as a PNG with its
+objects as the game starts and lists them, `--view N` the 320x200 screen with the camera and
+standing actors, `--costume N` a sheet of a costume's figures, `--font` or `--text "words"` the
 built-in font, `--script N` or `--room-scripts N` a disassembly, and `--run [steps] --screenshot
-file.png` the game headless.
+file.png` the game headless, with clicks and keys given at chosen steps (`--click step:x,y`,
+`--key step:key`).
 [ROADMAP.md](ROADMAP.md) gives the order of work.
 
 | Release | SCUMM version | Data | State |
 |---|---|---|---|
-| DOS V1 (1987) | 1 | `00.LFL` to `52.LFL`, XOR-encoded | Detected; all resources read: rooms, pictures, objects, costumes |
-| DOS V2 "enhanced" (1988) | 2 | `00.LFL` to `53.LFL`, XOR-encoded | Detected; all resources read: rooms, pictures, objects, costumes |
+| DOS V1 (1987) | 1 | `00.LFL` to `52.LFL`, XOR-encoded | Playable, without sound |
+| DOS V2 "enhanced" (1988) | 2 | `00.LFL` to `53.LFL`, XOR-encoded | Playable, without sound |
 | Commodore 64 (1987) | 0 | `maniac1.d64`, `maniac2.d64` disk images | Not yet: needs the disk image reader |
 | NES (1990) | 1 (NES dialect) | `.prg` extracted from the ROM | Later, if at all |
 
@@ -52,13 +59,13 @@ Needs the .NET 10 SDK.
 ```
 dotnet build Maniacal.slnx
 dotnet test Maniacal.slnx
-dotnet run --project src/Maniacal.Player -- <game folder> [--list] [--scale N] [--fullscreen]
+dotnet run --project src/Maniacal.Player -- <game folder> [--list] [--scale N] [--fullscreen] [--frames N]
 dotnet run --project src/Maniacal.Player -- <game folder> --room N [--objects none|initial|all] [--mask] [--zoom N] [--output file.png]
 dotnet run --project src/Maniacal.Player -- <game folder> --view N [--camera X] [--actor costume,x,y[,direction]]... [--zoom N]
 dotnet run --project src/Maniacal.Player -- <game folder> --costume N [--zoom N] [--output file.png]
 dotnet run --project src/Maniacal.Player -- <game folder> --font | --text "words" [--zoom N] [--output file.png]
 dotnet run --project src/Maniacal.Player -- <game folder> --script N | --room-scripts N
-dotnet run --project src/Maniacal.Player -- <game folder> --run [steps] [--set var=value]... [--skip step]... [--screenshot file.png] [--zoom N]
+dotnet run --project src/Maniacal.Player -- <game folder> --run [steps] [--click step:x,y]... [--key step:key]... [--set var=value]... [--skip step]... [--screenshot file.png] [--zoom N]
 ```
 
 ## Game data

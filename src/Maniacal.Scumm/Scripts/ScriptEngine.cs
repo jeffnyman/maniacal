@@ -191,10 +191,63 @@ public sealed class ScriptEngine
         }
     }
 
-    /// <summary>Runs an object's verb script: <paramref name="code"/> is the object's code block, <paramref name="offset"/> the verb's entry.</summary>
-    public void RunObjectScript(int obj, ReadOnlyMemory<byte> code, int offset, bool inInventory = false)
+    /// <summary>
+    /// Runs an object's verb script: <paramref name="code"/> is the object's code block,
+    /// <paramref name="offset"/> the verb's entry. A slot can be given to run it in, replacing what
+    /// ran there. Mirrors <c>runObjectScript</c>, which in these versions leaves other copies running.
+    /// </summary>
+    public void RunObjectScript(int obj, ReadOnlyMemory<byte> code, int offset, bool inInventory = false,
+        bool freezeResistant = false, bool recursive = false, int slot = -1)
     {
-        Start(obj, inInventory ? ScriptKind.Inventory : ScriptKind.Room, code, offset, false, false);
+        Start(obj, inInventory ? ScriptKind.Inventory : ScriptKind.Room, code, offset, freezeResistant, recursive, slot);
+    }
+
+    /// <summary>
+    /// The slot running an object's script with these flags, or -1. <c>o2_doSentence</c> reuses it,
+    /// using the flags to tell background and special-verb scripts apart.
+    /// </summary>
+    public int FindObjectSlot(int obj, bool freezeResistant, bool recursive)
+    {
+        for (int i = 0; i < SlotCount; i++)
+        {
+            var slot = Slots[i];
+            if (slot.Number == obj && slot.FreezeResistant == freezeResistant && slot.Recursive == recursive && slot.Kind != ScriptKind.Global)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    /// <summary>Stops every script of an object, running or nested. Mirrors <c>stopObjectScript</c>.</summary>
+    public void StopObjectScript(int obj)
+    {
+        if (obj == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < SlotCount; i++)
+        {
+            var slot = Slots[i];
+            if (slot.Number == obj && !slot.IsDead && slot.Kind != ScriptKind.Global)
+            {
+                slot.Kill();
+                if (CurrentSlot == i)
+                {
+                    CurrentSlot = -1;
+                }
+            }
+        }
+
+        for (int i = 0; i < _nested.Count; i++)
+        {
+            if (_nested[i].Number == obj && _nested[i].Kind != ScriptKind.Global)
+            {
+                _nested[i] = (0, ScriptKind.Global, -1);
+            }
+        }
     }
 
     /// <summary>Runs every running slot once, from the first to the last. Mirrors <c>runAllScripts</c>.</summary>
@@ -333,9 +386,13 @@ public sealed class ScriptEngine
         }
     }
 
-    private void Start(int number, ScriptKind kind, ReadOnlyMemory<byte> code, int offset, bool freezeResistant, bool recursive)
+    private void Start(int number, ScriptKind kind, ReadOnlyMemory<byte> code, int offset, bool freezeResistant, bool recursive, int index = -1)
     {
-        int index = FreeSlot();
+        if (index < 0)
+        {
+            index = FreeSlot();
+        }
+
         var slot = Slots[index];
         slot.Number = number;
         slot.Kind = kind;

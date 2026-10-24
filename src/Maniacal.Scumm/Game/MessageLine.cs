@@ -208,18 +208,26 @@ public sealed class MessageLine
                 LineBreak();
             }
 
-            // CharsetRendererV3::printChar skips a character that would not fit
-            if (_nextLeft + Font.CharWidth <= Width && c < Font.GlyphCount)
+            // CharsetRendererV3::printChar skips a character that would not fit, and a filler (@)
+            // takes no room, though it counts towards the message's time
+            if (c != '@')
             {
-                _font.DrawGlyph(Text, c, _nextLeft, _nextTop, (byte)_color);
+                if (_nextLeft + Font.CharWidth <= Width && c < Font.GlyphCount)
+                {
+                    _font.DrawGlyph(Text, c, _nextLeft, _nextTop, (byte)_color);
+                }
+
+                _nextLeft += Font.CharWidth;
             }
 
             _messageCount++;
-            _nextLeft += Font.CharWidth;
             TalkDelay += TextSpeed;
             _engine.Variables[VarCharCount]++;
         }
     }
+
+    /// <summary>The message's time is up: the period key. Mirrors the <c>talkstopKeyEnabled</c> case of <c>processKeyboard</c>.</summary>
+    public void SkipDelay() => TalkDelay = 0;
 
     /// <summary>Counts the message's time down. Mirrors the <c>_talkDelay</c> lines of <c>scummLoop</c>.</summary>
     public void CountDown(int ticks) => TalkDelay = Math.Max(0, TalkDelay - ticks);

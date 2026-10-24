@@ -55,8 +55,10 @@ public static class RoomView
     /// Draws an actor on the view. Its point is its position in pixels less the view's left edge,
     /// moved right by 8 pixels in version 2, or by 16 in either version when facing left, and
     /// down a line in version 1. A pixel under the room mask is not drawn when the actor is behind it.
+    /// Returns the columns of the view the figure covers, as <c>markAsDirty</c> marks them: a pixel
+    /// further right in version 2, 8 in version 1.
     /// </summary>
-    public static void DrawActor(MaskedImage view, int version, Camera camera, ActorDrawing actor)
+    public static (int Left, int Right) DrawActor(MaskedImage view, int version, Camera camera, ActorDrawing actor)
     {
         int x = actor.X * 8 - camera.Left;
         int y = (actor.Y - actor.Elevation) * 2;
@@ -103,6 +105,8 @@ public static class RoomView
                 view.Pixels[sx, sy] = pixel;
             }
         }
+
+        return (left, left + frame.Pixels.Width + (version <= 1 ? 8 : 1));
     }
 
     /// <summary>The whole 320x200 screen with the room view in its place; the rest is black for now.</summary>

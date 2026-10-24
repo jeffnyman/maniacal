@@ -22,5 +22,5 @@ public sealed class ScummEngineProvider : IEngineProvider
     }
 
     public Engine Create(IHost host, IGameContainer game, DetectedGame detected)
-        => throw new NotSupportedException($"{detected}: the SCUMM interpreter is not ported yet (see ROADMAP.md).");
+        => new ScummEngine(host, game, detected);
 }

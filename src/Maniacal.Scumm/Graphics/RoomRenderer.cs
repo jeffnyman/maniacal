@@ -103,7 +103,8 @@ public static class RoomRenderer
         return image;
     }
 
-    private static bool ParentsAllow(Room room, RoomObject obj, Func<int, int> stateOf)
+    /// <summary>Whether every parent of an object is in the state the object needs to show or be found.</summary>
+    public static bool ParentsAllow(Room room, RoomObject obj, Func<int, int> stateOf)
     {
         // the parent indexes are 1-based; walk up while each parent's image state matches what its child expects
         var current = obj;

@@ -15,7 +15,7 @@ namespace Maniacal.Scumm.Game;
 /// instructions that work on rooms, the camera and actors; the others are recorded in
 /// <see cref="Unhandled"/> until their subsystems exist.
 /// </summary>
-public sealed class GameWorld : IScriptHost, IActorWorld
+public sealed partial class GameWorld : IScriptHost, IActorWorld
 {
     // engine variables of version 2 (ScummEngine_v2::setupScummVars)
     public const int VarCameraPosX = 2, VarCurrentLights = 12, VarCameraMinX = 23, VarCameraMaxX = 24;
@@ -61,7 +61,9 @@ public sealed class GameWorld : IScriptHost, IActorWorld
             }
         }
 
-        Messages = new MessageLine(Font.English(Version), Engine, n => n is > 0 and < ActorCount ? Actors[n] : null, NameOf, _ => string.Empty);
+        var font = Font.English(Version);
+        Messages = new MessageLine(font, Engine, n => n is > 0 and < ActorCount ? Actors[n] : null, NameOf, VerbName);
+        Verbs = new VerbArea(font, ScreenLayout.ForVersion(Version).RoomBottom, () => Engine.Interface);
     }
 
     public ScriptEngine Engine { get; }
@@ -127,25 +129,33 @@ public sealed class GameWorld : IScriptHost, IActorWorld
 
     /// <summary>
     /// One step of the main loop, in the order of <c>scummLoop</c> for these versions: count the
-    /// script delays down by the step's length (<c>VAR_TIMER_NEXT</c> ticks, at least 1), run every
-    /// script once, walk the actors, move the camera, draw the frame, then animate the actors in the
-    /// room, which <c>processActors</c> does after drawing them. Before the scripts run, the
-    /// variables the engine keeps for them are brought up to date (<c>scummLoop_updateScummVars</c>).
+    /// script delays down by the step's length (<c>VAR_TIMER_NEXT</c> ticks, at least 1), move the
+    /// message on, take the input, run every script once, hand the input to the input script, run a
+    /// waiting sentence, walk the actors, move the camera, draw the frame, animate the actors in the
+    /// room (which <c>processActors</c> does after drawing them), then move the highlights to the
+    /// mouse. Before the scripts run, the variables the engine keeps for them are brought up to date
+    /// (<c>scummLoop_updateScummVars</c>).
     /// </summary>
     public void Step()
     {
+        int oldEgo = Engine.Variables[ScriptEngine.VarEgo];
+
         // scummLoop: the step's ticks, at most 15, count the script delays and the message down;
         // then the message moves on (displayDialog, which versions up to 3 run before input)
         int ticks = Math.Clamp(Engine.Variables[ScriptEngine.VarTimerNext], 1, 15);
         Engine.DecreaseScriptDelay(ticks);
         Messages.CountDown(ticks);
         Messages.Display();
+        ProcessInput();
 
-        // scummLoop_updateScummVars: the camera's column, and whether a message shows
+        // scummLoop_updateScummVars: the camera's column, whether a message shows, the mouse in the room
         Engine.Variables[VarCameraPosX] = Camera.X >> 3;
         Engine.Variables[ScriptEngine.VarHaveMessage] = Messages.HaveMessage;
+        UpdateVirtualMouse();
 
         Engine.RunAllScripts();
+        CheckExecVerbs();
+        CheckAndRunSentenceScript();
         foreach (var actor in ActorsInRoom())
         {
             actor.Walk();
@@ -160,11 +170,25 @@ public sealed class GameWorld : IScriptHost, IActorWorld
             actor.AnimateCostume();
         }
 
+        HandleMouseOver(oldEgo != Engine.Variables[ScriptEngine.VarEgo]);
+        _cursorFrame++;
         Steps++;
     }
 
-    /// <summary>The 320x200 screen as the last step drew it (or as it is now, before any step). Room 0 is black.</summary>
-    public Surface8 Screen() => _frame ?? Draw();
+    /// <summary>
+    /// The 320x200 screen as the last step drew it (or as it is now, before any step), with the
+    /// verbs as they are now and without the cursor (<see cref="DrawCursor"/>). Room 0 is black.
+    /// </summary>
+    public Surface8 Screen()
+    {
+        var screen = _frame ?? Draw();
+        for (int y = 0; y < Verbs.Pixels.Height; y++)
+        {
+            Verbs.Pixels.Row(y).CopyTo(screen.Row(Verbs.Top + y));
+        }
+
+        return screen;
+    }
 
     public int Execute(ScriptEngine engine, Instruction instruction, IReadOnlyList<int> arguments)
     {
@@ -393,7 +417,9 @@ public sealed class GameWorld : IScriptHost, IActorWorld
                 }
 
             default:
-                return _recorder.Execute(engine, instruction, arguments);
+                return ExecuteInterface(engine, instruction, arguments, out int result)
+                    ? result
+                    : _recorder.Execute(engine, instruction, arguments);
         }
     }
 
@@ -401,7 +427,7 @@ public sealed class GameWorld : IScriptHost, IActorWorld
     /// Changes room. Mirrors <c>startScene</c> for versions 1 and 2: the running room script stops,
     /// the old room's exit script runs and its scripts die, the actors hide, the room variable and
     /// camera limits are set, the actors in the new room show, its entry script runs, then script
-    /// 5. The camera keeps its x, clamped to the new room; the sentence is not there yet.
+    /// 5. The sentence goes back to the default verb. The camera keeps its x, clamped to the new room.
     /// </summary>
     public void StartScene(int number)
     {
@@ -413,6 +439,7 @@ public sealed class GameWorld : IScriptHost, IActorWorld
         }
 
         Engine.KillRoomScripts();
+        ResetSentence();
         foreach (var actor in Actors.Skip(1))
         {
             actor.Hide();
@@ -482,6 +509,7 @@ public sealed class GameWorld : IScriptHost, IActorWorld
         SyncCameraLimits();
         Camera.SetAtEx(ego.X * 8);
         Camera.Follow(ego.Number, ego.X * 8, setCamera: true);
+        ResetSentence();
         if (walkX >= 0 && walkY >= 0)
         {
             ego.StartWalk(walkX, walkY, -1);
@@ -565,6 +593,7 @@ public sealed class GameWorld : IScriptHost, IActorWorld
 
         var view = RoomView.Window(RoomRenderer.Render(room, Engine.GetState), Camera);
         bool colors = (Engine.Variables[VarCurrentLights] & LightActorColors) != 0;
+        _actorStrips.Clear();
         foreach (var actor in ActorsInRoom().Where(a => a.Visible && a.Costume is not null).OrderBy(a => a.Y))
         {
             var costume = actor.Costume!;
@@ -572,7 +601,13 @@ public sealed class GameWorld : IScriptHost, IActorWorld
             var frame = CostumeRenderer.DrawLimbs(costume, actor.State, actor.OldDirection, palette);
             int box = actor.Walkbox;
             bool behind = box == BoxGeometry.NoBox || (box < room.WalkBoxes.Count && room.WalkBoxes.Boxes[box].Mask != 0);
-            RoomView.DrawActor(view, Version, Camera, new ActorDrawing(frame, actor.X, actor.Y, actor.Facing == 270, behind, actor.Elevation));
+            var (left, right) = RoomView.DrawActor(view, Version, Camera, new ActorDrawing(frame, actor.X, actor.Y, actor.Facing == 270, behind, actor.Elevation));
+
+            // markRectAsDirty: the room strips the figure covers, for getActorFromPos
+            if (right > 0 && left < Camera.ScreenWidth)
+            {
+                _actorStrips[actor.Number] = (Math.Max(left, 0) / 8 + Camera.StartStrip, (Math.Min(right, Camera.ScreenWidth) + Camera.Left) / 8);
+            }
         }
 
         var screen = RoomView.Screen(view, layout);
@@ -595,7 +630,7 @@ public sealed class GameWorld : IScriptHost, IActorWorld
         actor.Put(x, y, room);
     }
 
-    /// <summary>The name of an actor or of an object in the current room. Mirrors <c>getObjOrActorName</c>, without renamed or carried objects yet.</summary>
+    /// <summary>The name of an actor, or of an object carried or in the room. Mirrors <c>getObjOrActorName</c>, without renamed objects yet.</summary>
     public string NameOf(int number)
     {
         if (number is > 0 and < ActorCount)
@@ -603,7 +638,7 @@ public sealed class GameWorld : IScriptHost, IActorWorld
             return Actors[number].Name;
         }
 
-        return CurrentRoom?.FindObject(number)?.Name ?? string.Empty;
+        return ObjectCode(number)?.Name ?? string.Empty;
     }
 
     private void ActorOps(IReadOnlyList<int> arguments, Instruction instruction)

@@ -129,10 +129,19 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   keep escapes, the talk delay of 60 ticks and 6 a character, `stopTalk` and the talk frames;
   `print`, `printEgo` and `waitForMessage`; and the main loop's tick count and message variable.
   The intro's text and the kids' first lines show on the message line in both releases.
-- Next: verbs, the sentence and input, so the game can be played: the verb area, the inventory,
-  the sentence line, and clicking (`checkExecVerbs`, the sentence script).
-- Then: objects (`drawObject` positions, pick up), `getClosestObjActor` and `actorFromPos`, sound,
-  and dark rooms.
+- Done: verbs, the sentence and input (`VerbArea`, `GameWorld.Interface`): `o2_verbOps`,
+  `drawVerb`, `redrawVerbs`, `verbMouseOver` and `findVerbAtPos`; the sentence queue of
+  `o2_doSentence`, `checkAndRunSentenceScript`, `waitForSentence` and `drawSentence` with
+  prepositions; the inventory (`pickupObject`, `setOwnerOf`, `redrawV2Inventory`, its scrolling and
+  highlight boxes); `findObject`, `actorFromPos` and `getObjPreposition`; `processInput` and
+  `ScummEngine_v2::checkExecVerbs` with the input script, the verb and inventory keys, and Escape,
+  F4 or the right button for skipping cutscenes; the end of a cutscene giving the camera back to
+  the kid; and the V2 crosshair cursor. `ScummEngine` runs it all on a Daventry host, a step every
+  `VAR_TIMER_NEXT` sixtieths of a second. Both releases play from the title through the kid
+  selection (by clicking) and the intro to the driveway, out to the front of the house, and the
+  key under the door mat goes into the inventory, headless and in the SDL window.
+- Next: objects (`drawObject` positions, `setObjectName` and the renamed objects of
+  `getObjOrActorName`), `getClosestObjActor`, dark rooms and the flashlight, then sound.
 - `script.cpp`: script slots, `runScript`, `runObjectScript`, `runEntryScript`/`runExitScript`,
   cutscenes, `stopScript`, freeze and unfreeze, the bit variables.
 - `script_v2.cpp`: the V2 opcode table (also used by V1) and every handler.

@@ -20,6 +20,7 @@ internal static class Program
         bool fullscreen = false;
         bool verbose = false;
         int scale = 3;
+        int? frames = null;
         int? room = null;
         int? costume = null;
         int zoom = 1;
@@ -31,6 +32,7 @@ internal static class Program
         string? screenshot = null;
         var settings = new List<(int Variable, int Value)>();
         var skips = new List<int>();
+        var inputs = new List<(int Step, Action<Maniacal.Scumm.Game.GameWorld> Give)>();
         int? cameraX = null;
         var actors = new List<(int Costume, int X, int Y, int Direction)>();
         string? text = null;
@@ -50,6 +52,10 @@ internal static class Program
                     break;
                 case "--verbose":
                     verbose = true;
+                    break;
+                case "--frames" when i + 1 < args.Length && int.TryParse(args[i + 1], out int frameCount):
+                    frames = frameCount;
+                    i++;
                     break;
                 case "--scale" when i + 1 < args.Length && int.TryParse(args[i + 1], out scale):
                     i++;
@@ -95,6 +101,14 @@ internal static class Program
                     break;
                 case "--screenshot" when i + 1 < args.Length:
                     screenshot = args[++i];
+                    break;
+                case "--click" when i + 1 < args.Length && ParseClick(args[i + 1]) is { } click:
+                    inputs.Add((click.Step, w => w.Click(click.X, click.Y)));
+                    i++;
+                    break;
+                case "--key" when i + 1 < args.Length && ParseKey(args[i + 1]) is { } key:
+                    inputs.Add((key.Step, w => w.PressKey(key.Code)));
+                    i++;
                     break;
                 case "--skip" when i + 1 < args.Length && int.TryParse(args[i + 1], out int skipStep):
                     skips.Add(skipStep);
@@ -156,7 +170,7 @@ internal static class Program
 
         if (runSteps is { } stepCount)
         {
-            return RunHeadless(container, stepCount, screenshot, zoom, settings, skips);
+            return RunHeadless(container, stepCount, screenshot, zoom, settings, skips, inputs);
         }
 
         if (script is not null || roomScripts is not null)
@@ -209,7 +223,9 @@ internal static class Program
 
         using (engine)
         {
-            host.Run(engine);
+            // the game draws its own cursor, the crosshair
+            SDL.SDL3.SDL_HideCursor();
+            host.Run(engine, frames);
         }
 
         return 0;
@@ -248,6 +264,10 @@ internal static class Program
             }
 
             Console.WriteLine($"Room {number}: {room.Width}x{room.Height}, {room.Objects.Count} objects, written to {path}");
+            foreach (var obj in room.Objects)
+            {
+                Console.WriteLine($"  object {obj.Number} \"{obj.Name}\" at ({obj.X}, {obj.Y}) {obj.Width}x{obj.Height}, walk to ({obj.WalkX}, {obj.WalkY}), verbs {string.Join(" ", obj.Verbs.Select(v => v.Verb))}");
+            }
             return 0;
         }
         catch (Exception ex) when (ex is NotSupportedException or InvalidDataException)
@@ -307,7 +327,8 @@ internal static class Program
     /// does) and every running script runs once. Prints what the scripts asked of the world, the
     /// slots still alive and the variables that are not 0.
     /// </summary>
-    private static int RunHeadless(IGameContainer container, int steps, string? screenshot, int zoom, List<(int Variable, int Value)> settings, List<int> skips)
+    private static int RunHeadless(IGameContainer container, int steps, string? screenshot, int zoom, List<(int Variable, int Value)> settings, List<int> skips,
+        List<(int Step, Action<Maniacal.Scumm.Game.GameWorld> Give)> inputs)
     {
         var world = new Maniacal.Scumm.Game.GameWorld(ResourceLoader.Open(container));
         var engine = world.Engine;
@@ -330,6 +351,11 @@ internal static class Program
                     engine.AbortCutscene();
                 }
 
+                foreach (var input in inputs.Where(input => input.Step == step))
+                {
+                    input.Give(world);
+                }
+
                 world.Step();
             }
         }
@@ -350,7 +376,9 @@ internal static class Program
         if (screenshot is not null)
         {
             using var file = File.Create(screenshot);
-            PngWriter.Write(file, world.Screen(), Palettes.Ega, zoom, zoom);
+            var screen = world.Screen();
+            world.DrawCursor(screen);
+            PngWriter.Write(file, screen, Palettes.Ega, zoom, zoom);
             Console.WriteLine($"Screen written to {screenshot}");
         }
 
@@ -359,6 +387,33 @@ internal static class Program
             .Select(p => $"{p.i}: {p.s.Kind} {p.s.Number} at {p.s.Offset:X4} status {p.s.Status:X2}{(p.s.Status == SlotStatus.Paused ? $" delay {p.s.Delay}" : "")}")));
         Console.WriteLine("Variables: " + string.Join(", ", engine.Variables.Select((v, i) => (v, i)).Where(p => p.v != 0).Select(p => $"{p.i}={p.v}")));
         return 0;
+    }
+
+    /// <summary>A click given at a step: <c>step:x,y</c>, in screen pixels.</summary>
+    private static (int Step, int X, int Y)? ParseClick(string text)
+        => text.Split(':') is [var step, var point] && point.Split(',') is [var x, var y]
+            && int.TryParse(step, out int s) && int.TryParse(x, out int px) && int.TryParse(y, out int py)
+            ? (s, px, py)
+            : null;
+
+    /// <summary>A key given at a step: <c>step:c</c> for a character, <c>step:esc</c>, or <c>step:f1</c> to <c>step:f9</c>.</summary>
+    private static (int Step, int Code)? ParseKey(string text)
+    {
+        if (text.Split(':') is not [var step, var key] || !int.TryParse(step, out int s))
+        {
+            return null;
+        }
+
+        int? code = key.ToLowerInvariant() switch
+        {
+            "esc" => Maniacal.Scumm.Game.GameWorld.KeyEscape,
+            "enter" => 13,
+            "space" => ' ',
+            [var c] => c,
+            ['f', var digit] when digit is >= '1' and <= '9' => Maniacal.Scumm.Game.GameWorld.KeyF1 + digit - '1',
+            _ => null,
+        };
+        return code is { } value ? (s, value) : null;
     }
 
     /// <summary>
@@ -604,12 +659,12 @@ internal static class Program
 
     private static void PrintUsage()
     {
-        Console.Error.WriteLine("usage: maniacal <game folder> [--list] [--scale N] [--fullscreen] [--verbose]");
+        Console.Error.WriteLine("usage: maniacal <game folder> [--list] [--scale N] [--fullscreen] [--frames N] [--verbose]");
         Console.Error.WriteLine("       maniacal <game folder> --room N [--objects none|initial|all] [--mask] [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --costume N [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --view N [--camera X] [--actor costume,x,y[,left|right|front|back]]... [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --script N | --room-scripts N");
-        Console.Error.WriteLine("       maniacal <game folder> --run [steps] [--set var=value]... [--skip step]... [--screenshot file.png] [--zoom N]");
+        Console.Error.WriteLine("       maniacal <game folder> --run [steps] [--click step:x,y]... [--key step:key]... [--set var=value]... [--skip step]... [--screenshot file.png] [--zoom N]");
         Console.Error.WriteLine("       maniacal <game folder> --font | --text \"words\" [--zoom N] [--output file.png]");
     }
 }

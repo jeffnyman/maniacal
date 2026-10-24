@@ -1,0 +1,459 @@
+using Daventry.Core.Graphics;
+using Maniacal.Scumm.Graphics;
+
+namespace Maniacal.Scumm.Game;
+
+/// <summary>A verb the scripts made: its name and where it shows. Mirrors ScummVM's <c>VerbSlot</c> for text verbs.</summary>
+public sealed class VerbSlot
+{
+    /// <summary>The verb's number, which sentences use; 0 for an empty slot. Mirrors <c>verbid</c>.</summary>
+    public int Id { get; internal set; }
+
+    /// <summary>0 hidden, 1 shown, 2 shown dimmed. Mirrors <c>curmode</c>.</summary>
+    public int Mode { get; internal set; }
+
+    /// <summary>The name as the script gave it, with its @ fillers. Mirrors the <c>rtVerb</c> resource.</summary>
+    public byte[] Name { get; internal set; } = [];
+
+    /// <summary>The top left, in screen pixels. Mirrors <c>curRect.left</c> and <c>curRect.top</c>.</summary>
+    public int X { get; internal set; }
+
+    public int Y { get; internal set; }
+
+    /// <summary>Where clicks stop counting: a column a character of the name, fillers too. Mirrors <c>curRect.right</c>.</summary>
+    public int Right { get; internal set; }
+
+    public int Bottom { get; internal set; }
+
+    /// <summary>The preposition version 1 puts after the verb's object, or 0xFF to ask the object. Mirrors <c>prep</c>.</summary>
+    public int Preposition { get; internal set; }
+
+    /// <summary>The key that clicks it, or 0. Mirrors <c>key</c>.</summary>
+    public int Key { get; internal set; }
+
+    public int Color { get; internal set; }
+
+    public int HiColor { get; internal set; }
+
+    public int DimColor { get; internal set; }
+
+    /// <summary>Where the name was last drawn, to clear it from. Mirrors <c>oldRect</c>.</summary>
+    internal Rect? Drawn { get; set; }
+}
+
+/// <summary>
+/// The bottom of the screen: the sentence line, the verbs and the inventory. Mirrors ScummVM's verb
+/// virtual screen for versions 1 and 2, drawn into as the original drew into it: <c>drawVerb</c>,
+/// <c>restoreVerbBG</c>, <c>redrawVerbs</c>, <c>verbMouseOver</c>, <c>findVerbAtPos</c>,
+/// <c>ScummEngine_v2::drawSentence</c>, <c>redrawV2Inventory</c>, <c>checkV2MouseOver</c> and
+/// <c>checkV2Inventory</c>.
+/// </summary>
+/// <remarks>
+/// Verbs are placed in screen pixels; the sentence line is the area's first 8 lines and the
+/// inventory its lines 32 to 47, two names a row either side of the scroll arrows.
+/// </remarks>
+public sealed class VerbArea
+{
+    /// <summary>Mirrors <c>_numVerbs</c> for these versions.</summary>
+    public const int SlotCount = 100;
+
+    /// <summary>Where the inventory starts in the area. Mirrors <c>inventoryArea</c>.</summary>
+    public const int InventoryTop = 32;
+
+    // the mouse-over boxes of initV2MouseOver: four inventory places, the two arrows, the sentence line
+    public const int UpArrow = 4, DownArrow = 5, SentenceLine = 6;
+
+    // the DOS colours of initV2MouseOver, o2_verbOps and drawSentence
+    private const int TextColor = 13, ArrowColor = 1, HighlightColor = 14;
+    private const int VerbColor = 2, VerbDimColor = 8;
+    private const int SentenceChars = 40, InventoryChars = 18;
+
+    // the keys o2_verbOps gives the first 15 slots
+    private const string Keys = "qwertasdfgzxcvb";
+
+    private static readonly (Rect Rect, int Color)[] Boxes =
+    [
+        (new Rect(0, 32, 144, 8), TextColor),
+        (new Rect(176, 32, 144, 8), TextColor),
+        (new Rect(0, 40, 144, 8), TextColor),
+        (new Rect(176, 40, 144, 8), TextColor),
+        (new Rect(144, 32, 32, 8), ArrowColor),
+        (new Rect(144, 40, 32, 8), ArrowColor),
+        (new Rect(0, 0, 320, 8), TextColor),
+    ];
+
+    // the interface bits of the user state (USERSTATE_IFACE_*)
+    public const int ShowSentence = 0x20, ShowInventory = 0x40, ShowVerbs = 0x80;
+
+    private readonly Font _font;
+    private readonly Func<int> _userState;
+    private int _mouseOverVerb;
+
+    /// <param name="font">The font the names are drawn in.</param>
+    /// <param name="top">The screen line the area starts at.</param>
+    /// <param name="userState">The user state, whose interface bits say what shows (<c>_userState</c>).</param>
+    public VerbArea(Font font, int top, Func<int> userState)
+    {
+        _font = font;
+        _userState = userState;
+        Top = top;
+        Pixels = new Surface8(Width, ScreenHeight - top);
+        for (int i = 0; i < SlotCount; i++)
+        {
+            Slots[i] = new VerbSlot();
+        }
+    }
+
+    public const int Width = 320;
+
+    private const int ScreenHeight = 200;
+
+    /// <summary>The screen line the area starts at: the sentence line. Mirrors the verb screen's <c>topline</c>.</summary>
+    public int Top { get; }
+
+    /// <summary>The area as it is drawn now.</summary>
+    public Surface8 Pixels { get; }
+
+    public VerbSlot[] Slots { get; } = new VerbSlot[SlotCount];
+
+    /// <summary>The mouse-over box highlighted, or -1. Mirrors <c>_mouseOverBoxV2</c>.</summary>
+    public int MouseOverBox { get; private set; } = -1;
+
+    /// <summary>The first carried object shown, a multiple of 2. Mirrors <c>_inventoryOffset</c>.</summary>
+    public int InventoryOffset { get; set; }
+
+    /// <summary>
+    /// Makes a verb in a slot, or remakes it, and draws it. Version 1 places verbs a line lower,
+    /// under its sentence line. Mirrors the new-verb case of <c>o2_verbOps</c>.
+    /// </summary>
+    public void SetVerb(int slot, int id, int column, int row, int preposition, ReadOnlySpan<byte> name, int version)
+    {
+        var verb = Slot(slot);
+        verb.Id = id;
+        verb.Color = VerbColor;
+        verb.HiColor = HighlightColor;
+        verb.DimColor = VerbDimColor;
+        verb.Mode = 1;
+        verb.Key = slot <= Keys.Length ? Keys[slot - 1] : 0;
+        verb.Preposition = preposition;
+        verb.Name = name.ToArray();
+        verb.X = column * 8;
+        verb.Y = row * 8 + (version == 1 ? 8 : 0);
+        Draw(slot, false);
+        MouseOver(0);
+    }
+
+    /// <summary>Removes a verb, clearing where it showed. Mirrors <c>killVerb</c>.</summary>
+    public void Kill(int slot)
+    {
+        var verb = Slot(slot);
+        verb.Id = 0;
+        verb.Mode = 0;
+        verb.Name = [];
+        Draw(slot, false);
+        MouseOver(0);
+    }
+
+    /// <summary>Shows, hides or dims the verb with a number. Mirrors the on/off case of <c>o2_verbOps</c>.</summary>
+    public void SetMode(int id, int mode)
+    {
+        int slot = SlotOf(id);
+        Slots[slot].Mode = mode;
+        Draw(slot, false);
+        MouseOver(0);
+    }
+
+    /// <summary>The slot holding a verb, or 0. Mirrors <c>getVerbSlot</c> with no save id.</summary>
+    public int SlotOf(int id)
+    {
+        for (int i = 1; i < SlotCount; i++)
+        {
+            if (Slots[i].Id == id)
+            {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>
+    /// Draws a verb, highlighted or not, after clearing where it last showed; a hidden or empty verb
+    /// is only cleared. Its clickable area runs a character for each byte of its name. Mirrors
+    /// <c>drawVerb</c> for versions 1 and 2.
+    /// </summary>
+    public void Draw(int slot, bool highlighted)
+    {
+        if (slot == 0)
+        {
+            return;
+        }
+
+        var verb = Slots[slot];
+        ClearDrawn(verb);
+        if (verb.Mode == 0 || verb.Id == 0)
+        {
+            return;
+        }
+
+        int color = verb.Mode == 2 ? verb.DimColor : highlighted && verb.HiColor != 0 ? verb.HiColor : verb.Color;
+        var drawn = DrawString(verb.Name, verb.X, verb.Y, Width - 1, color);
+        verb.Right = Math.Min(verb.X + verb.Name.Length * 8, Width);
+        verb.Bottom = drawn.Bottom;
+        verb.Drawn = drawn;
+    }
+
+    /// <summary>The slot of the shown verb at a screen point, or 0; later slots come first. Mirrors <c>findVerbAtPos</c>.</summary>
+    public int FindAt(int x, int y)
+    {
+        for (int i = SlotCount - 1; i > 0; i--)
+        {
+            var verb = Slots[i];
+            if (verb.Mode == 1 && verb.Id != 0 && y >= verb.Y && y < verb.Bottom && x >= verb.X && x < verb.Right)
+            {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
+    /// <summary>Clears the whole area. Mirrors the <c>restoreBackground</c> of <c>ScummEngine_v2::setUserState</c>.</summary>
+    public void Clear()
+    {
+        Pixels.Fill(0);
+        foreach (var verb in Slots)
+        {
+            verb.Drawn = null;
+        }
+    }
+
+    /// <summary>
+    /// Draws every verb, the one under the mouse (when there is one) highlighted. Nothing shows while
+    /// the verbs are off. Mirrors <c>redrawVerbs</c>.
+    /// </summary>
+    public void Redraw(int mouseVerb)
+    {
+        if ((_userState() & ShowVerbs) == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < SlotCount; i++)
+        {
+            Draw(i, i == mouseVerb && Slots[i].HiColor != 0);
+        }
+
+        _mouseOverVerb = mouseVerb;
+    }
+
+    /// <summary>Moves the highlight to the verb under the mouse. Mirrors <c>verbMouseOver</c>.</summary>
+    public void MouseOver(int verb)
+    {
+        if ((_userState() & ShowVerbs) == 0 || _mouseOverVerb == verb)
+        {
+            return;
+        }
+
+        Draw(_mouseOverVerb, false);
+        _mouseOverVerb = verb;
+        if (Slots[verb].HiColor != 0)
+        {
+            Draw(verb, true);
+        }
+    }
+
+    /// <summary>
+    /// Shows a sentence on the sentence line, up to 40 characters not counting fillers, while the
+    /// sentence line is on. Mirrors the drawing half of <c>ScummEngine_v2::drawSentence</c>.
+    /// </summary>
+    public void DrawSentence(ReadOnlySpan<byte> sentence)
+    {
+        if ((_userState() & ShowSentence) == 0)
+        {
+            return;
+        }
+
+        int length = 0, end = 0;
+        while (end < sentence.Length && sentence[end] != 0)
+        {
+            if (sentence[end] != '@' && ++length > SentenceChars)
+            {
+                break;
+            }
+
+            end++;
+        }
+
+        Pixels.FillRect(Boxes[SentenceLine].Rect, 0);
+        DrawString(sentence[..end], 0, Top, Width - 1, TextColor);
+    }
+
+    /// <summary>
+    /// Shows the carried objects from <see cref="InventoryOffset"/>, four at most, with arrows when
+    /// there are more either way. Mirrors <c>redrawV2Inventory</c> for DOS.
+    /// </summary>
+    public void DrawInventory(IReadOnlyList<string> names)
+    {
+        MouseOverBox = -1;
+        if ((_userState() & ShowInventory) == 0)
+        {
+            return;
+        }
+
+        Pixels.FillRect(new Rect(0, InventoryTop, Width, Pixels.Height - InventoryTop), 0);
+        int shown = Math.Min(names.Count - InventoryOffset, 4);
+        for (int i = 0; i < shown; i++)
+        {
+            var box = Boxes[i];
+            var name = System.Text.Encoding.Latin1.GetBytes(names[InventoryOffset + i]);
+            DrawString(name.AsSpan(0, Math.Min(name.Length, InventoryChars)), box.Rect.Left, Top + box.Rect.Top, box.Rect.Right - 1, box.Color);
+        }
+
+        if (InventoryOffset > 0)
+        {
+            var box = Boxes[UpArrow];
+            DrawString(" \x01\x02"u8, box.Rect.Left, Top + box.Rect.Top, box.Rect.Right - 1, box.Color);
+        }
+
+        if (InventoryOffset + 4 < names.Count)
+        {
+            var box = Boxes[DownArrow];
+            DrawString(" \x03\x04"u8, box.Rect.Left, Top + box.Rect.Top, box.Rect.Right - 1, box.Color);
+        }
+    }
+
+    /// <summary>
+    /// Highlights the box under the mouse while the inventory shows: its text colour becomes the
+    /// highlight, and the last box's goes back. Mirrors <c>checkV2MouseOver</c>.
+    /// </summary>
+    public void CheckMouseOver(int x, int y, bool cursorShown)
+    {
+        if ((_userState() & ShowInventory) == 0)
+        {
+            MouseOverBox = -1;
+            return;
+        }
+
+        int box = -1;
+        if (cursorShown)
+        {
+            box = Array.FindIndex(Boxes, b => b.Rect.Contains(x, y - Top));
+        }
+
+        if (box == MouseOverBox)
+        {
+            return;
+        }
+
+        if (MouseOverBox != -1)
+        {
+            Recolor(Boxes[MouseOverBox].Rect, HighlightColor, Boxes[MouseOverBox].Color);
+        }
+
+        if (box != -1)
+        {
+            Recolor(Boxes[box].Rect, Boxes[box].Color, HighlightColor);
+        }
+
+        MouseOverBox = box;
+    }
+
+    /// <summary>
+    /// What a click in the inventory does: scrolls with the arrows, or names the place clicked, 0 to
+    /// 3, or -1 for none. The caller picks the object. Mirrors <c>checkV2Inventory</c>.
+    /// </summary>
+    public int ClickInventory(int x, int y, int carried)
+    {
+        y -= Top;
+        if (y < InventoryTop)
+        {
+            return -1;
+        }
+
+        if (Boxes[UpArrow].Rect.Contains(x, y))
+        {
+            if (InventoryOffset >= 2)
+            {
+                InventoryOffset -= 2;
+                return -2;
+            }
+        }
+        else if (Boxes[DownArrow].Rect.Contains(x, y))
+        {
+            if (InventoryOffset + 4 < carried)
+            {
+                InventoryOffset += 2;
+                return -2;
+            }
+        }
+
+        for (int place = 0; place < 4; place++)
+        {
+            if (Boxes[place].Rect.Contains(x, y))
+            {
+                return place;
+            }
+        }
+
+        return -1;
+    }
+
+    private VerbSlot Slot(int slot)
+        => slot is > 0 and < SlotCount ? Slots[slot] : throw new InvalidOperationException($"Verb slot {slot} is not one of 1 to {SlotCount - 1}.");
+
+    private void ClearDrawn(VerbSlot verb)
+    {
+        if (verb.Drawn is { } drawn)
+        {
+            Pixels.FillRect(drawn with { Y = drawn.Y - Top }, 0);
+            verb.Drawn = null;
+        }
+    }
+
+    private void Recolor(Rect rect, int from, int to)
+    {
+        for (int y = rect.Top; y < rect.Bottom && y < Pixels.Height; y++)
+        {
+            var row = Pixels.Row(y).Slice(rect.Left, Math.Min(rect.Width, Width - rect.Left));
+            foreach (ref byte pixel in row)
+            {
+                if (pixel == from)
+                {
+                    pixel = (byte)to;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Draws text at a screen point and returns the rectangle its characters cover, in screen
+    /// pixels. Fillers (@) take no room, and a character that would pass <paramref name="right"/>
+    /// is left out. Mirrors <c>drawString</c> with <c>CharsetRendererV3::printChar</c>.
+    /// </summary>
+    private Rect DrawString(ReadOnlySpan<byte> text, int x, int y, int right, int color)
+    {
+        int left = x;
+        foreach (byte c in text)
+        {
+            if (c == 0)
+            {
+                break;
+            }
+
+            if (c == '@' || x + Font.CharWidth > right + 1)
+            {
+                continue;
+            }
+
+            if (c < Font.GlyphCount)
+            {
+                _font.DrawGlyph(Pixels, c, x, y - Top, (byte)color);
+            }
+
+            x += Font.CharWidth;
+        }
+
+        return Rect.FromBounds(left, y, x, y + Font.Height);
+    }
+}
