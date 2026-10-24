@@ -216,7 +216,8 @@ public sealed partial class GameWorld
                 continue;
             }
 
-            if (obj.X <= x && obj.X + obj.Width > x && obj.Y <= y && obj.Y + obj.Height > y)
+            var (left, top) = PositionOf(obj);
+            if (left <= x && left + obj.Width > x && top <= y && top + obj.Height > y)
             {
                 return obj.Number;
             }

@@ -140,8 +140,12 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   `VAR_TIMER_NEXT` sixtieths of a second. Both releases play from the title through the kid
   selection (by clicking) and the intro to the driveway, out to the front of the house, and the
   key under the door mat goes into the inventory, headless and in the SDL window.
-- Next: objects (`drawObject` positions, `setObjectName` and the renamed objects of
-  `getObjOrActorName`), `getClosestObjActor`, dark rooms and the flashlight, then sound.
+- Done: objects and lights: `o2_drawObject` moving an object and its walk-to point for as long as
+  the room is loaded, `setObjectName` and the new names `getObjOrActorName` gives first,
+  `getClosestObjActor`, and dark rooms: black where the room lights are off (`clear8Col`), with
+  the flashlight of `o2_lights` and `drawFlashlight`, its corners rounded by the version 1 and 2
+  curves, lighting the room around the mouse. Rooms 5, 8, 9, 15, 22 and 23 start dark.
+- Next: sound (Phase 4), then saves.
 - `script.cpp`: script slots, `runScript`, `runObjectScript`, `runEntryScript`/`runExitScript`,
   cutscenes, `stopScript`, freeze and unfreeze, the bit variables.
 - `script_v2.cpp`: the V2 opcode table (also used by V1) and every handler.

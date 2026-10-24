@@ -171,7 +171,7 @@ public class PlayingTests
     }
 
     /// <summary>Boots a release and picks Syd and Bernard by clicking, then plays on to the driveway.</summary>
-    private static GameWorld? SelectedKids(string folder)
+    internal static GameWorld? SelectedKids(string folder)
     {
         if (GameFolders.Find(folder) is not { } path)
         {

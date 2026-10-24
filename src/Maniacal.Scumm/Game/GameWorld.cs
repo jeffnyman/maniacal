@@ -18,7 +18,8 @@ namespace Maniacal.Scumm.Game;
 public sealed partial class GameWorld : IScriptHost, IActorWorld
 {
     // engine variables of version 2 (ScummEngine_v2::setupScummVars)
-    public const int VarCameraPosX = 2, VarCurrentLights = 12, VarCameraMinX = 23, VarCameraMaxX = 24;
+    public const int VarCameraPosX = 2, VarCurrentLights = 12, VarActorRangeMin = 19, VarActorRangeMax = 20,
+        VarCameraMinX = 23, VarCameraMaxX = 24;
 
     /// <summary>The script <c>startScene</c> runs after every room's entry script in versions 1 and 2.</summary>
     public const int AfterEntryScript = 5;
@@ -37,6 +38,13 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     private readonly Dictionary<int, Costume?> _costumes = [];
     private Surface8? _frame;
     private byte[] _boxFlags = [];
+
+    // where drawObject moved objects of the current room to, in pixels; the room's own data is kept
+    private readonly Dictionary<int, (int X, int Y)> _moved = [];
+
+    // the names setObjectName gave objects (_newNames)
+    private readonly Dictionary<int, string> _newNames = [];
+    private (int Strips, int Rows) _flashlight = (Flashlight.DefaultStrips, Flashlight.DefaultRows);
 
     public GameWorld(ResourceLoader loader, int seed = 1)
     {
@@ -230,6 +238,10 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
                         ? arguments[0] switch { 2 => 11, 1 => 4, _ => 0 }
                         : arguments[0];
                 }
+                else if (arguments[2] == 1)
+                {
+                    _flashlight = (arguments[0], arguments[1]);
+                }
 
                 return 0;
 
@@ -350,17 +362,18 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
                 return 0;
 
-            // o2_drawObject: the object shows its image, and the objects with exactly its rectangle stop showing theirs;
-            // an x and y other than 255 would move it first, which is not done yet
+            // o2_drawObject: an x other than 255 moves the object first, to a column and row; then it shows its
+            // image, and the objects with exactly its rectangle stop showing theirs
             case "o2_drawObject":
-                if (arguments[1] != 0xFF)
-                {
-                    _recorder.Execute(engine, instruction, arguments);
-                }
-
                 if (CurrentRoom?.FindObject(arguments[0]) is { } drawn)
                 {
-                    foreach (var other in CurrentRoom.Objects.Where(o => o.Number != 0 && o.X == drawn.X && o.Y == drawn.Y && o.Width == drawn.Width && o.Height == drawn.Height))
+                    if (arguments[1] != 0xFF)
+                    {
+                        _moved[drawn.Number] = (arguments[1] * 8, arguments[2] * 8);
+                    }
+
+                    var (x, y) = PositionOf(drawn);
+                    foreach (var other in CurrentRoom.Objects.Where(o => o.Number != 0 && PositionOf(o) == (x, y) && o.Width == drawn.Width && o.Height == drawn.Height))
                     {
                         engine.PutState(other.Number, engine.GetState(other.Number) & ~ScriptEngine.StateIntrinsic);
                     }
@@ -369,6 +382,33 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
                 }
 
                 return 0;
+
+            // o5_setObjectName: a new name, kept across rooms; the inventory shows it at once (setObjectName)
+            case "o5_setObjectName":
+                if (arguments[0] < ActorCount)
+                {
+                    throw new InvalidOperationException($"Actor {arguments[0]} cannot be renamed with setObjectName.");
+                }
+
+                _newNames[arguments[0]] = Encoding.Latin1.GetString(instruction.Operands[1].Text!);
+                RedrawInventory();
+                return 0;
+
+            // o5_getClosestObjActor: of the actors and objects from VAR_ACTOR_RANGE_MAX down to _MIN, the nearest, or 0xFF
+            case "o5_getClosestObjActor":
+                {
+                    int closest = 0xFF, closestDistance = 0xFF;
+                    for (int obj = engine.Variables[VarActorRangeMax]; obj >= engine.Variables[VarActorRangeMin]; obj--)
+                    {
+                        int distance = Distance(arguments[0], obj);
+                        if (distance < closestDistance)
+                        {
+                            (closest, closestDistance) = (obj, distance);
+                        }
+                    }
+
+                    return closest;
+                }
 
             case "o5_getDist":
                 return Distance(arguments[0], arguments[1]);
@@ -455,6 +495,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
         var room = _loader.LoadRoom(number) ?? throw new InvalidOperationException($"Room {number} does not exist.");
         CurrentRoom = room;
+        _moved.Clear();
         _boxFlags = room.WalkBoxes.Boxes.Select(b => b.Flags).ToArray();
         Engine.Variables[VarCameraMinX] = ScreenLayout.Width / 2;
         Engine.Variables[VarCameraMaxX] = room.Width - ScreenLayout.Width / 2;
@@ -523,7 +564,19 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// the facing it asks for. Mirrors <c>getObjectXYPos</c> for versions 1 and 2.
     /// </summary>
     public (int X, int Y, int Direction)? ObjectPosition(int obj)
-        => CurrentRoom?.FindObject(obj) is { } o ? (o.WalkX / 8, o.WalkY / 2, Actor.OldDirToNewDir(o.ActorDir & 3)) : null;
+    {
+        if (CurrentRoom?.FindObject(obj) is not { } o)
+        {
+            return null;
+        }
+
+        // a moved object's walk-to point moves with it (o2_drawObject)
+        var (x, y) = PositionOf(o);
+        return ((o.WalkX + x - o.X) / 8, (o.WalkY + y - o.Y) / 2, Actor.OldDirToNewDir(o.ActorDir & 3));
+    }
+
+    /// <summary>Where an object of the current room is, in pixels: where the room puts it, or where a script moved it.</summary>
+    public (int X, int Y) PositionOf(RoomObject obj) => _moved.TryGetValue(obj.Number, out var moved) ? moved : (obj.X, obj.Y);
 
     /// <summary>
     /// Where an actor or object is, in actor units, or null when it is not in the current room. A
@@ -591,9 +644,23 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             return blank;
         }
 
-        var view = RoomView.Window(RoomRenderer.Render(room, Engine.GetState), Camera);
-        bool colors = (Engine.Variables[VarCurrentLights] & LightActorColors) != 0;
+        var view = RoomView.Window(RoomRenderer.Render(room, Engine.GetState, PositionOf), Camera);
+        int lights = Engine.Variables[VarCurrentLights];
+        bool colors = (lights & LightActorColors) != 0;
         _actorStrips.Clear();
+
+        // the lights off: the room is black, but where the flashlight shines (clear8Col, drawFlashlight)
+        if ((lights & Flashlight.RoomLightsOn) == 0)
+        {
+            Rect? light = null;
+            if ((lights & Flashlight.FlashlightOn) != 0 && _flashlight.Strips > 0 && _flashlight.Rows > 0)
+            {
+                int height = Math.Min(view.Pixels.Height, layout.RoomHeight);
+                light = Flashlight.Area(Mouse.X + Camera.Left, Mouse.Y - layout.RoomTop, Camera.Left, _flashlight.Strips, _flashlight.Rows, view.Pixels.Width, height);
+            }
+
+            Flashlight.Darken(view.Pixels, Version, light);
+        }
         foreach (var actor in ActorsInRoom().Where(a => a.Visible && a.Costume is not null).OrderBy(a => a.Y))
         {
             var costume = actor.Costume!;
@@ -630,7 +697,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         actor.Put(x, y, room);
     }
 
-    /// <summary>The name of an actor, or of an object carried or in the room. Mirrors <c>getObjOrActorName</c>, without renamed objects yet.</summary>
+    /// <summary>The name of an actor, or of an object: the name a script gave it, or its own, carried or in the room. Mirrors <c>getObjOrActorName</c>.</summary>
     public string NameOf(int number)
     {
         if (number is > 0 and < ActorCount)
@@ -638,7 +705,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             return Actors[number].Name;
         }
 
-        return ObjectCode(number)?.Name ?? string.Empty;
+        return _newNames.TryGetValue(number, out string? name) ? name : ObjectCode(number)?.Name ?? string.Empty;
     }
 
     private void ActorOps(IReadOnlyList<int> arguments, Instruction instruction)

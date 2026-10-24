@@ -53,9 +53,10 @@ public static class RoomRenderer
     /// visible. Mirrors ScummVM's <c>drawRoomObjects</c> and <c>drawRoomObject</c>: objects are
     /// drawn from the last to the first, each only when its state has <see cref="ImageState"/> set
     /// and every parent up the chain is in the state its child expects. An object's mask replaces
-    /// the room's mask where it is drawn.
+    /// the room's mask where it is drawn. An object the scripts moved is drawn where
+    /// <paramref name="positionOf"/> puts it.
     /// </summary>
-    public static MaskedImage Render(Room room, Func<int, int> stateOf)
+    public static MaskedImage Render(Room room, Func<int, int> stateOf, Func<RoomObject, (int X, int Y)>? positionOf = null)
     {
         var image = DrawBackground(room);
         var v1 = room.Version == 1 ? V1Bitmap.ForRoom(room) : null;
@@ -64,7 +65,8 @@ public static class RoomRenderer
         {
             if (DrawObject(room, obj, v1) is { } objectImage)
             {
-                Paste(image, objectImage, obj.X, obj.Y);
+                var (x, y) = positionOf?.Invoke(obj) ?? (obj.X, obj.Y);
+                Paste(image, objectImage, x, y);
             }
         }
 

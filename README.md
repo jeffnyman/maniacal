@@ -16,8 +16,8 @@ costumes are read, and every script decodes. `maniacal <folder>` opens the game 
 scripts run, change rooms, set the camera and object states, and put, walk and animate actors; the
 message line shows what is said, and the verbs, the sentence line and the inventory work with the
 mouse and the keys. Kids are picked by clicking, the intro plays, and the kids walk from room to
-room and pick things up; the game beyond the front door is not checked yet. There is no sound yet, objects that move are not drawn where they move to, and dark rooms
-are drawn as if lit.
+room and pick things up; dark rooms are black but for the flashlight. The game beyond the front
+door is not checked yet, and there is no sound yet.
 
 A verb is clicked, then an object; clicking the object again, or clicking the sentence line,
 carries the sentence out, as in the original. The right button, Escape or F4 skip a cutscene, and
