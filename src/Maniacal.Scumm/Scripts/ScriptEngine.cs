@@ -22,6 +22,9 @@ public sealed class ScriptEngine
     /// <summary>Global script code starts after the 4-byte resource header (<c>_resourceHeaderSize</c>).</summary>
     public const int ScriptHeaderSize = 4;
 
+    /// <summary>Version 0's bit variables (<c>_numBitVariables</c>, <c>ScummEngine_v4::readMAXS</c>).</summary>
+    public const int BitVariableCount = 4096;
+
     /// <summary>A script running this many instructions without yielding is taken to be stuck.</summary>
     public const int InstructionBudget = 100_000;
 
@@ -49,6 +52,7 @@ public sealed class ScriptEngine
     public ScriptEngine(int version, Func<int, ReadOnlyMemory<byte>?> loadScript, IScriptHost host, IReadOnlyList<byte> objectOwners, IReadOnlyList<byte> objectStates, int seed = 1)
     {
         Version = version;
+        Vars = EngineVariables.For(version);
         _loadScript = loadScript;
         _host = host;
         _decoder = new ScriptDecoder(version);
@@ -63,7 +67,28 @@ public sealed class ScriptEngine
 
     public int Version { get; }
 
+    /// <summary>The numbers of the variables the engine itself uses, as this version gives them.</summary>
+    public EngineVariables Vars { get; }
+
     public int[] Variables { get; } = new int[VariableCount];
+
+    /// <summary>
+    /// Version 0's bit variables, 4096 bits, which its instructions address by byte and bit
+    /// (<c>_bitVars</c>; versions 1 and 2 keep theirs in <see cref="Variables"/>).
+    /// </summary>
+    public byte[] BitVariables { get; } = new byte[BitVariableCount / 8];
+
+    /// <summary>
+    /// Version 0: the sentence the scripts are running, its verb and objects (<c>_cmdVerb</c>,
+    /// <c>_cmdObject</c>, <c>_cmdObject2</c>), the objects with their types in the high byte.
+    /// </summary>
+    public int CommandVerb { get; set; }
+
+    /// <inheritdoc cref="CommandVerb"/>
+    public int CommandObject { get; set; }
+
+    /// <inheritdoc cref="CommandVerb"/>
+    public int CommandObject2 { get; set; }
 
     public ScriptSlot[] Slots { get; } = new ScriptSlot[SlotCount];
 
@@ -141,7 +166,7 @@ public sealed class ScriptEngine
     public void WriteVar(int number, int value)
     {
         CheckVariable(number);
-        if (number == VarCutsceneExitKey && value is 4 or 13 or 64)
+        if (Version > 0 && number == VarCutsceneExitKey && value is 4 or 13 or 64)
         {
             value = 27;
         }
@@ -164,7 +189,7 @@ public sealed class ScriptEngine
     /// </summary>
     public int GetState(int obj)
     {
-        if (!CopyProtection && obj is SecurityDoorOutside or SecurityDoorInside)
+        if (!CopyProtection && Version != 0 && obj is SecurityDoorOutside or SecurityDoorInside)
         {
             ObjectStates[obj] |= StateIntrinsic;
         }
@@ -391,7 +416,7 @@ public sealed class ScriptEngine
         var slot = Slots[skip.Slot];
         slot.Offset = skip.Offset;
         slot.Status = SlotStatus.Running;
-        Variables[VarOverride] = 1;
+        Variables[Vars.Override] = 1;
         Override = null;
     }
 
@@ -427,7 +452,7 @@ public sealed class ScriptEngine
     internal void EndCutscene()
     {
         Override = null;
-        Variables[VarOverride] = 0;
+        Variables[Vars.Override] = 0;
         Variables[VarCursorState] = SavedForCutscene.CursorState;
         SetUserState(SavedForCutscene.UserState | UserSetInterface | UserSetCursor | UserSetFreeze);
     }
@@ -560,6 +585,9 @@ public sealed class ScriptEngine
             {
                 OperandKind.Variable => ReadVar(operands[i].Value),
                 OperandKind.Constant => operands[i].Value,
+
+                // the sentence's object, without its type (getActiveObject's OBJECT_V0_ID)
+                OperandKind.CommandObject => CommandObject & 0xFF,
                 _ => 0,
             };
         }
@@ -777,6 +805,43 @@ public sealed class ScriptEngine
 
             case "o5_getObjectOwner":
                 WriteVar(instruction.Result!.Value, GetOwner(Arg(0)));
+                break;
+
+            // version 0: 0 is the sentence's object (o_getObjectOwner)
+            case "o_getObjectOwner":
+                WriteVar(instruction.Result!.Value, GetOwner(Arg(0) != 0 ? Arg(0) : CommandObject & 0xFF));
+                break;
+
+            // version 0: the running script stops (o_stopCurrentScript, stopScriptCommon(0))
+            case "o_stopCurrentScript":
+                StopScriptCommon(0);
+                break;
+
+            // version 0's bit variables: a byte and a bit in it (o_setBitVar, o_getBitVar)
+            case "o_setBitVar":
+                BitVariables[(byte)Arg(0)] = Arg(2) != 0
+                    ? (byte)(BitVariables[(byte)Arg(0)] | (1 << (Arg(1) & 7)))
+                    : (byte)(BitVariables[(byte)Arg(0)] & ~(1 << (Arg(1) & 7)));
+                break;
+            case "o_getBitVar":
+                WriteVar(instruction.Result!.Value, (BitVariables[(byte)Arg(0)] & (1 << (Arg(1) & 7))) != 0 ? 1 : 0);
+                break;
+
+            // version 0: whether the sentence's second object is the one given; without bit 0x80 it
+            // must also be an object with an owner and state (ifEqualActiveObject2Common)
+            case "o_ifEqualActiveObject2" or "o_ifNotEqualActiveObject2":
+                {
+                    bool checkType = (instruction.Opcode & 0x80) == 0;
+                    bool equal = (!checkType || (CommandObject2 >> 8) == 0) && Arg(0) == (CommandObject2 & 0xFF);
+                    Jump(instruction.Handler == "o_ifEqualActiveObject2" ? equal : !equal);
+                }
+
+                break;
+
+            // version 0: loading and locking resources, and the instructions that do nothing here
+            case "o_loadSound" or "o_lockSound" or "o_unlockSound" or "o_loadCostume" or "o_lockCostume" or "o_unlockCostume"
+                or "o_loadScript" or "o_lockScript" or "o_unlockScript" or "o_loadRoom" or "o_lockRoom" or "o_unlockRoom"
+                or "o_nop" or "o_screenPrepare":
                 break;
             case "o2_setOwnerOf":
                 ObjectOwners[Arg(0)] = (byte)Arg(1);

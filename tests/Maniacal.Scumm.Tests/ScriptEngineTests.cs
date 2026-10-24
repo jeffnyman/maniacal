@@ -248,3 +248,61 @@ public class BootTests
         Assert.True(engine.IsScriptRunning(alongside));
     }
 }
+
+/// <summary>Version 0's own script instructions.</summary>
+public class ScriptEngineV0Tests
+{
+    private const byte Stop = 0x00;
+
+    /// <summary>A version 0 engine over hand-made global scripts, each given without its 4-byte header.</summary>
+    private static ScriptEngine EngineV0(params (int Number, byte[] Code)[] scripts)
+    {
+        var table = scripts.ToDictionary(s => s.Number, s => (ReadOnlyMemory<byte>)new byte[ScriptEngine.ScriptHeaderSize].Concat(s.Code).ToArray());
+        return new ScriptEngine(0, n => table.TryGetValue(n, out var code) ? code : null, new RecordingHost(), new byte[256], new byte[256]);
+    }
+
+    /// <summary>Version 0's bit variables are bytes and bits of their own (o_setBitVar, o_getBitVar).</summary>
+    [Fact]
+    public void Version_0_bit_variables_are_a_byte_and_a_bit()
+    {
+        // setBitVar(3, 5, 1); Var[60] = getBitVar(3, 5); Var[61] = getBitVar(3, 4)
+        var engine = EngineV0((10, [0x1D, 3, 5, 1, 0x31, 60, 3, 5, 0x31, 61, 3, 4, Stop]));
+
+        engine.RunScript(10);
+
+        Assert.Equal(0x20, engine.BitVariables[3]);
+        Assert.Equal((1, 0), (engine.Variables[60], engine.Variables[61]));
+        Assert.All(engine.Variables.Take(60), v => Assert.Equal(0, v));
+    }
+
+    /// <summary>
+    /// Version 0's state and owner instructions can mean the running sentence's object: its number
+    /// without the type in the high byte.
+    /// </summary>
+    [Fact]
+    public void Version_0_instructions_can_mean_the_sentences_object()
+    {
+        // setStateIntrinsicOn(cmdObject); Var[61] = getObjectOwner(0)
+        var engine = EngineV0((10, [0xD7, 0x73, 61, 0, Stop]));
+        engine.CommandObject = 5;
+        engine.ObjectOwners[5] = 7;
+
+        engine.RunScript(10);
+
+        Assert.Equal(ScriptEngine.StateIntrinsic, engine.GetState(5));
+        Assert.Equal(7, engine.Variables[61]);
+    }
+
+    /// <summary>o_stopCurrentScript stops the script that runs it, there and then.</summary>
+    [Fact]
+    public void Version_0_scripts_stop_themselves()
+    {
+        // Var[60] = 1; stopCurrentScript; Var[60] = 2
+        var engine = EngineV0((10, [0x1A, 60, 1, 0x05, 0x1A, 60, 2, Stop]));
+
+        engine.RunScript(10);
+
+        Assert.Equal(1, engine.Variables[60]);
+        Assert.False(engine.IsScriptRunning(10));
+    }
+}

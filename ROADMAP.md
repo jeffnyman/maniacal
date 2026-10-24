@@ -235,8 +235,21 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   C64 script 54; and every instruction offset in `docs/scripts/retail` (154 global scripts, 75
   room scripts, 434 objects' scripts) is one decoded here, but for the meteor, whose Pick up
   begins with another instruction in the copy here than in the listing's.
-- Next: running the V0 scripts (`script_v0.cpp`'s handlers, the V0 variables of `setupScummVars`
-  and the sentence of `checkExecVerbs`), then actors, costumes and walking.
+- Done: the C64 boots to its kid selection. The engine's variables are numbered as each version
+  numbers them (`EngineVariables`, from both `setupScummVars`), with none where a version has none,
+  as ScummVM's `VAR_*` stay 0xFF: version 0 has nine, and keeps its lights in the engine
+  (`getCurrentLights`, set by `o_lights`). Its own bit variables (`_bitVars`), the sentence's verb
+  and objects the scripts read (`_cmdObject`), and the instructions the boot runs: `o_cutscene`
+  and `o_endCutscene` with the mode and room they keep, `o_setMode` and the four modes as user
+  states, `o_print` and `o_printEgo` with version 0's text (`decodeParseString`), and the
+  resource instructions, which do nothing here. Objects that are part of a room have no state.
+  `startScene` resets the sentence and runs script 5 in versions 1 and 2 only. The screen is
+  `initScreens(9, 145)`, and a step 4 ticks at the C64's 240 quarter-frames a second (NTSC),
+  without the ticks ScummVM adds for the C64's redraw time (`DelayCalculateDelta`). Sounds go
+  nowhere until the SID player is ported, as in ScummVM built without it.
+- Next: the C64's input, verbs and sentence (`ScummEngine_v0::processInput`, `checkExecVerbs`,
+  `resetVerbs`, `runSentenceScript`), so the kids can be picked and the intro play; then actors,
+  costumes and walking.
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).

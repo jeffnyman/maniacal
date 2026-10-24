@@ -210,8 +210,8 @@ public sealed partial class GameWorld
 
         foreach (var obj in room.Objects)
         {
-            if (obj.Number < 1 || (Engine.GetState(obj.Number) & ScriptEngine.StateUntouchable) != 0
-                || !RoomRenderer.ParentsAllow(room, obj, Engine.GetState))
+            if (obj.Number < 1 || (StateOf(obj.Number) & ScriptEngine.StateUntouchable) != 0
+                || !RoomRenderer.ParentsAllow(room, obj, StateOf))
             {
                 continue;
             }

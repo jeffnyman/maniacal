@@ -34,6 +34,9 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// <summary>The light bit that draws actors in their own colours. Mirrors <c>LIGHTMODE_actor_use_colors</c>.</summary>
     public const int LightActorColors = 8;
 
+    /// <summary>The light bit that draws actors in their costume's colours. Mirrors <c>LIGHTMODE_actor_use_base_palette</c>.</summary>
+    public const int LightActorBasePalette = 1;
+
     /// <summary>The talk colours version 1 actors start with. Mirrors <c>v1MMActorTalkColor</c>.</summary>
     private static readonly int[] V1TalkColors = [1, 7, 2, 14, 8, 1, 3, 7, 7, 12, 1, 13, 1, 4, 5, 5, 4, 3, 1, 5, 1, 1, 1, 7, 7];
 
@@ -97,18 +100,30 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// How fast the game's clock runs, in quarter-frames a second: 1193182 / 5041 for version 2,
     /// and for version 1 twelve a tick of the PC's 18.2 Hz timer. Mirrors <c>setTimerAndShakeFrequency</c>.
     /// </summary>
-    public double TimerFrequency => Version <= 1 ? 1193182.0 / 65536 * 12 : 1193182.0 / 5041;
+    public double TimerFrequency => Version switch
+    {
+        0 => C64NtscTimerRate,
+        1 => 1193182.0 / 65536 * 12,
+        _ => 1193182.0 / 5041,
+    };
+
+    // the C64's screen refresh in quarter-frames a second (C64_NTSC_VBLANK_RATE)
+    private const double C64NtscTimerRate = 240.0;
 
     /// <summary>
     /// The ticks the next step lasts: <c>VAR_TIMER_NEXT</c>, at least 1, and in version 1 rounded
-    /// up to a multiple of 3. Mirrors the <c>delta</c> of <c>ScummEngine::go</c>.
+    /// up to a multiple of 3; version 0 has no such variable and takes 4. Mirrors the <c>delta</c> of
+    /// <c>ScummEngine::go</c>, but for the ticks ScummVM adds in version 0 for the time the C64 took
+    /// to redraw (<c>DelayCalculateDelta</c>).
     /// </summary>
     public int StepTicks
     {
         get
         {
-            int delta = Math.Max(1, Engine.Variables[ScriptEngine.VarTimerNext]);
-            return Version <= 1 ? (delta + 2) / 3 * 3 : delta;
+            const int NoTimerNext = 4;
+            int timerNext = Engine.Vars.TimerNext;
+            int delta = Math.Max(1, timerNext == EngineVariables.None ? NoTimerNext : Engine.Variables[timerNext]);
+            return Version == 1 ? (delta + 2) / 3 * 3 : delta;
         }
     }
 
@@ -190,6 +205,9 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     {
         int oldEgo = Engine.Variables[ScriptEngine.VarEgo];
 
+        // ScummEngine_v0::scummLoop: whether the last sound started still plays
+        SetVar(Engine.Vars.IsSoundRunning, Sound.LastSound != 0 && Sound.IsRunning(Sound.LastSound) ? 1 : 0);
+
         // scummLoop: the step's ticks, at most 15, count the script delays and the message down;
         // then the message moves on (displayDialog, which versions up to 3 run before input)
         Time += StepLength;
@@ -197,19 +215,30 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         Engine.DecreaseScriptDelay(ticks);
         Messages.CountDown(ticks);
         Messages.Display();
-        ProcessInput();
+
+        // version 0's input, verbs and sentences are its own (ScummEngine_v0::processInput, checkExecVerbs)
+        if (Version >= 1)
+        {
+            ProcessInput();
+        }
 
         // scummLoop_updateScummVars: the camera's column, whether a message shows, the mouse in the room
         Engine.Variables[VarCameraPosX] = Camera.X >> 3;
         Engine.Variables[ScriptEngine.VarHaveMessage] = Messages.HaveMessage;
-        UpdateVirtualMouse();
+        if (Version >= 1)
+        {
+            UpdateVirtualMouse();
+        }
 
         // updateMusicTimer: the player's timer, in quarter-frames of 240 a second
-        Engine.Variables[VarMusicTimer] = (int)(Sound.Player.MusicTimer * TimerFrequency / 240.0);
+        SetVar(Engine.Vars.MusicTimer, (int)(Sound.Player.MusicTimer * TimerFrequency / 240.0));
 
         Engine.RunAllScripts();
-        CheckExecVerbs();
-        CheckAndRunSentenceScript();
+        if (Version >= 1)
+        {
+            CheckExecVerbs();
+            CheckAndRunSentenceScript();
+        }
         foreach (var actor in ActorsInRoom())
         {
             actor.Walk();
@@ -224,7 +253,10 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             actor.AnimateCostume();
         }
 
-        HandleMouseOver(oldEgo != Engine.Variables[ScriptEngine.VarEgo]);
+        if (Version >= 1)
+        {
+            HandleMouseOver(oldEgo != Engine.Variables[ScriptEngine.VarEgo]);
+        }
 
         // scummLoop_handleSound: the sounds asked for go to the player
         Sound.ProcessQueue();
@@ -250,6 +282,11 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
     public int Execute(ScriptEngine engine, Instruction instruction, IReadOnlyList<int> arguments)
     {
+        if (Version == 0 && ExecuteV0(engine, instruction, arguments, out int v0Result))
+        {
+            return v0Result;
+        }
+
         switch (instruction.Handler)
         {
             // o5_loadRoom: old-bundle games only switch when the room changes
@@ -465,12 +502,12 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
             // o5_startSound restarts the music timer; both note the sound in VAR_LAST_SOUND (Sound::startSound)
             case "o5_startSound":
-                engine.Variables[VarMusicTimer] = 0;
-                engine.Variables[VarLastSound] = arguments[0];
+                SetVar(engine.Vars.MusicTimer, 0);
+                SetVar(engine.Vars.LastSound, arguments[0]);
                 Sound.Start(arguments[0]);
                 return 0;
             case "o5_startMusic":
-                engine.Variables[VarLastSound] = arguments[0];
+                SetVar(engine.Vars.LastSound, arguments[0]);
                 Sound.Start(arguments[0]);
                 return 0;
             case "o5_stopSound":
@@ -548,7 +585,11 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         }
 
         Engine.KillRoomScripts();
-        ResetSentence();
+        if (Version >= 1)
+        {
+            ResetSentence();
+        }
+
         foreach (var actor in Actors.Skip(1))
         {
             actor.Hide();
@@ -566,8 +607,8 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         CurrentRoom = room;
         _moved.Clear();
         _boxFlags = room.WalkBoxes.Boxes.Select(b => b.Flags).ToArray();
-        Engine.Variables[VarCameraMinX] = ScreenLayout.Width / 2;
-        Engine.Variables[VarCameraMaxX] = room.Width - ScreenLayout.Width / 2;
+        SetVar(Engine.Vars.CameraMinX, ScreenLayout.Width / 2);
+        SetVar(Engine.Vars.CameraMaxX, room.Width - ScreenLayout.Width / 2);
         Camera.SetRoom(room.Width);
         SyncCameraLimits();
 
@@ -578,7 +619,10 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         }
 
         Engine.RunRoomScript(ScriptEngine.EntryScriptNumber, room.EntryScript);
-        Engine.RunScript(AfterEntryScript);
+        if (Version >= 1)
+        {
+            Engine.RunScript(AfterEntryScript);
+        }
     }
 
     /// <summary>
@@ -713,8 +757,8 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             return blank;
         }
 
-        var view = RoomView.Window(RoomRenderer.Render(room, Engine.GetState, PositionOf), Camera);
-        int lights = Engine.Variables[VarCurrentLights];
+        var view = RoomView.Window(RoomRenderer.Render(room, StateOf, PositionOf), Camera);
+        int lights = CurrentLights;
         bool colors = (lights & LightActorColors) != 0;
         _actorStrips.Clear();
 
@@ -843,10 +887,55 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     private Actor ActorOf(int number)
         => number is > 0 and < ActorCount ? Actors[number] : throw new InvalidOperationException($"Actor {number} is not one of 1 to {ActorCount - 1}.");
 
-    /// <summary>The camera reads its limits from the scripts' variables, as ScummVM's camera code does.</summary>
+    /// <summary>
+    /// The camera reads its limits from the scripts' variables, as ScummVM's camera code does. Version
+    /// 0 has none, and keeps the room's own (<c>cameraMoved</c>).
+    /// </summary>
     private void SyncCameraLimits()
     {
-        Camera.MinX = Engine.Variables[VarCameraMinX];
-        Camera.MaxX = Engine.Variables[VarCameraMaxX];
+        if (Engine.Vars.CameraMinX != EngineVariables.None)
+        {
+            Camera.MinX = Engine.Variables[Engine.Vars.CameraMinX];
+            Camera.MaxX = Engine.Variables[Engine.Vars.CameraMaxX];
+        }
     }
+
+    /// <summary>
+    /// The state of an object of the room. Version 0's objects that are part of the room (type 1
+    /// in their number's high byte) have none and count as 0: ScummVM never reads them from the
+    /// state table (<c>updateObjectStates</c>, <c>findObject</c>).
+    /// </summary>
+    public int StateOf(int obj) => Version == 0 && obj >> 8 != 0 ? 0 : Engine.GetState(obj);
+
+    /// <summary>Writes an engine variable, when the version has it.</summary>
+    private void SetVar(int number, int value)
+    {
+        if (number != EngineVariables.None)
+        {
+            Engine.Variables[number] = value;
+        }
+    }
+
+    /// <summary>
+    /// The lights: how the room and the actors are lit. Versions 1 and 2 keep them in a variable;
+    /// version 0 in the engine, set by <c>o_lights</c> (<c>getCurrentLights</c>).
+    /// </summary>
+    public int CurrentLights
+    {
+        get => Engine.Vars.CurrentLights == EngineVariables.None ? _lightsV0 : Engine.Variables[Engine.Vars.CurrentLights];
+        private set
+        {
+            if (Engine.Vars.CurrentLights == EngineVariables.None)
+            {
+                _lightsV0 = value;
+            }
+            else
+            {
+                Engine.Variables[Engine.Vars.CurrentLights] = value;
+            }
+        }
+    }
+
+    // version 0's lights (_currentLights); resetScummVars starts them with the room lit and the actors in colour
+    private int _lightsV0 = LightActorBasePalette | Flashlight.RoomLightsOn | LightActorColors;
 }

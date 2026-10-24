@@ -9,6 +9,7 @@ public class GameWorldTests
 {
     private const string V1Folder = "maniac_mansion_original_DOS.com";
     private const string V2Folder = "maniac_mansion_enhanced_DOS.com";
+    private const string C64Folder = "maniac_mansion_c64";
 
     private static GameWorld? Open(string folder)
         => GameFolders.Find(folder) is { } path ? new GameWorld(ResourceLoader.Open(new DirectoryGameContainer(path))) : null;
@@ -40,10 +41,45 @@ public class GameWorldTests
         Assert.Equal(160, world.Camera.X);
     }
 
+    /// <summary>
+    /// The C64 boots to the same title room: its boot script sets the keypad mode for the kid
+    /// selection and prints the copyright on the message line. Version 0 keeps the lights in the
+    /// engine, not a variable, and every instruction on the way is one it handles.
+    /// </summary>
+    [Fact]
+    public void The_c64_boots_to_the_kid_selection()
+    {
+        if (Open(C64Folder) is not { } world)
+        {
+            return;
+        }
+
+        world.Boot();
+        for (int i = 0; i < 60; i++)
+        {
+            world.Step();
+        }
+
+        Assert.Equal(0, world.Version);
+        Assert.Equal(45, world.CurrentRoom?.Number);
+        Assert.Equal(45, world.Engine.Variables[ScriptEngine.VarRoom]);
+        Assert.Equal(11, world.CurrentLights);
+        Assert.Equal(GameWorld.ModeKeypad, world.CurrentMode);
+        Assert.True(world.CursorShown);
+        Assert.Contains("Lucasfilm Ltd. All rights reserved", world.Messages.Plain());
+        Assert.Empty(world.Unhandled);
+
+        // the C64 has no variables for the mouse in the room: 30 and 31 are the scripts' own
+        Assert.Equal((0, 0), (world.Engine.Variables[30], world.Engine.Variables[31]));
+        // 4 ticks a step, of 4 quarter-frames at 240 a second: 60 steps are 4 seconds
+        Assert.Equal(4.0, world.Time.TotalSeconds, 3);
+    }
+
     /// <summary>Pinned after checking the screens by eye: the title, START and the seven kids, after 60 steps with seed 1.</summary>
     [Theory]
     [InlineData(V1Folder, "09c1f7ddfc8ee22b22a3126cebd04151")]
     [InlineData(V2Folder, "94c5b94df4c443508a7ad9c8ad5bacbd")]
+    [InlineData(C64Folder, "f837caf9ecdc9ae403db05f9df376c2d")]
     public void The_title_screen_is_stable(string folder, string md5)
     {
         if (Open(folder) is not { } world)

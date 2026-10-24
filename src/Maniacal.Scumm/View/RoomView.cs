@@ -13,8 +13,17 @@ public readonly record struct ScreenLayout(int RoomTop, int RoomBottom)
     public const int Width = 320;
     public const int Height = 200;
 
-    /// <summary>Version 1 shows 136 room lines (<c>initScreens(16, 152)</c>), version 2 shows 128 (<c>initScreens(16, 144)</c>).</summary>
-    public static ScreenLayout ForVersion(int version) => version <= 1 ? new(16, 152) : new(16, 144);
+    /// <summary>
+    /// Version 1 shows 136 room lines (<c>initScreens(16, 152)</c>), version 2 shows 128
+    /// (<c>initScreens(16, 144)</c>), and the C64 136 a line below its one message line
+    /// (<c>initScreens(9, 145)</c>).
+    /// </summary>
+    public static ScreenLayout ForVersion(int version) => version switch
+    {
+        0 => new(9, 145),
+        1 => new(16, 152),
+        _ => new(16, 144),
+    };
 
     public int RoomHeight => RoomBottom - RoomTop;
 }

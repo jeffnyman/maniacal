@@ -28,7 +28,6 @@ public sealed class MessageLine
     private const int Escape = 0xFF, NewLine = 1, Keep = 2, Wait = 3;
 
     // the engine's character count (VAR_CHARCOUNT of ScummEngine_v2::setupScummVars)
-    private const int VarCharCount = 7, VarTalkActor = 41;
 
     private readonly Font _font;
     private readonly ScriptEngine _engine;
@@ -73,7 +72,7 @@ public sealed class MessageLine
             _talkingActor = value;
             if (_engine.Version >= 2)
             {
-                _engine.Variables[VarTalkActor] = value;
+                _engine.Variables[_engine.Vars.TalkActor] = value;
             }
         }
     }
@@ -125,6 +124,27 @@ public sealed class MessageLine
     }
 
     /// <summary>
+    /// Turns the text of a version 0 print instruction into a message. Mirrors
+    /// <c>ScummEngine_v0::decodeParseString</c>: a byte with bit 7 has a space after it, and a
+    /// slash is a new line; there are no escapes.
+    /// </summary>
+    public static byte[] DecodeV0(ReadOnlySpan<byte> text)
+    {
+        var output = new List<byte>(text.Length + 8);
+        foreach (byte b in text)
+        {
+            byte c = (byte)(b & 0x7F);
+            output.Add(c == '/' ? (byte)13 : c);
+            if ((b & 0x80) != 0)
+            {
+                output.Add((byte)' ');
+            }
+        }
+
+        return [.. output];
+    }
+
+    /// <summary>
     /// Shows a message as said by an actor (or by nobody, <see cref="NoActor"/>). An actor outside
     /// the current room says nothing. Mirrors <c>actorTalk</c>.
     /// </summary>
@@ -163,8 +183,8 @@ public sealed class MessageLine
         _position = 0;
         TalkDelay = 0;
         HaveMessage = 0xFF;
-        _engine.Variables[ScriptEngine.VarHaveMessage] = 0xFF;
-        _engine.Variables[VarCharCount] = 0;
+        _engine.Variables[_engine.Vars.HaveMessage] = 0xFF;
+        _engine.Variables[_engine.Vars.CharCount] = 0;
         Display();
     }
 
@@ -238,7 +258,7 @@ public sealed class MessageLine
 
             _messageCount++;
             TalkDelay += TextSpeed;
-            _engine.Variables[VarCharCount]++;
+            _engine.Variables[_engine.Vars.CharCount]++;
         }
     }
 

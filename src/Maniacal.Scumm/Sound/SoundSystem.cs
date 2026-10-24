@@ -14,9 +14,14 @@ public sealed class SoundSystem
     private readonly Func<int, byte[]?> _load;
     private readonly List<int> _queue = [];
 
+    // version 0 has no player yet: its sounds go nowhere, as in ScummVM built without SID audio
+    private readonly bool _silent;
+
     public SoundSystem(int version, Func<int, byte[]?> load, int sampleRate, bool pcjr = true)
     {
         _load = load;
+        _silent = version == 0;
+
         // ScummVM gives Player_V1 to version 1 of Maniac Mansion only; version 0 (the C64) has its own player, not ported yet
         Player = version == 1 ? new PlayerV1(sampleRate, pcjr) : new PlayerV2(sampleRate, pcjr);
         Output = new ClockedSource(Player, sampleRate);
@@ -46,7 +51,7 @@ public sealed class SoundSystem
         for (int i = _queue.Count - 1; i >= 0; i--)
         {
             int sound = _queue[i];
-            if (sound != 0 && _load(sound) is { } data)
+            if (!_silent && sound != 0 && _load(sound) is { } data)
             {
                 Player.StartSound(sound, data);
             }

@@ -42,7 +42,7 @@ file.png` the game headless, with clicks and keys given at chosen steps (`--clic
 |---|---|---|---|
 | DOS V1 (1987) | 1 | `00.LFL` to `52.LFL`, XOR-encoded | Playable, with sound and saves |
 | DOS V2 "enhanced" (1988) | 2 | `00.LFL` to `53.LFL`, XOR-encoded | Playable, with sound and saves |
-| Commodore 64 (1987) | 0 | `maniac1.d64`, `maniac2.d64` disk images | Detected; rooms, objects, pictures and scripts read (`--room N`, `--script N`); not playable yet |
+| Commodore 64 (1987) | 0 | `maniac1.d64`, `maniac2.d64` disk images | Boots to the kid selection; rooms, objects, pictures and scripts read; not playable yet |
 | NES (1990) | 1 (NES dialect) | `.prg` extracted from the ROM | Later, if at all |
 
 ## Layout
