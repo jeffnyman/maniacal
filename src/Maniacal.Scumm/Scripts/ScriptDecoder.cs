@@ -3,10 +3,10 @@ using System.Buffers.Binary;
 namespace Maniacal.Scumm.Scripts;
 
 /// <summary>
-/// Decodes the script instructions of versions 1 and 2: which handler an opcode runs, and the
-/// operands it fetches. The operand layouts mirror the fetches of ScummVM's handlers in
-/// <c>script_v2.cpp</c> and the <c>o5_</c>, <c>o4_</c> and <c>o3_</c> handlers the version 2
-/// table borrows.
+/// Decodes script instructions: which handler an opcode runs, and the operands it fetches. The
+/// operand layouts mirror the fetches of ScummVM's handlers in <c>script_v2.cpp</c>, the
+/// <c>o5_</c>, <c>o4_</c> and <c>o3_</c> handlers the version 2 table borrows, and for version 0
+/// (the C64) <c>script_v0.cpp</c> with the version 2 handlers its table borrows.
 /// </summary>
 /// <remarks>
 /// <para>Operand kinds (<c>ScummEngine_v2::getVar</c>, <c>getResultPos</c>, and
@@ -17,6 +17,10 @@ namespace Maniacal.Scumm.Scripts;
 /// <para>Two operand layouts depend on values: <c>doSentence</c> stops after its first operand when
 /// it is the constant 0xFC or 0xFB (when it is a variable, the full layout is assumed), and
 /// <c>actorOps</c> sub-operation 2 has an extra byte in version 2 only.</para>
+/// <para>Version 0 reads every word but a jump's as a byte (<c>ScummEngine_v0::fetchScriptWord</c>
+/// and <c>getVarOrDirectWord</c>), and takes the object of the state instructions as a byte, or
+/// with bit 0x40 as no operand at all: the object the running sentence is about
+/// (<c>ScummEngine_v0::getActiveObject</c>). Its text is bytes up to a zero, without escapes.</para>
 /// </remarks>
 public sealed class ScriptDecoder(int version)
 {
@@ -24,20 +28,35 @@ public sealed class ScriptDecoder(int version)
 
     public int Version { get; } = version;
 
-    public static string HandlerOf(byte opcode) => OpcodeTable.Handlers[opcode];
+    private readonly string[] _handlers = version == 0 ? OpcodeTable.HandlersV0 : OpcodeTable.Handlers;
+
+    /// <summary>The ScummVM handler an opcode runs in this version.</summary>
+    public string HandlerOf(byte opcode) => _handlers[opcode];
 
     public Instruction Decode(ReadOnlySpan<byte> code, int offset)
     {
         var r = new Reader(code, offset);
         byte opcode = r.Byte();
-        string handler = OpcodeTable.Handlers[opcode];
+        string handler = _handlers[opcode];
+        bool v0 = Version == 0;
         var operands = new List<Operand>();
         int? result = null;
         bool indirect = false;
         int? jump = null;
 
         void VarOrByte(ref Reader reader, byte mask) => operands.Add((opcode & mask) != 0 ? Operand.Variable(reader.Byte()) : Operand.Constant(reader.Byte()));
-        void VarOrWord(ref Reader reader, byte mask) => operands.Add((opcode & mask) != 0 ? Operand.Variable(reader.Byte()) : Operand.Constant(reader.SignedWord()));
+        void VarOrWord(ref Reader reader, byte mask) => operands.Add((opcode & mask) != 0 ? Operand.Variable(reader.Byte()) : Operand.Constant(v0 ? reader.Byte() : reader.SignedWord()));
+        void ActiveObject(ref Reader reader)
+        {
+            if (!v0)
+            {
+                VarOrWord(ref reader, Param1);
+            }
+            else
+            {
+                operands.Add((opcode & Param2) != 0 ? Operand.CommandObject : Operand.Constant(reader.Byte()));
+            }
+        }
         void Var(ref Reader reader) => operands.Add(Operand.Variable(reader.Byte()));
         void Byte(ref Reader reader) => operands.Add(Operand.Constant(reader.Byte()));
         void Word(ref Reader reader) => operands.Add(Operand.Constant(reader.Word()));
@@ -53,19 +72,104 @@ public sealed class ScriptDecoder(int version)
             // no operands
             case "o5_stopObjectCode" or "o5_breakHere" or "o5_stopMusic" or "o2_cutscene" or "o2_endCutscene"
                 or "o2_restart" or "o2_drawSentence" or "o2_waitForMessage" or "o2_waitForSentence" or "o2_dummy"
-                or "o2_switchCostumeSet":
+                or "o2_switchCostumeSet" or "o_stopCurrentScript" or "o_nop" or "o_cutscene" or "o_endCutscene"
+                or "o_screenPrepare":
                 break;
 
-            // the active object: a variable or word (getActiveObject)
+            // the active object (getActiveObject)
             case "o2_setStateIntrinsicOn" or "o2_setStateIntrinsicOff" or "o2_setStateLocked" or "o2_setStateUnlocked"
-                or "o2_setStateTouchable" or "o2_setStateUntouchable" or "o2_setStatePickupable" or "o2_setStateUnpickupable"
-                or "o2_pickupObject" or "o2_cursorCommand":
+                or "o2_setStateTouchable" or "o2_setStateUntouchable" or "o2_setStatePickupable" or "o2_setStateUnpickupable":
+                ActiveObject(ref r);
+                break;
+
+            case "o2_pickupObject" or "o2_cursorCommand":
                 VarOrWord(ref r, Param1);
                 break;
 
             case "o2_ifStateIntrinsicOn" or "o2_ifStateIntrinsicOff" or "o2_ifStateLocked" or "o2_ifStateUnlocked"
                 or "o2_ifStateTouchable" or "o2_ifStateUntouchable" or "o2_ifStatePickupable" or "o2_ifStateUnpickupable":
+                ActiveObject(ref r);
+                Jump(ref r);
+                break;
+
+            // version 0: one byte (the resource instructions, setMode, pickupObject)
+            case "o_loadSound" or "o_lockSound" or "o_unlockSound" or "o_lockCostume" or "o_unlockCostume"
+                or "o_lockScript" or "o_unlockScript" or "o_lockRoom" or "o_unlockRoom" or "o_setMode" or "o_pickupObject":
+                Byte(ref r);
+                break;
+
+            // version 0: one variable or byte
+            case "o_loadCostume" or "o_loadScript" or "o_loadRoom" or "o_lights":
+                VarOrByte(ref r, Param1);
+                break;
+
+            // version 0: an actor, then an object number whose type the opcode's bit 0x40 gives
+            case "o_walkActorToObject" or "o_putActorAtObject":
+                VarOrByte(ref r, Param1);
+                Byte(ref r);
+                break;
+
+            case "o_loadRoomWithEgo":
+                Byte(ref r);
+                Byte(ref r);
+                break;
+
+            case "o_animateActor":
+                VarOrByte(ref r, Param1);
+                VarOrByte(ref r, Param2);
+                operands.Add(Operand.Constant((sbyte)r.Byte()));
+                break;
+
+            case "o_getActorMoving" or "o_getClosestActor":
+                Result(ref r);
+                VarOrByte(ref r, Param1);
+                break;
+
+            case "o_setObjectName":
+                Byte(ref r);
+                operands.Add(r.ResourceString());
+                break;
+
+            case "o_setActorBitVar" or "o_setBitVar":
+                VarOrByte(ref r, Param1);
+                VarOrByte(ref r, Param2);
+                VarOrByte(ref r, Param3);
+                break;
+
+            case "o_getActorBitVar" or "o_getBitVar":
+                Result(ref r);
+                VarOrByte(ref r, Param1);
+                VarOrByte(ref r, Param2);
+                break;
+
+            case "o_getObjectOwner":
+                Result(ref r);
                 VarOrWord(ref r, Param1);
+                break;
+
+            case "o_setOwnerOf":
+                VarOrWord(ref r, Param1);
+                VarOrByte(ref r, Param2);
+                break;
+
+            case "o_print":
+                Byte(ref r);
+                operands.Add(r.PlainText());
+                break;
+
+            case "o_printEgo":
+                operands.Add(r.PlainText());
+                break;
+
+            // the verb and two objects: 0xFE and 0xFF the sentence's, else numbers whose types the opcode's bits 0x80 and 0x40 give
+            case "o_doSentence":
+                Byte(ref r);
+                Byte(ref r);
+                Byte(ref r);
+                break;
+
+            case "o_ifEqualActiveObject2" or "o_ifNotEqualActiveObject2":
+                Byte(ref r);
                 Jump(ref r);
                 break;
 
@@ -261,7 +365,7 @@ public sealed class ScriptDecoder(int version)
 
             case "o5_print":
                 VarOrByte(ref r, Param1);
-                operands.Add(r.Message());
+                operands.Add(v0 ? r.PlainText() : r.Message());
                 break;
 
             case "o5_printEgo":
@@ -428,6 +532,20 @@ public sealed class ScriptDecoder(int version)
                 {
                     Byte();
                 }
+            }
+
+            return new Operand(OperandKind.Text, Position - start - 1, _code[start..(Position - 1)].ToArray());
+        }
+
+        /// <summary>
+        /// Version 0 text, up to a zero byte: characters, bit 7 for a space after one. Mirrors
+        /// <c>ScummEngine_v0::decodeParseString</c>.
+        /// </summary>
+        public Operand PlainText()
+        {
+            int start = Position;
+            while (Byte() != 0)
+            {
             }
 
             return new Operand(OperandKind.Text, Position - start - 1, _code[start..(Position - 1)].ToArray());

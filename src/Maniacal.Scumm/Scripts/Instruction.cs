@@ -10,6 +10,9 @@ public enum OperandKind
 
     /// <summary>Text in the script, up to and without its zero byte.</summary>
     Text,
+
+    /// <summary>Version 0: the object the running sentence is about (<c>_cmdObject</c>), for which the instruction has no operand.</summary>
+    CommandObject,
 }
 
 public readonly record struct Operand(OperandKind Kind, int Value, byte[]? Text = null)
@@ -18,9 +21,13 @@ public readonly record struct Operand(OperandKind Kind, int Value, byte[]? Text 
 
     public static Operand Variable(int number) => new(OperandKind.Variable, number);
 
+    /// <summary>The sentence's object, in version 0.</summary>
+    public static readonly Operand CommandObject = new(OperandKind.CommandObject, 0);
+
     public override string ToString() => Kind switch
     {
         OperandKind.Variable => $"Var[{Value}]",
+        OperandKind.CommandObject => "cmdObject",
         OperandKind.Text => $"\"{Escape(Text!)}\"",
         _ => Value.ToString(System.Globalization.CultureInfo.InvariantCulture),
     };
@@ -66,7 +73,7 @@ public sealed record Instruction(
     /// <c>stopScript(0)</c>, which stops the script running it, as <c>stopScriptCommon</c> does), an
     /// unconditional jump, chaining to another script, or restarting.
     /// </summary>
-    public bool EndsFlow => Handler is "o5_stopObjectCode" or "o5_jumpRelative" or "o2_chainScript" or "o2_restart"
+    public bool EndsFlow => Handler is "o5_stopObjectCode" or "o5_jumpRelative" or "o2_chainScript" or "o2_restart" or "o_stopCurrentScript"
         || (Handler == "o2_stopScript" && Operands[0] is { Kind: OperandKind.Constant, Value: 0 });
 
     public override string ToString()

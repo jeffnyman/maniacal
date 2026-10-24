@@ -225,7 +225,18 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   Maniacal does too where ScummVM stops 8 bytes short. Checked: every room's picture ends where
   what follows it begins, the 250 object images that are their objects' own decode, and the front
   of the mansion and the hall look right by eye (no C64 screenshot to compare against yet).
-- Next: the V0 scripts (`script_v0.cpp`), then actors, costumes and walking.
+- Done: decoding the V0 scripts: the opcode table of `ScummEngine_v0::setupOpcodes` (generated
+  with version 2's by `tools/port_opcodes.py`) and the operand layout of each of its 95 handlers.
+  Version 0 reads a word operand as a byte (`fetchScriptWord`, `getVarOrDirectWord`) but a jump
+  as a word; the state instructions take their object as a byte, or with bit 0x40 none, meaning
+  the running sentence's object (`getActiveObject`); text is bytes to a zero, bit 7 a space
+  after (`decodeParseString`). Every global, room and object script of the C64 release decodes
+  along every path, jumps landing on instructions, with the 20 leftover bytes of V2 script 59 after
+  C64 script 54; and every instruction offset in `docs/scripts/retail` (154 global scripts, 75
+  room scripts, 434 objects' scripts) is one decoded here, but for the meteor, whose Pick up
+  begins with another instruction in the copy here than in the listing's.
+- Next: running the V0 scripts (`script_v0.cpp`'s handlers, the V0 variables of `setupScummVars`
+  and the sentence of `checkExecVerbs`), then actors, costumes and walking.
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).
