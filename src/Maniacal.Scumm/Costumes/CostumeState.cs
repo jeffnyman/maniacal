@@ -33,6 +33,25 @@ public sealed class CostumeState
 
     public bool IsStopped(int limb) => (Stopped & (1 << limb)) != 0;
 
+    /// <summary>Copies the limbs into a save's arrays: <c>curpos</c>, <c>start</c>, <c>end</c> and <c>frame</c>.</summary>
+    internal void SaveTo(int[] position, int[] start, int[] end, int[] animation)
+    {
+        _position.CopyTo(position, 0);
+        _start.CopyTo(start, 0);
+        _end.CopyTo(end, 0);
+        _animation.CopyTo(animation, 0);
+    }
+
+    /// <summary>Takes the limbs from a save.</summary>
+    internal void LoadFrom(int[] position, int[] start, int[] end, int[] animation, int stopped)
+    {
+        Array.Copy(position, _position, Limbs);
+        Array.Copy(start, _start, Limbs);
+        Array.Copy(end, _end, Limbs);
+        Array.Copy(animation, _animation, Limbs);
+        Stopped = stopped;
+    }
+
     /// <summary>Mirrors <c>CostumeData::reset</c>.</summary>
     public void Reset()
     {

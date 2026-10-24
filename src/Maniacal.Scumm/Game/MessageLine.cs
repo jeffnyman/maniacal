@@ -28,7 +28,7 @@ public sealed class MessageLine
     private const int Escape = 0xFF, NewLine = 1, Keep = 2, Wait = 3;
 
     // the engine's character count (VAR_CHARCOUNT of ScummEngine_v2::setupScummVars)
-    private const int VarCharCount = 7;
+    private const int VarCharCount = 7, VarTalkActor = 41;
 
     private readonly Font _font;
     private readonly ScriptEngine _engine;
@@ -43,6 +43,7 @@ public sealed class MessageLine
     private bool _keepText;
     private bool _useTalkAnims;
     private int _color;
+    private int _talkingActor;
 
     public MessageLine(Font font, ScriptEngine engine, Func<int, Actor?> actorOf, Func<int, string> nameOf, Func<int, string> verbNameOf)
     {
@@ -59,8 +60,23 @@ public sealed class MessageLine
     /// <summary>0 for none, 0xFF while a message (or part of one) is to show, 1 once it has all shown. Mirrors <c>_haveMsg</c>.</summary>
     public int HaveMessage { get; private set; }
 
-    /// <summary>The actor whose speech shows, or <see cref="NoActor"/>. Mirrors <c>getTalkingActor</c>.</summary>
-    public int TalkingActor { get; private set; } = NoActor;
+    /// <summary>
+    /// The actor whose speech shows, <see cref="NoActor"/> when nobody's does, or 0 before anyone
+    /// has spoken. Mirrors <c>getTalkingActor</c> and <c>setTalkingActor</c>: version 2 keeps it in
+    /// <c>VAR_TALK_ACTOR</c>, variable 41.
+    /// </summary>
+    public int TalkingActor
+    {
+        get => _talkingActor;
+        private set
+        {
+            _talkingActor = value;
+            if (_engine.Version >= 2)
+            {
+                _engine.Variables[VarTalkActor] = value;
+            }
+        }
+    }
 
     /// <summary>Ticks the message still shows. Mirrors <c>_talkDelay</c>.</summary>
     public int TalkDelay { get; private set; }
@@ -249,6 +265,48 @@ public sealed class MessageLine
         }
 
         _keepText = false;
+        Clear();
+    }
+
+    /// <summary>
+    /// Copies the message into a save as ScummVM keeps it: the expanded text and how far it has
+    /// shown (<c>_charsetBuffer</c>, <c>_charsetBufPos</c>), whether one shows, its time, colour and
+    /// speaker, and the default text colour (<c>_string[0].color</c>).
+    /// </summary>
+    internal void SaveTo(Saves.ScummState s)
+    {
+        Array.Clear(s.CharsetBuffer);
+        Array.Copy(_buffer, s.CharsetBuffer, Math.Min(_buffer.Length, s.CharsetBuffer.Length));
+        s.CharsetBufPos = _position;
+        s.HaveMessage = HaveMessage;
+        s.TalkDelay = TalkDelay;
+        s.DefaultTextSpeed = TextSpeed;
+        s.KeepText = _keepText ? 1 : 0;
+        s.UseTalkAnims = _useTalkAnims ? 1 : 0;
+        s.CharsetColor = _color;
+        s.CharsetRendererColor = _color;
+        s.ActorToPrintStrFor = TalkingActor;
+        s.Strings[0].Color = StringColor;
+    }
+
+    /// <summary>
+    /// Takes the message from a save. Like ScummVM after a load, the text area starts clear, so
+    /// a message still showing goes on from where it was without what had already shown.
+    /// </summary>
+    internal void LoadFrom(Saves.ScummState s, int talkingActor)
+    {
+        int length = Array.IndexOf(s.CharsetBuffer, (byte)0);
+        _buffer = [.. s.CharsetBuffer.AsSpan(0, length < 0 ? s.CharsetBuffer.Length : length), 0];
+        _position = Math.Min(s.CharsetBufPos, _buffer.Length - 1);
+        HaveMessage = s.HaveMessage;
+        TalkDelay = s.TalkDelay;
+        TextSpeed = s.DefaultTextSpeed;
+        _keepText = s.KeepText != 0;
+        _useTalkAnims = s.UseTalkAnims != 0;
+        _color = s.CharsetColor;
+        TalkingActor = talkingActor;
+        StringColor = s.Strings[0].Color;
+        _messageCount = 0;
         Clear();
     }
 

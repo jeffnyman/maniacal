@@ -306,6 +306,10 @@ public sealed partial class GameWorld
                 PickUp(arguments[0]);
                 return true;
 
+            case "o4_saveLoadGame":
+                result = SaveLoadGame(arguments[0], instruction);
+                return true;
+
             // the user state changes of cursorCommand, cutscene and endCutscene redraw the interface (ScummEngine_v2::setUserState)
             case "o2_cursorCommand":
                 RedrawInterface();

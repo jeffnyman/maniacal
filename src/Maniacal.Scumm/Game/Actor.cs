@@ -660,6 +660,96 @@ public sealed class Actor
         return OldDirToNewDir(TurnInterpolation[NewDirToOldDir(TargetFacing) | (NewDirToOldDir(Facing) << 2)]);
     }
 
+    /// <summary>
+    /// Copies the actor into a save as ScummVM keeps it: position, costume and its limbs, the walk
+    /// and its leg, and the fields this interpreter does not keep at their <c>Actor_v2::initActor</c>
+    /// values. Mirrors what <c>Actor::saveLoadWithSerializer</c> writes.
+    /// </summary>
+    internal void SaveTo(Saves.ScummState.ActorState a)
+    {
+        a.X = X;
+        a.Y = Y;
+        a.Elevation = Elevation;
+        a.Facing = Facing;
+        a.Costume = CostumeNumber;
+        a.Room = Room;
+        a.TalkColor = TalkColor;
+        a.Sound[0] = Sound;
+        a.TargetFacing = TargetFacing;
+        a.Moving = Moving;
+        a.Visible = Visible ? 1 : 0;
+        a.Frame = Frame;
+        a.AnimSpeed = AnimSpeed;
+        a.AnimProgress = _animProgress;
+        a.Walkbox = Walkbox;
+
+        // version 1 keeps no palette: what scripts set lands on zeros (setActorCostume returns early)
+        Array.Clear(a.Palette);
+        for (int i = 0; i < Palette.Length; i++)
+        {
+            a.Palette[i] = _world.Version <= 1 && Palette[i] == i ? 0 : Palette[i];
+        }
+
+        a.DestX = _dest.X;
+        a.DestY = _dest.Y;
+        a.DestBox = _destBox & 0xFF;
+        a.DestDir = _destDir & 0xFFFF;
+        a.CurBox = _curBox & 0xFF;
+        a.CurX = X;
+        a.CurY = Y;
+        a.NextX = _next.X;
+        a.NextY = _next.Y;
+        a.DeltaXFactor = _deltaX;
+        a.DeltaYFactor = _deltaY;
+        a.XFrac = _xfrac & 0xFFFF;
+        a.YFrac = _yfrac & 0xFFFF;
+        a.WalkFacing = _walkFacing;
+        a.XAdd = _xAdd & 0xFFFF;
+        a.YAdd = _yAdd & 0xFFFF;
+        a.StepThreshold = _stepThreshold & 0xFFFF;
+        a.Stopped = State.Stopped;
+        State.SaveTo(a.CurPos, a.Start, a.End, a.CostumeFrame);
+    }
+
+    /// <summary>Takes the actor from a save; the costume loads when it is next drawn.</summary>
+    internal void LoadFrom(Saves.ScummState.ActorState a)
+    {
+        X = a.X;
+        Y = a.Y;
+        Elevation = (short)a.Elevation;
+        Facing = a.Facing;
+        SelectCostume(a.Costume);
+        Room = a.Room;
+        TalkColor = a.TalkColor;
+        Sound = a.Sound[0];
+        TargetFacing = a.TargetFacing;
+        Moving = a.Moving;
+        Visible = a.Visible != 0;
+        Frame = a.Frame;
+        AnimSpeed = a.AnimSpeed;
+        _animProgress = a.AnimProgress;
+        Walkbox = a.Walkbox;
+        for (int i = 0; i < Palette.Length; i++)
+        {
+            Palette[i] = _world.Version <= 1 && a.Palette[i] == 0 ? (byte)i : (byte)a.Palette[i];
+        }
+
+        _dest = new Point(a.DestX, a.DestY);
+        _destBox = a.DestBox;
+        _destDir = a.DestDir == 0xFFFF ? -1 : a.DestDir;
+        _curBox = a.CurBox;
+        _next = new Point(a.NextX, a.NextY);
+        _deltaX = a.DeltaXFactor;
+        _deltaY = a.DeltaYFactor;
+        _xfrac = (short)a.XFrac;
+        _yfrac = (short)a.YFrac;
+        _walkFacing = a.WalkFacing;
+        _xAdd = (short)a.XAdd;
+        _yAdd = (short)a.YAdd;
+        _stepThreshold = a.StepThreshold;
+        State.LoadFrom(a.CurPos, a.Start, a.End, a.CostumeFrame, a.Stopped);
+    }
+
     private void SelectCostume(int costume)
     {
         CostumeNumber = costume;

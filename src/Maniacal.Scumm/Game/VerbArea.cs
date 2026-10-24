@@ -399,6 +399,79 @@ public sealed class VerbArea
         return -1;
     }
 
+    /// <summary>
+    /// Copies the verbs into a save as ScummVM keeps them: each slot's rectangles, colours, mode,
+    /// key and preposition, and its name as a verb resource ending in 0 (<c>rtVerb</c>). An empty
+    /// slot is as <c>resetScumm</c> leaves it.
+    /// </summary>
+    internal void SaveTo(Saves.ScummState s)
+    {
+        s.InventoryOffset = InventoryOffset;
+        for (int i = 0; i < SlotCount; i++)
+        {
+            var verb = Slots[i];
+            var state = s.Verbs[i] = new Saves.ScummState.VerbState();
+            if (verb.Id == 0 && verb.Name.Length == 0)
+            {
+                continue;
+            }
+
+            state.Id = verb.Id;
+            state.Left = verb.X;
+            state.Top = verb.Y;
+            state.Right = verb.Right;
+            state.Bottom = verb.Bottom;
+            (state.OldLeft, state.OldTop, state.OldRight, state.OldBottom) = verb.Drawn is { } drawn
+                ? (drawn.Left, drawn.Top, drawn.Right, drawn.Bottom)
+                : (-1, 0, 0, 0);
+            state.Color = verb.Color;
+            state.HiColor = verb.HiColor;
+            state.DimColor = verb.DimColor;
+            state.Charset = 0;
+            state.Mode = verb.Mode;
+            state.Key = verb.Key;
+            state.Prep = verb.Preposition;
+            if (verb.Name.Length > 0)
+            {
+                s.Resources[(Saves.ScummState.TypeVerb, i)] = new Saves.ScummState.Resource([.. verb.Name, 0]);
+            }
+        }
+    }
+
+    /// <summary>Takes the verbs from a save; the area is drawn again by the caller.</summary>
+    internal void LoadFrom(Saves.ScummState s)
+    {
+        InventoryOffset = s.InventoryOffset;
+        MouseOverBox = -1;
+        _mouseOverVerb = 0;
+        for (int i = 0; i < SlotCount; i++)
+        {
+            var state = s.Verbs[i];
+            var verb = Slots[i] = new VerbSlot
+            {
+                Id = state.Id,
+                X = state.Left,
+                Y = state.Top,
+                Right = state.Right,
+                Bottom = state.Bottom,
+                Color = state.Color,
+                HiColor = state.HiColor,
+                DimColor = state.DimColor,
+                Mode = state.Mode,
+                Key = state.Key,
+                Preposition = state.Prep,
+            };
+
+            if (s.Resources.TryGetValue((Saves.ScummState.TypeVerb, i), out var name))
+            {
+                int end = Array.IndexOf(name.Data, (byte)0);
+                verb.Name = name.Data[..(end < 0 ? name.Data.Length : end)];
+            }
+        }
+
+        Pixels.Fill(0);
+    }
+
     private VerbSlot Slot(int slot)
         => slot is > 0 and < SlotCount ? Slots[slot] : throw new InvalidOperationException($"Verb slot {slot} is not one of 1 to {SlotCount - 1}.");
 

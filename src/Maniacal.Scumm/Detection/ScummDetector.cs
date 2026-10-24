@@ -44,6 +44,23 @@ public static class ScummDetector
         ["Remastered"] = (2, false),
     };
 
+    /// <summary>The MD5 of the index file ScummVM detects a release by, as the bytes ScummVM keeps in its saves (<c>_gameMD5</c>).</summary>
+    public static byte[] IndexMd5(IGameContainer container)
+    {
+        foreach (var name in IndexFiles)
+        {
+            if (container.Exists(name))
+            {
+                using var stream = container.Open(name);
+                var buffer = new byte[Math.Min(stream.Length, Md5FileSizeLimit)];
+                stream.ReadExactly(buffer);
+                return System.Security.Cryptography.MD5.HashData(buffer);
+            }
+        }
+
+        return new byte[16];
+    }
+
     public static ScummGame? Identify(IGameContainer container)
     {
         foreach (var name in IndexFiles)

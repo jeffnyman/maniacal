@@ -65,6 +65,7 @@ public sealed class Room
         Scripts = Numbers(span.Slice(lists + soundCount, scriptCount));
 
         int boxes = span[21];
+        BoxOffset = boxes;
         WalkBoxes = boxes == 0 ? WalkBoxes.Empty : WalkBoxes.Parse(span[boxes..]);
 
         // ScummVM sizes these scripts the same way: the exit script runs up to the entry script,
@@ -73,7 +74,17 @@ public sealed class Room
         int entry = Word(span, 26);
         ExitScript = exit == 0 ? ReadOnlyMemory<byte>.Empty : data[exit..(entry > exit ? entry : span.Length)];
         EntryScript = entry == 0 ? ReadOnlyMemory<byte>.Empty : data[entry..];
+        ExitScriptOffset = exit;
+        EntryScriptOffset = entry;
     }
+
+    /// <summary>Where the exit and entry scripts start in the room (<c>_EXCD_offs</c>, <c>_ENCD_offs</c>), 0 for none.</summary>
+    public int ExitScriptOffset { get; }
+
+    public int EntryScriptOffset { get; }
+
+    /// <summary>Where the walkboxes start in the room: their count, the boxes, then the matrix. 0 for none.</summary>
+    public int BoxOffset { get; }
 
     public int Number { get; }
 

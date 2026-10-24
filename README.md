@@ -18,7 +18,8 @@ message line shows what is said, and the verbs, the sentence line and the invent
 mouse and the keys. Kids are picked by clicking, the intro plays, and the kids walk from room to
 room and pick things up; dark rooms are black but for the flashlight. The game beyond the front
 door is not checked yet. The music and sound effects play as the PCjr made them, or as the PC
-speaker did with `--speaker`.
+speaker did with `--speaker`. F5 opens the game's own save screen; saves are ScummVM's own files
+(`maniac.s01` for Game A, and so on), so they can be moved between Maniacal and ScummVM 2.7 or later.
 
 A verb is clicked, then an object; clicking the object again, or clicking the sentence line,
 carries the sentence out, as in the original. The right button, Escape or F4 skip a cutscene, and
@@ -29,13 +30,13 @@ objects as the game starts and lists them, `--view N` the 320x200 screen with th
 standing actors, `--costume N` a sheet of a costume's figures, `--font` or `--text "words"` the
 built-in font, `--script N` or `--room-scripts N` a disassembly, and `--run [steps] --screenshot
 file.png` the game headless, with clicks and keys given at chosen steps (`--click step:x,y`,
-`--key step:key`).
+`--key step:key`), and saves loaded or written (`--load file`, `--save file`, `--saves folder`).
 [ROADMAP.md](ROADMAP.md) gives the order of work.
 
 | Release | SCUMM version | Data | State |
 |---|---|---|---|
-| DOS V1 (1987) | 1 | `00.LFL` to `52.LFL`, XOR-encoded | Playable, with sound; no saves yet |
-| DOS V2 "enhanced" (1988) | 2 | `00.LFL` to `53.LFL`, XOR-encoded | Playable, with sound; no saves yet |
+| DOS V1 (1987) | 1 | `00.LFL` to `52.LFL`, XOR-encoded | Playable, with sound and saves |
+| DOS V2 "enhanced" (1988) | 2 | `00.LFL` to `53.LFL`, XOR-encoded | Playable, with sound and saves |
 | Commodore 64 (1987) | 0 | `maniac1.d64`, `maniac2.d64` disk images | Not yet: needs the disk image reader |
 | NES (1990) | 1 (NES dialect) | `.prg` extracted from the ROM | Later, if at all |
 
@@ -66,7 +67,7 @@ dotnet run --project src/Maniacal.Player -- <game folder> --view N [--camera X] 
 dotnet run --project src/Maniacal.Player -- <game folder> --costume N [--zoom N] [--output file.png]
 dotnet run --project src/Maniacal.Player -- <game folder> --font | --text "words" [--zoom N] [--output file.png]
 dotnet run --project src/Maniacal.Player -- <game folder> --script N | --room-scripts N
-dotnet run --project src/Maniacal.Player -- <game folder> --run [steps] [--click step:x,y]... [--key step:key]... [--set var=value]... [--skip step]... [--screenshot file.png] [--wav file.wav [--speaker]] [--zoom N]
+dotnet run --project src/Maniacal.Player -- <game folder> --run [steps] [--click step:x,y]... [--key step:key]... [--set var=value]... [--skip step]... [--load file] [--save file [--save-version N]] [--saves folder [--target name]] [--screenshot file.png] [--wav file.wav [--speaker]] [--zoom N]
 ```
 
 ## Game data

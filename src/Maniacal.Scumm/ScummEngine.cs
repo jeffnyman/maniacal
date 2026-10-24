@@ -31,7 +31,11 @@ public sealed class ScummEngine : Engine
 
     public override void Initialize()
     {
-        _world = new GameWorld(ResourceLoader.Open(Game), Host.RandomSeed ?? Environment.TickCount, Host.Audio.SampleRate, Pcjr);
+        _world = new GameWorld(ResourceLoader.Open(Game), Host.RandomSeed ?? Environment.TickCount, Host.Audio.SampleRate, Pcjr)
+        {
+            SaveStore = Host.Saves,
+            SaveTarget = Detected.GameId,
+        };
         Host.Graphics.SetMode(ScreenLayout.Width, ScreenLayout.Height);
         Host.Graphics.SetTitle($"Maniacal - {Detected.Title}");
         Host.Graphics.SetPalette(Palettes.Ega);

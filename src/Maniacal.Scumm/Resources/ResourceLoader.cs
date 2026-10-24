@@ -24,6 +24,9 @@ public sealed class ResourceLoader
 
     public ResourceIndex Index { get; }
 
+    /// <summary>The files of the release.</summary>
+    public IGameContainer Game => _game;
+
     /// <summary>Reads the index from <c>00.LFL</c> and returns a loader over it.</summary>
     public static ResourceLoader Open(IGameContainer game)
         => new(game, ResourceIndex.Parse(LflFile.Read(game, 0)));

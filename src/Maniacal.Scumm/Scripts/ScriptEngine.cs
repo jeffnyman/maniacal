@@ -80,16 +80,16 @@ public sealed class ScriptEngine
     public Instruction? CurrentInstruction { get; private set; }
 
     /// <summary>The slot whose script set an override, and where it skips to. Mirrors <c>vm.cutSceneScript[0]</c> and <c>vm.cutScenePtr[0]</c>.</summary>
-    public (int Slot, int Offset)? Override { get; private set; }
+    public (int Slot, int Offset)? Override { get; internal set; }
 
     /// <summary>Mirrors <c>vm.cutSceneData[0]</c> and <c>[1]</c>: the user state and cursor state saved by <c>cutscene</c>.</summary>
-    public (int UserState, int CursorState) SavedForCutscene { get; private set; }
+    public (int UserState, int CursorState) SavedForCutscene { get; internal set; }
 
     /// <summary>Which parts of the interface show: the sentence line, inventory and verbs bits. Mirrors <c>_userState</c>.</summary>
-    public int Interface { get; private set; }
+    public int Interface { get; internal set; }
 
     /// <summary>Whether the cursor shows. Mirrors <c>_userPut</c>.</summary>
-    public bool CursorOn { get; private set; }
+    public bool CursorOn { get; internal set; }
 
     /// <summary>
     /// Changes the interface, the cursor and whether scripts are frozen, as the bits say. Mirrors
@@ -259,6 +259,7 @@ public sealed class ScriptEngine
             if (Slots[i].Status == SlotStatus.Running)
             {
                 CurrentSlot = i;
+                Slots[i].ResumeOffset = Slots[i].Offset;
                 Execute();
             }
         }
@@ -373,6 +374,21 @@ public sealed class ScriptEngine
         Override = null;
     }
 
+    /// <summary>
+    /// After a load in the middle of an instruction: the slot the save was running carries on
+    /// from where the instruction ends, as ScummVM's <c>o4_saveLoadGame</c> puts the old script
+    /// pointer into the loaded state's current script (<c>updateScriptPtr</c>). -1 for no slot.
+    /// </summary>
+    internal void ContinueAfterLoad(int slot, int offset)
+    {
+        _nested.Clear();
+        CurrentSlot = slot;
+        if (slot >= 0)
+        {
+            Slots[slot].Offset = offset;
+        }
+    }
+
     /// <summary>Ends the running script's turn; it carries on from the next instruction next time. Mirrors <c>o5_breakHere</c>.</summary>
     public void BreakHere() => CurrentSlot = -1;
 
@@ -431,7 +447,14 @@ public sealed class ScriptEngine
         _nested.Add(caller < 0 ? (0, ScriptKind.Global, -1) : (Slots[caller].Number, Slots[caller].Kind, caller));
         int level = _nested.Count - 1;
 
+        // runScriptNested: the caller's position is kept (updateScriptPtr), and the new script starts
+        if (caller >= 0)
+        {
+            Slots[caller].ResumeOffset = Slots[caller].Offset;
+        }
+
         CurrentSlot = index;
+        Slots[index].ResumeOffset = Slots[index].Offset;
         Execute();
 
         var nest = _nested[level];

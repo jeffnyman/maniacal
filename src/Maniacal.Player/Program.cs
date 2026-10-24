@@ -31,6 +31,11 @@ internal static class Program
         int? runSteps = null;
         string? screenshot = null;
         string? wav = null;
+        string? loadFile = null;
+        string? savesDir = null;
+        string target = "maniac";
+        string? saveFile = null;
+        int saveVersion = Maniacal.Scumm.Saves.SaveFile.CompatibleVersion;
         bool speaker = false;
         var settings = new List<(int Variable, int Value)>();
         var skips = new List<int>();
@@ -107,6 +112,21 @@ internal static class Program
                 case "--wav" when i + 1 < args.Length:
                     wav = args[++i];
                     break;
+                case "--saves" when i + 1 < args.Length:
+                    savesDir = args[++i];
+                    break;
+                case "--target" when i + 1 < args.Length:
+                    target = args[++i];
+                    break;
+                case "--load" when i + 1 < args.Length:
+                    loadFile = args[++i];
+                    break;
+                case "--save" when i + 1 < args.Length:
+                    saveFile = args[++i];
+                    break;
+                case "--save-version" when i + 1 < args.Length && int.TryParse(args[i + 1], out saveVersion):
+                    i++;
+                    break;
                 case "--speaker":
                     speaker = true;
                     break;
@@ -178,7 +198,7 @@ internal static class Program
 
         if (runSteps is { } stepCount)
         {
-            return RunHeadless(container, stepCount, screenshot, wav, speaker, zoom, settings, skips, inputs);
+            return RunHeadless(container, stepCount, screenshot, wav, speaker, zoom, settings, skips, inputs, loadFile, saveFile, saveVersion, savesDir, target);
         }
 
         if (script is not null || roomScripts is not null)
@@ -341,10 +361,18 @@ internal static class Program
     /// slots still alive and the variables that are not 0.
     /// </summary>
     private static int RunHeadless(IGameContainer container, int steps, string? screenshot, string? wav, bool speaker, int zoom, List<(int Variable, int Value)> settings, List<int> skips,
-        List<(int Step, Action<Maniacal.Scumm.Game.GameWorld> Give)> inputs)
+        List<(int Step, Action<Maniacal.Scumm.Game.GameWorld> Give)> inputs, string? loadFile = null, string? saveFile = null, int saveVersion = Maniacal.Scumm.Saves.SaveFile.CompatibleVersion,
+        string? savesDir = null, string target = "maniac")
     {
         var world = new Maniacal.Scumm.Game.GameWorld(ResourceLoader.Open(container), pcjr: !speaker);
         var engine = world.Engine;
+
+        // the game's own save screen saves to and loads from a folder, named as ScummVM names saves
+        if (savesDir is not null)
+        {
+            world.SaveStore = new FileSaveStore(savesDir);
+            world.SaveTarget = target;
+        }
 
         // with a WAV to write, the run reads the sound as a host would, a step's worth after each step
         var audio = new List<short>();
@@ -369,7 +397,16 @@ internal static class Program
 
         try
         {
-            world.Boot();
+            // a load takes the place of the boot script, as ScummVM does when started on a save
+            if (loadFile is not null)
+            {
+                var info = world.Load(File.ReadAllBytes(loadFile));
+                Console.WriteLine($"Loaded \"{info.Name}\": save version {info.Version}, {info.PlayTime} played");
+            }
+            else
+            {
+                world.Boot();
+            }
 
             // variables set after the boot stand in for input there is no way to give yet
             foreach (var (variable, value) in settings)
@@ -402,6 +439,12 @@ internal static class Program
         foreach (var call in world.Unhandled)
         {
             Console.WriteLine(call);
+        }
+
+        if (saveFile is not null)
+        {
+            File.WriteAllBytes(saveFile, world.Save(Path.GetFileNameWithoutExtension(saveFile), DateTime.Now, saveVersion));
+            Console.WriteLine($"Saved to {saveFile} in save version {saveVersion}");
         }
 
         if (wav is not null)
@@ -705,7 +748,7 @@ internal static class Program
         Console.Error.WriteLine("       maniacal <game folder> --costume N [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --view N [--camera X] [--actor costume,x,y[,left|right|front|back]]... [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --script N | --room-scripts N");
-        Console.Error.WriteLine("       maniacal <game folder> --run [steps] [--click step:x,y]... [--key step:key]... [--set var=value]... [--skip step]... [--screenshot file.png] [--wav file.wav [--speaker]] [--zoom N]");
+        Console.Error.WriteLine("       maniacal <game folder> --run [steps] [--click step:x,y]... [--key step:key]... [--set var=value]... [--skip step]... [--load file] [--save file [--save-version N]] [--saves folder [--target name]] [--screenshot file.png] [--wav file.wav [--speaker]] [--zoom N]");
         Console.Error.WriteLine("       maniacal <game folder> --font | --text \"words\" [--zoom N] [--output file.png]");
     }
 }

@@ -145,7 +145,7 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   `getClosestObjActor`, and dark rooms: black where the room lights are off (`clear8Col`), with
   the flashlight of `o2_lights` and `drawFlashlight`, its corners rounded by the version 1 and 2
   curves, lighting the room around the mouse. Rooms 5, 8, 9, 15, 22 and 23 start dark.
-- Next: saves (Phase 4).
+- Next: the rest of Phase 4 (the copy protection), then the game beyond the front door.
 - `script.cpp`: script slots, `runScript`, `runObjectScript`, `runEntryScript`/`runExitScript`,
   cutscenes, `stopScript`, freeze and unfreeze, the bit variables.
 - `script_v2.cpp`: the V2 opcode table (also used by V1) and every handler.
@@ -174,10 +174,16 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   original's: steps last `VAR_TIMER_NEXT` ticks of 4 quarter-frames at 1193182 / 5041 Hz in
   version 2, and in version 1 a multiple of 3 ticks at 12 quarter-frames a tick of the 18.2 Hz
   timer (`setTimerAndShakeFrequency`, `ScummEngine::go`). `--run ... --wav file.wav` records a run.
-- `saveload.cpp`: ScummVM's save format for these versions (`ScummEngine_v2::saveLoadWithSerializer`
-  and the base serializer), so saves can be swapped with a real ScummVM build as Daventry's are.
+- Done: saves (`Maniacal.Scumm.Saves`): ScummVM's save format for these versions, field for field
+  (`ScummEngine::saveLoadWithSerializer`, `ScummEngine_v2::saveLoadWithSerializer`, the actor,
+  script, object, verb, sentence and string serializers, the resources, gzip, the header and the
+  information section), written in save version 108 (ScummVM 2.7's) by default or 124, and read
+  from 108 to 124; the game's own save screen (`o4_saveLoadGame`), saving mid-script as ScummVM
+  does and, after a load, carrying on after the instruction or booting and loading again when the
+  save was made outside the save room. Checked against ScummVM 2.7.0: a save made here loads
+  there; a save-screen save made here, loaded there, is saved again by ScummVM and loads back
+  here; and the two saves of the same moment differ only in the mouse and a few ticks of time.
 - The copy-protection door code (`GAMEOPTION_COPY_PROTECTION`): ScummVM bypasses it by default.
-- Check: saves made here load in ScummVM and back.
 
 ## Phase 5: Commodore 64 (V0)
 

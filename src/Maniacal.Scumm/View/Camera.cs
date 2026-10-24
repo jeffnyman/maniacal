@@ -162,6 +162,40 @@ public sealed class Camera
         Moved();
     }
 
+    /// <summary>
+    /// Copies the camera into a save: its centre and destination in pixels (y at the middle of the
+    /// screen, as versions 1 and 2 keep it), the strips in view, the mode and the actor followed.
+    /// </summary>
+    internal void SaveTo(Saves.ScummState s)
+    {
+        const int MiddleY = 100;
+        s.CameraDestX = DestinationX;
+        s.CameraDestY = MiddleY;
+        s.CameraX = X;
+        s.CameraY = MiddleY;
+        s.CameraLastX = X;
+        s.CameraLastY = MiddleY;
+        s.ScreenStartStrip = StartStrip;
+        s.ScreenEndStrip = EndStrip;
+        s.CameraMode = (int)Mode;
+        s.CameraFollows = Follows;
+        s.CameraLeftTrigger = LeftTrigger;
+        s.CameraRightTrigger = RightTrigger;
+        s.CameraMovingToActor = MovingToActor ? 1 : 0;
+    }
+
+    /// <summary>Takes the camera from a save, in a room of a width. Mirrors the <c>cameraMoved</c> of <c>loadState</c>.</summary>
+    internal void LoadFrom(Saves.ScummState s, int roomWidth)
+    {
+        _roomWidth = roomWidth;
+        X = s.CameraX;
+        DestinationX = s.CameraDestX;
+        Mode = Enum.IsDefined((CameraMode)s.CameraMode) ? (CameraMode)s.CameraMode : CameraMode.Normal;
+        Follows = s.CameraFollows;
+        MovingToActor = s.CameraMovingToActor != 0;
+        Moved();
+    }
+
     /// <summary>Mirrors <c>cameraMoved</c> before version 7: keep the view inside the room, and find its strips.</summary>
     private void Moved()
     {

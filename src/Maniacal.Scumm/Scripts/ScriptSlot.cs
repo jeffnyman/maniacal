@@ -38,6 +38,12 @@ public sealed class ScriptSlot
     /// <summary>Where execution resumes.</summary>
     public int Offset { get; internal set; }
 
+    /// <summary>
+    /// Where the slot was when it last yielded, started running or started a nested script: what
+    /// ScummVM's <c>offs</c> holds while the slot runs, which a save made mid-instruction records.
+    /// </summary>
+    public int ResumeOffset { get; internal set; }
+
     /// <summary>Ticks left to wait while paused.</summary>
     public int Delay { get; internal set; }
 
