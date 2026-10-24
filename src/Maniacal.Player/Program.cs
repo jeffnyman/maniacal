@@ -28,6 +28,7 @@ internal static class Program
         int? script = null;
         int? roomScripts = null;
         int? runSteps = null;
+        string? screenshot = null;
         int? cameraX = null;
         var actors = new List<(int Costume, int X, int Y, int Direction)>();
         string? text = null;
@@ -90,6 +91,9 @@ internal static class Program
                     }
 
                     break;
+                case "--screenshot" when i + 1 < args.Length:
+                    screenshot = args[++i];
+                    break;
                 case "--font":
                     font = true;
                     break;
@@ -141,7 +145,7 @@ internal static class Program
 
         if (runSteps is { } stepCount)
         {
-            return RunHeadless(container, stepCount);
+            return RunHeadless(container, stepCount, screenshot, zoom);
         }
 
         if (script is not null || roomScripts is not null)
@@ -292,24 +296,17 @@ internal static class Program
     /// does) and every running script runs once. Prints what the scripts asked of the world, the
     /// slots still alive and the variables that are not 0.
     /// </summary>
-    private static int RunHeadless(IGameContainer container, int steps)
+    private static int RunHeadless(IGameContainer container, int steps, string? screenshot, int zoom)
     {
-        var loader = ResourceLoader.Open(container);
-        var host = new RecordingHost();
-        var engine = new ScriptEngine(
-            loader.Index.Version,
-            n => loader.Index.Locate(ResourceType.Script, n).IsPresent ? loader.Load(ResourceType.Script, n) : null,
-            host,
-            loader.Index.ObjectOwners,
-            loader.Index.ObjectStates);
+        var world = new Maniacal.Scumm.Game.GameWorld(ResourceLoader.Open(container));
+        var engine = world.Engine;
 
         try
         {
-            engine.RunScript(1);
+            world.Boot();
             for (int step = 0; step < steps; step++)
             {
-                engine.DecreaseScriptDelay(Math.Max(1, engine.Variables[ScriptEngine.VarTimerNext]));
-                engine.RunAllScripts();
+                world.Step();
             }
         }
         catch (Exception ex) when (ex is InvalidOperationException or InvalidDataException)
@@ -317,9 +314,18 @@ internal static class Program
             Console.WriteLine($"Stopped in script {engine.CurrentScriptNumber}: {ex.Message}");
         }
 
-        foreach (var call in host.Calls)
+        foreach (var call in world.Unhandled)
         {
             Console.WriteLine(call);
+        }
+
+        Console.WriteLine();
+        Console.WriteLine($"Room {world.CurrentRoom?.Number ?? 0}, camera at {world.Camera.X}, {world.Steps} steps");
+        if (screenshot is not null)
+        {
+            using var file = File.Create(screenshot);
+            PngWriter.Write(file, world.Screen(), Palettes.Ega, zoom, zoom);
+            Console.WriteLine($"Screen written to {screenshot}");
         }
 
         Console.WriteLine();
@@ -577,7 +583,7 @@ internal static class Program
         Console.Error.WriteLine("       maniacal <game folder> --costume N [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --view N [--camera X] [--actor costume,x,y[,left|right|front|back]]... [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --script N | --room-scripts N");
-        Console.Error.WriteLine("       maniacal <game folder> --run [steps]");
+        Console.Error.WriteLine("       maniacal <game folder> --run [steps] [--screenshot file.png] [--zoom N]");
         Console.Error.WriteLine("       maniacal <game folder> --font | --text \"words\" [--zoom N] [--output file.png]");
     }
 }

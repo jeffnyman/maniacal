@@ -105,8 +105,13 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   condition, jump and script-control instructions. Every other instruction goes to an
   `IScriptHost` with its operands evaluated. `maniacal <folder> --run [steps]` runs the boot script
   headless and lists what the scripts asked of the world: both releases reach the kid selection.
-- Next: hosts for the world instructions, subsystem by subsystem (rooms and objects, actors,
-  verbs and the sentence, text, sound), starting with `loadRoom` and the room entry and exit scripts.
+- Done: the first world host (`GameWorld`): `loadRoom` as `startScene` does it for these versions
+  (leave and kill the room's scripts, the exit script, the room variable, the camera limits, the entry
+  script, then script 5), `setCameraAt`, `panCameraTo`, the camera limits of `roomOps`, and `lights`;
+  a main-loop step (delays, scripts, camera); and the screen drawn from the object states.
+  `maniacal <folder> --run [steps] --screenshot file.png` shows the title screen in both releases.
+- Next: the other world instructions, subsystem by subsystem: actors (put, walk, animate, costumes),
+  then verbs and the sentence, text, objects (`drawObject` positions, pick up), sound, and dark rooms.
 - `script.cpp`: script slots, `runScript`, `runObjectScript`, `runEntryScript`/`runExitScript`,
   cutscenes, `stopScript`, freeze and unfreeze, the bit variables.
 - `script_v2.cpp`: the V2 opcode table (also used by V1) and every handler.

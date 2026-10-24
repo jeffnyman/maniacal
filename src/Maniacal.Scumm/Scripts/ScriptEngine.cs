@@ -258,6 +258,30 @@ public sealed class ScriptEngine
         }
     }
 
+    /// <summary>
+    /// When the running script belongs to the room (its entry or exit script, or an object's), it
+    /// stops running now: it is about to be killed with the room. Mirrors the start of <c>startScene</c>.
+    /// </summary>
+    public void LeaveRoomScript()
+    {
+        if (CurrentSlot >= 0 && Slots[CurrentSlot].Kind == ScriptKind.Room)
+        {
+            CurrentSlot = -1;
+        }
+    }
+
+    /// <summary>Kills every script of the room being left; scripts of carried objects live on. Mirrors <c>killScriptsAndResources</c>.</summary>
+    public void KillRoomScripts()
+    {
+        foreach (var slot in Slots)
+        {
+            if (slot.Kind == ScriptKind.Room && !slot.IsDead)
+            {
+                slot.Kill();
+            }
+        }
+    }
+
     /// <summary>Freezes every slot but the running one and the freeze-resistant ones. Mirrors <c>freezeScripts</c> for <c>version &lt;= 2</c>.</summary>
     public void FreezeScripts()
     {

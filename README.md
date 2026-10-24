@@ -12,13 +12,14 @@ the same engine generations and would come nearly for free, but it is not a goal
 
 Early. Releases are identified by ScummVM's MD5 table. For both DOS releases the index, rooms
 (objects, walkboxes), room pictures, object images and costumes are read, and every script
-decodes. The script engine runs the boot script headless up to the kid selection, though the
-instructions that act on the world (rooms, actors, text, sound) are only recorded so far.
+decodes. The game boots headless to its title screen: the scripts run, change rooms and set the
+camera and object states, and the screen is drawn from them. Instructions for actors, verbs, text
+and sound are only recorded so far.
 Nothing is playable yet: `maniacal <folder>` names the release and stops. `--room N` writes a
 room as a PNG, with its objects as the game starts, `--view N` the 320x200 screen with the camera
 and standing actors, `--costume N` a sheet of a costume's figures, `--font` or `--text "words"` the
-built-in font, `--script N` or `--room-scripts N` a disassembly, and `--run [steps]` the boot
-script headless.
+built-in font, `--script N` or `--room-scripts N` a disassembly, and `--run [steps] --screenshot
+file.png` the game headless.
 [ROADMAP.md](ROADMAP.md) gives the order of work.
 
 | Release | SCUMM version | Data | State |
@@ -55,7 +56,7 @@ dotnet run --project src/Maniacal.Player -- <game folder> --view N [--camera X] 
 dotnet run --project src/Maniacal.Player -- <game folder> --costume N [--zoom N] [--output file.png]
 dotnet run --project src/Maniacal.Player -- <game folder> --font | --text "words" [--zoom N] [--output file.png]
 dotnet run --project src/Maniacal.Player -- <game folder> --script N | --room-scripts N
-dotnet run --project src/Maniacal.Player -- <game folder> --run [steps]
+dotnet run --project src/Maniacal.Player -- <game folder> --run [steps] [--screenshot file.png] [--zoom N]
 ```
 
 ## Game data

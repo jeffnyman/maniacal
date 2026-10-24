@@ -57,6 +57,7 @@ public sealed class Camera
     public void SetRoom(int roomWidth)
     {
         _roomWidth = roomWidth;
+        Mode = CameraMode.Normal;
         MinX = ScreenWidth / 2;
         MaxX = roomWidth - ScreenWidth / 2;
         Moved();
