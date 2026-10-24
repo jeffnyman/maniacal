@@ -3,17 +3,17 @@ using System.Buffers.Binary;
 namespace Maniacal.Scumm.Rooms;
 
 /// <summary>
-/// A room of versions 1 and 2: its size, objects, walkboxes, entry and exit scripts, and the
+/// A room of versions 0 to 2: its size, objects, walkboxes, entry and exit scripts, and the
 /// sounds and scripts loaded with it. The graphics are read when the room is drawn. Mirrors
 /// ScummVM's <c>ScummEngine_v3old::setupRoomSubBlocks</c>, <c>resetRoomSubBlocks</c> and
 /// <c>resetRoomObjects</c> for <c>version &lt;= 2</c>.
 /// </summary>
 /// <remarks>
-/// Header, from the room's size word: width and height at 4 (version 1: two bytes in 8-pixel
-/// units; version 2: two words in pixels, and the picture offset at 10), the object count at 20, the walkbox offset at 21 (a
-/// byte), the sound and script counts at 22 and 23, the exit and entry script offsets at 24 and
-/// 26, and from 28 the object image offsets, the object code offsets, the sound numbers and the
-/// script numbers.
+/// Header, from the room's size word: width and height at 4 (versions 0 and 1: two bytes in
+/// 8-pixel units; version 2: two words in pixels, and the picture offset at 10), the object count
+/// at 20, the walkbox offset at 21 (a byte), the sound and script counts at 22 and 23, the exit and
+/// entry script offsets at 24 and 26, and from 28 the object image offsets, the object code
+/// offsets, the sound numbers and the script numbers.
 /// </remarks>
 public sealed class Room
 {
@@ -52,12 +52,14 @@ public sealed class Room
             throw new InvalidDataException($"Room {number}: the object, sound and script lists run past the end of the room.");
         }
 
+        // in version 0 an object without an image of its own points at the first code block (resetRoomObjects)
         var objects = new RoomObject[objectCount];
+        int noImage = objectCount > 0 ? Word(span, HeaderSize + 2 * objectCount) : 0;
         for (int i = 0; i < objectCount; i++)
         {
             int image = Word(span, HeaderSize + 2 * i);
             int code = Word(span, HeaderSize + 2 * (objectCount + i));
-            objects[i] = RoomObject.Parse(data, image, code);
+            objects[i] = RoomObject.Parse(data, version == 0 && image == noImage ? 0 : image, code, version);
         }
 
         Objects = objects;
@@ -66,7 +68,7 @@ public sealed class Room
 
         int boxes = span[21];
         BoxOffset = boxes;
-        WalkBoxes = boxes == 0 ? WalkBoxes.Empty : WalkBoxes.Parse(span[boxes..]);
+        WalkBoxes = boxes == 0 ? WalkBoxes.Empty : version == 0 ? WalkBoxes.ParseV0(span[boxes..]) : WalkBoxes.Parse(span[boxes..]);
 
         // ScummVM sizes these scripts the same way: the exit script runs up to the entry script,
         // and the entry script to the end of the room
@@ -83,7 +85,7 @@ public sealed class Room
 
     public int EntryScriptOffset { get; }
 
-    /// <summary>Where the walkboxes start in the room: their count, the boxes, then the matrix. 0 for none.</summary>
+    /// <summary>Where the walkboxes start in the room: their count, the boxes, then the matrix (version 0: the boxes up to 0xFF, then their neighbours). 0 for none.</summary>
     public int BoxOffset { get; }
 
     public int Number { get; }
@@ -99,7 +101,7 @@ public sealed class Room
     /// <summary>Height in pixels.</summary>
     public int Height { get; }
 
-    /// <summary>Version 2: offset of the background picture and its mask (<c>_IM00_offs</c>). Version 1 keeps its graphics elsewhere and leaves this 0.</summary>
+    /// <summary>Version 2: offset of the background picture and its mask (<c>_IM00_offs</c>). Versions 0 and 1 keep their graphics elsewhere and leave this 0.</summary>
     public int ImageOffset { get; }
 
     public IReadOnlyList<RoomObject> Objects { get; }
@@ -121,9 +123,9 @@ public sealed class Room
 
     public static Room Parse(int number, int version, ReadOnlyMemory<byte> data)
     {
-        if (version is < 1 or > 2)
+        if (version is < 0 or > 2)
         {
-            throw new ArgumentOutOfRangeException(nameof(version), version, "Only the version 1 and 2 room format is supported.");
+            throw new ArgumentOutOfRangeException(nameof(version), version, "Only the room formats of versions 0 to 2 are supported.");
         }
 
         return new Room(number, version, data);

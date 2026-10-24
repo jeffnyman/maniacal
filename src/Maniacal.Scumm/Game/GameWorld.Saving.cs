@@ -574,7 +574,7 @@ public sealed partial class GameWorld
                 }
 
                 _inventory[index] = resource.Number;
-                _carried[resource.Number] = RoomObject.Parse(resource.Data, 0, 0);
+                _carried[resource.Number] = RoomObject.Parse(resource.Data, 0, 0, Version);
             }
             else if (type == ScummState.TypeObjectName && resource.Number != 0)
             {

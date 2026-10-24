@@ -298,7 +298,7 @@ internal static class Program
             }
             else
             {
-                PngWriter.Write(file, image.Pixels, Palettes.Ega, zoom, zoom);
+                PngWriter.Write(file, image.Pixels, Palettes.ForVersion(room.Version), zoom, zoom);
             }
 
             Console.WriteLine($"Room {number}: {room.Width}x{room.Height}, {room.Objects.Count} objects, written to {path}");
@@ -468,7 +468,7 @@ internal static class Program
             using var file = File.Create(screenshot);
             var screen = world.Screen();
             world.DrawCursor(screen);
-            PngWriter.Write(file, screen, Palettes.Ega, zoom, zoom);
+            PngWriter.Write(file, screen, Palettes.ForVersion(world.Version), zoom, zoom);
             Console.WriteLine($"Screen written to {screenshot}");
         }
 
@@ -662,7 +662,7 @@ internal static class Program
 
             var screen = RoomView.Screen(image, ScreenLayout.ForVersion(room.Version));
             using var file = File.Create(path);
-            PngWriter.Write(file, screen, Palettes.Ega, zoom, zoom);
+            PngWriter.Write(file, screen, Palettes.ForVersion(room.Version), zoom, zoom);
             Console.WriteLine($"Room {number}: camera at {camera.X}, view from x {camera.Left}, written to {path}");
             return 0;
         }

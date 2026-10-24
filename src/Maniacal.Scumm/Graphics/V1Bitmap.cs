@@ -5,7 +5,7 @@ using Maniacal.Scumm.Rooms;
 namespace Maniacal.Scumm.Graphics;
 
 /// <summary>
-/// The picture format of version 1 rooms and objects, kept from the C64 original: pictures are
+/// The picture format of version 0 and 1 rooms and objects, the C64 original's: pictures are
 /// grids of 8x8 tiles from the room's own character set, drawn in C64 multicolour mode. Mirrors
 /// ScummVM's <c>GdiV1::roomChanged</c>, <c>decodeV1Gfx</c>, <c>drawStripV1Background</c>,
 /// <c>drawStripV1Object</c> and <c>drawStripV1Mask</c>.
@@ -17,7 +17,8 @@ namespace Maniacal.Scumm.Graphics;
 /// that is 8 more than the data).</para>
 /// <para>Each tile row is a byte of four 2-bit pixels, each drawn 2 pixels wide. Values 0 to 2 pick
 /// the room's first three colours and 3 the cell's own colour from the colour map. Colours are C64
-/// colour numbers, shown through <see cref="Palettes.ManiacV1ToEga"/>.</para>
+/// colour numbers, which version 1 shows through <see cref="Palettes.ManiacV1ToEga"/> and the C64
+/// keeps (<see cref="Palettes.RoomColorMap"/>).</para>
 /// <para>An object image is one compressed layer holding three maps of the object's size, row by
 /// row: tiles, cell colours and mask tiles, drawn with the room's character sets.</para>
 /// </remarks>
@@ -34,22 +35,31 @@ public sealed class V1Bitmap
     private readonly byte[] _maskChars;
     private readonly int _columns;
     private readonly int _rows;
+    private readonly byte[] _colorMap;
 
     private V1Bitmap(Room room)
     {
+        _colorMap = Palettes.RoomColorMap(room.Version).ToArray();
         var data = room.Data.Span;
         _columns = data[4];
         _rows = data[5];
         int cells = _columns * _rows;
         data.Slice(6, 4).CopyTo(_colors);
 
-        _charset = DecodeLayer(data, Word(data, 10), CharsetSize, out _);
-        _tiles = DecodeLayer(data, Word(data, 12), cells, out _);
-        _cellColors = DecodeLayer(data, Word(data, 14), cells, out _);
-        _maskTiles = DecodeLayer(data, Word(data, 16), cells, out _);
+        _charset = DecodeLayer(data, Word(data, 10), CharsetSize, out int charsetEnd);
+        _tiles = DecodeLayer(data, Word(data, 12), cells, out int tilesEnd);
+        _cellColors = DecodeLayer(data, Word(data, 14), cells, out int colorsEnd);
+        _maskTiles = DecodeLayer(data, Word(data, 16), cells, out int maskTilesEnd);
+
+        // the mask characters' length word is 8 more than their data (bug #3458). ScummVM decodes
+        // the data; the C64 decodes the whole length, its last tile from the bytes that follow
         int maskOffset = Word(data, 18);
-        _maskChars = DecodeLayer(data, maskOffset + 2, Word(data, maskOffset) - 8, out int end);
-        GraphicsEnd = end;
+        int maskLength = Word(data, maskOffset);
+        DecodeLayer(data, maskOffset + 2, maskLength - 8, out int maskCharsEnd);
+        _maskChars = room.Version == 0 ? DecodeLayer(data, maskOffset + 2, maskLength, out _) : DecodeLayer(data, maskOffset + 2, maskLength - 8, out _);
+
+        // the layers end where the last of them does: the mask characters in version 1, the mask map on the C64
+        GraphicsEnd = Math.Max(Math.Max(charsetEnd, tilesEnd), Math.Max(Math.Max(colorsEnd, maskTilesEnd), maskCharsEnd));
     }
 
     /// <summary>The offset just past the room's graphics, where its object images begin.</summary>
@@ -58,9 +68,9 @@ public sealed class V1Bitmap
     /// <summary>Decodes a room's character sets and maps, which its background and objects are drawn from.</summary>
     public static V1Bitmap ForRoom(Room room)
     {
-        if (room.Version != 1)
+        if (room.Version > 1)
         {
-            throw new ArgumentException($"Room {room.Number} is version {room.Version}, not 1.", nameof(room));
+            throw new ArgumentException($"Room {room.Number} is version {room.Version}, not 0 or 1.", nameof(room));
         }
 
         return new V1Bitmap(room);
@@ -158,7 +168,7 @@ public sealed class V1Bitmap
             throw new InvalidDataException($"Mask tile {maskTile} is past the room's {_maskChars.Length / TileSize} mask tiles.");
         }
 
-        var colorMap = Palettes.ManiacV1ToEga;
+        var colorMap = _colorMap;
         _colors[3] = (byte)(cellColor & 7);
         int x = column * TileSize;
         for (int line = 0; line < TileSize; line++)

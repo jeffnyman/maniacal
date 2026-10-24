@@ -7,6 +7,7 @@ namespace Maniacal.Scumm.Tests;
 public class RoomRendererTests
 {
     private const string V1Folder = "maniac_mansion_original_DOS.com";
+    private const string C64Folder = "maniac_mansion_c64";
     private const string V2Folder = "maniac_mansion_enhanced_DOS.com";
 
     [Fact]
@@ -157,6 +158,51 @@ public class RoomRendererTests
     }
 
     /// <summary>
+    /// The C64's rooms are drawn as version 1's are, in the C64's own colour numbers. Their layers
+    /// are in another order, the mask map last, and end where the object images begin, or where
+    /// the object code does in a room without images.
+    /// </summary>
+    [Fact]
+    public void Every_c64_room_decodes_up_to_what_follows_its_picture()
+    {
+        if (Open(C64Folder) is not { } loader)
+        {
+            return;
+        }
+
+        for (int number = 1; number <= 52; number++)
+        {
+            var room = loader.LoadRoom(number)!;
+            var image = RoomRenderer.DrawBackground(room);
+
+            Assert.Equal(room.Width, image.Pixels.Width);
+            Assert.Equal(room.Height, image.Pixels.Height);
+            Assert.All(image.Pixels.Pixels, pixel => Assert.InRange(pixel, 0, 15));
+
+            var images = room.Objects.Where(o => o.ImageOffset > 0).Select(o => o.ImageOffset).ToList();
+            int next = images.Count > 0 ? images.Min()
+                : room.Objects.Count > 0 ? room.Objects.Min(o => o.CodeOffset)
+                : room.EntryScriptOffset;
+            Assert.True(V1Bitmap.ForRoom(room).GraphicsEnd == next, $"room {number}: graphics end at {V1Bitmap.ForRoom(room).GraphicsEnd}, next part at {next}");
+        }
+    }
+
+    [Fact]
+    public void C64_front_of_the_mansion_picture_is_stable()
+    {
+        if (Open(C64Folder) is not { } loader)
+        {
+            return;
+        }
+
+        var image = RoomRenderer.DrawBackground(loader.LoadRoom(1)!);
+
+        // pinned after checking the picture by eye
+        Assert.Equal(C64PixelsMd5, Md5.ComputeHex(image.Pixels.Pixels));
+        Assert.Equal(C64MaskMd5, Md5.ComputeHex(image.Mask.Pixels));
+    }
+
+    /// <summary>
     /// At the start of the game the package (not delivered yet) and the three tombstones (no kid
     /// has died) are in state 8: their images, empty ground, are drawn over the background, which
     /// shows them. The script run when a kid dies clears state 8 to reveal a tombstone.
@@ -203,10 +249,11 @@ public class RoomRendererTests
         Assert.True(KeyVisible(8));
     }
 
-    /// <summary>Every image that clearly belongs to its object decodes, in both releases.</summary>
+    /// <summary>Every image that clearly belongs to its object decodes, in every release.</summary>
     [Theory]
     [InlineData(V1Folder, 52, 246)]
     [InlineData(V2Folder, 53, 258)]
+    [InlineData(C64Folder, 52, 250)]
     public void Every_owned_object_image_decodes(string folder, int lastRoom, int expected)
     {
         if (Open(folder) is not { } loader)
@@ -234,6 +281,8 @@ public class RoomRendererTests
     private const string MaskMd5 = "8ce08ed6bde1b4bde0e7d4286c33239e";
     private const string V1PixelsMd5 = "abf8a1ba6c3162137c3286a7bec29c72";
     private const string V1MaskMd5 = "5bfbbed378058da55624a4e8deb5c540";
+    private const string C64PixelsMd5 = "30da2356714337ce172f50c8709f69d4";
+    private const string C64MaskMd5 = "388ff7a9cf4e55e8e8430737f46ac501";
 
     private static ResourceLoader? Open(string folder)
         => GameFolders.Find(folder) is { } path ? ResourceLoader.Open(new DirectoryGameContainer(path)) : null;

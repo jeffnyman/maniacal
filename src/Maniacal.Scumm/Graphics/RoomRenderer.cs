@@ -4,7 +4,8 @@ using Maniacal.Scumm.Rooms;
 namespace Maniacal.Scumm.Graphics;
 
 /// <summary>
-/// Draws rooms and their objects. Both versions give EGA colour numbers, for <see cref="Palettes.Ega"/>.
+/// Draws rooms and their objects, in the colour numbers of <see cref="Palettes.ForVersion"/>: the
+/// C64's for version 0, EGA for versions 1 and 2.
 /// </summary>
 public static class RoomRenderer
 {
@@ -13,7 +14,7 @@ public static class RoomRenderer
 
     public static MaskedImage DrawBackground(Room room) => room.Version switch
     {
-        1 => V1Bitmap.ForRoom(room).DrawBackground(),
+        0 or 1 => V1Bitmap.ForRoom(room).DrawBackground(),
         _ => DecodeV2(room, room.ImageOffset, room.Width, room.Height),
     };
 
@@ -43,7 +44,7 @@ public static class RoomRenderer
             return null;
         }
 
-        return room.Version == 1
+        return room.Version <= 1
             ? (v1 ?? V1Bitmap.ForRoom(room)).DrawObject(room.Data.Span, obj.ImageOffset, obj.Width, obj.Height)
             : DecodeV2(room, obj.ImageOffset, obj.Width, obj.Height);
     }
@@ -59,7 +60,7 @@ public static class RoomRenderer
     public static MaskedImage Render(Room room, Func<int, int> stateOf, Func<RoomObject, (int X, int Y)>? positionOf = null)
     {
         var image = DrawBackground(room);
-        var v1 = room.Version == 1 ? V1Bitmap.ForRoom(room) : null;
+        var v1 = room.Version <= 1 ? V1Bitmap.ForRoom(room) : null;
 
         foreach (var obj in VisibleObjects(room, stateOf))
         {
@@ -93,7 +94,7 @@ public static class RoomRenderer
     public static MaskedImage RenderAll(Room room)
     {
         var image = DrawBackground(room);
-        var v1 = room.Version == 1 ? V1Bitmap.ForRoom(room) : null;
+        var v1 = room.Version <= 1 ? V1Bitmap.ForRoom(room) : null;
         for (int i = room.Objects.Count - 1; i >= 0; i--)
         {
             if (OwnsImage(room, room.Objects[i]) && DrawObject(room, room.Objects[i], v1) is { } objectImage)

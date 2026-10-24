@@ -210,8 +210,22 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   index, as `openDiskImage` does: the copy here is ScummVM's English C64 row. Checked: every room
   file is an exact chain of sized resources, and the index entries that point at real resources
   are counted and pinned, as for DOS.
-- Next: rooms (`room.cpp`, `object.cpp` and `boxes.cpp`, version 0 branches) and their pictures
-  with the C64 palette (`GdiV1` for the C64).
+- Done: rooms. The header is version 1's; objects (`ScummEngine_v0::resetRoomObject`) have their
+  fields a byte earlier, the name's offset at 13 and the verbs from 14, a type in the number's high
+  byte (0 for objects with an owner and state, 1 for those that are part of the room), and an
+  image offset equal to the first code block's when they have none (`resetRoomObjects`). The
+  walkboxes are rectangles up to an 0xFF, corner boxes narrowing their top as
+  `getBoxCoordinates` has it, followed by each box's neighbours rather than a matrix
+  (`getBoxConnectionBase`, `getNextBox`; the C64's own search is `walkboxes/walkbox_dfs.asm`).
+- Done: pictures. `GdiV1` draws them, in the C64's own colour numbers and ScummVM's C64 palette
+  (`tableC64Palette` and the rows of `setV1ColorTable`, generated with the EGA palette by
+  `tools/port_palettes.py`). The layers come in another order, the mask map last. The mask
+  characters' length word is 8 more than their data, as in version 1; the C64 decodes the whole
+  length (`read_room_graphics` in `resources/room_loader.asm`), and its last tile is used, so
+  Maniacal does too where ScummVM stops 8 bytes short. Checked: every room's picture ends where
+  what follows it begins, the 250 object images that are their objects' own decode, and the front
+  of the mansion and the hall look right by eye (no C64 screenshot to compare against yet).
+- Next: the V0 scripts (`script_v0.cpp`), then actors, costumes and walking.
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).

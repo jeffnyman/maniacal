@@ -6,40 +6,45 @@ namespace Maniacal.Scumm.Rooms;
 public readonly record struct VerbEntry(byte Verb, int Offset);
 
 /// <summary>
-/// An object as its room defines it: the object code block (OBCD) of versions 1 and 2. Positions
-/// and sizes are in pixels, as ScummVM's <c>ObjectData</c> keeps them. Mirrors
-/// <c>ScummEngine_v4::resetRoomObject</c> with its <c>GF_OLD_BUNDLE</c> and <c>version &lt;= 2</c>
-/// branches.
+/// An object as its room defines it: the object code block (OBCD). Positions and sizes are in
+/// pixels, as ScummVM's <c>ObjectData</c> keeps them. Mirrors <c>ScummEngine_v4::resetRoomObject</c>
+/// with its <c>GF_OLD_BUNDLE</c> and <c>version &lt;= 2</c> branches, and
+/// <c>ScummEngine_v0::resetRoomObject</c>.
 /// </summary>
 /// <remarks>
-/// The code block starts with its size word. Byte 4 holds the object number, bytes 7 to 13 the
-/// geometry, byte 14 the offset of the name and byte 15 the start of the verb table: pairs of verb
-/// and offset, ended by a 0 verb.
+/// The code block starts with its size word. Bytes 4 and 5 hold the object number, bytes 7 to 13
+/// the geometry, byte 14 the offset of the name and byte 15 the start of the verb table: pairs of
+/// verb and offset, ended by a 0 verb. Version 0 has no byte 6, so the geometry is at 6 to 12, the
+/// name's offset at 13 and the verbs from 14; its number's high byte is the object's type
+/// (<c>OBJECT_V0</c>): 0 for one with an owner and state, 1 for one that is part of the room.
 /// </remarks>
 public sealed class RoomObject
 {
     /// <summary>The verb-table entry that matches any verb. Mirrors <c>kFallbackEntry</c> in <c>getVerbEntrypoint</c>.</summary>
     public const byte FallbackVerb = 0xFF;
 
-    private RoomObject(ReadOnlyMemory<byte> code, int imageOffset, int codeOffset)
+    private RoomObject(ReadOnlyMemory<byte> code, int imageOffset, int codeOffset, int version)
     {
         var block = code.Span;
         Code = code;
         ImageOffset = imageOffset;
         CodeOffset = codeOffset;
         Number = block[4] | (block[5] << 8);
-        X = block[7] * 8;
-        Y = (block[8] & 0x7F) * 8;
-        ParentState = (block[8] & 0x80) != 0 ? 8 : 0;
-        Width = block[9] * 8;
-        Parent = block[10];
-        WalkX = block[11] * 8;
-        WalkY = (block[12] & 0x1F) * 8;
-        Preposition = block[12] >> 5;
-        ActorDir = block[13] & 0x07;
-        Height = block[13] & 0xF8;
-        Name = ReadName(block, block[14]);
-        Verbs = ReadVerbs(block);
+
+        // version 0 has everything after the number a byte earlier
+        int at = version == 0 ? 6 : 7;
+        X = block[at] * 8;
+        Y = (block[at + 1] & 0x7F) * 8;
+        ParentState = (block[at + 1] & 0x80) != 0 ? 8 : 0;
+        Width = block[at + 2] * 8;
+        Parent = block[at + 3];
+        WalkX = block[at + 4] * 8;
+        WalkY = (block[at + 5] & 0x1F) * 8;
+        Preposition = block[at + 5] >> 5;
+        ActorDir = block[at + 6] & 0x07;
+        Height = block[at + 6] & 0xF8;
+        Name = ReadName(block, block[at + 7]);
+        Verbs = ReadVerbs(block, at + 8);
     }
 
     /// <summary>The global object number.</summary>
@@ -72,10 +77,10 @@ public sealed class RoomObject
 
     public int WalkY { get; }
 
-    /// <summary>The preposition "Use" takes with this object. Mirrors <c>o2_getObjPreposition</c>.</summary>
+    /// <summary>The preposition "Use" takes with this object. Mirrors <c>o2_getObjPreposition</c> and <c>ScummEngine_v0::getVerbPrepId</c>.</summary>
     public int Preposition { get; }
 
-    /// <summary>The direction the actor faces to use the object (the low 3 bits of byte 13).</summary>
+    /// <summary>The direction the actor faces to use the object (the low 3 bits of byte 13, 12 in version 0).</summary>
     public int ActorDir { get; }
 
     public string Name { get; }
@@ -84,7 +89,7 @@ public sealed class RoomObject
 
     /// <summary>
     /// The offset of the script that handles a verb, or null when the object has none. The fallback
-    /// entry matches any verb. Mirrors the version 1 and 2 branch of <c>getVerbEntrypoint</c>.
+    /// entry matches any verb. Mirrors the version 0 to 2 branches of <c>getVerbEntrypoint</c>.
     /// </summary>
     public int? FindVerb(byte verb)
     {
@@ -99,21 +104,23 @@ public sealed class RoomObject
         return null;
     }
 
-    internal static RoomObject Parse(ReadOnlyMemory<byte> room, int imageOffset, int codeOffset)
+    internal static RoomObject Parse(ReadOnlyMemory<byte> room, int imageOffset, int codeOffset, int version = 2)
     {
+        // the header up to the verb table, and the 0 that ends it
         var span = room.Span;
-        if (codeOffset + 16 > span.Length)
+        int smallest = version == 0 ? 15 : 16;
+        if (codeOffset + smallest > span.Length)
         {
             throw new InvalidDataException($"Object code block at {codeOffset} is past the end of the room ({span.Length} bytes).");
         }
 
         int size = span[codeOffset] | (span[codeOffset + 1] << 8);
-        if (size < 16 || codeOffset + size > span.Length)
+        if (size < smallest || codeOffset + size > span.Length)
         {
             throw new InvalidDataException($"Object code block at {codeOffset} has a bad size {size}.");
         }
 
-        return new RoomObject(room.Slice(codeOffset, size), imageOffset, codeOffset);
+        return new RoomObject(room.Slice(codeOffset, size), imageOffset, codeOffset, version);
     }
 
     private static string ReadName(ReadOnlySpan<byte> block, int offset)
@@ -128,10 +135,10 @@ public sealed class RoomObject
         return Encoding.Latin1.GetString(name);
     }
 
-    private static VerbEntry[] ReadVerbs(ReadOnlySpan<byte> block)
+    private static VerbEntry[] ReadVerbs(ReadOnlySpan<byte> block, int start)
     {
         var verbs = new List<VerbEntry>();
-        for (int i = 15; i + 1 < block.Length && block[i] != 0; i += 2)
+        for (int i = start; i + 1 < block.Length && block[i] != 0; i += 2)
         {
             verbs.Add(new VerbEntry(block[i], block[i + 1]));
         }
