@@ -214,6 +214,7 @@ public class IntroTests
         world.Engine.WriteVar(110, 1);
 
         var rooms = new List<int>();
+        var messages = new HashSet<string>();
         bool meteorLanded = false;
         for (int step = 0; step < 1500 && !(rooms.Count > 0 && rooms[^1] == 44); step++)
         {
@@ -222,6 +223,11 @@ public class IntroTests
             if (rooms.Count == 0 || rooms[^1] != room)
             {
                 rooms.Add(room);
+            }
+
+            if (world.Messages.HaveMessage != 0)
+            {
+                messages.Add(world.Messages.Plain());
             }
 
             var meteor = world.Actors[22];
@@ -233,7 +239,8 @@ public class IntroTests
         Assert.Contains(33, rooms);
         Assert.Contains(49, rooms);
         Assert.Equal(44, rooms[^1]);
-        Assert.Contains(world.Unhandled, c => c.Contains("Gilber", StringComparison.Ordinal));
+        Assert.Contains(messages, m => m.Contains("Twenty years ago today", StringComparison.Ordinal));
+        Assert.Contains(messages, m => m.Contains("Ron Gilbert and David Fox", StringComparison.Ordinal));
         Assert.Equal([1, 2, 3], world.Actors.Where(a => a.InCurrentRoom && a.Visible).Select(a => a.Number));
     }
 }

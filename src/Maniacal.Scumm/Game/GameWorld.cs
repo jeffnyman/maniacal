@@ -60,6 +60,8 @@ public sealed class GameWorld : IScriptHost, IActorWorld
                 Actors[i].TalkColor = V1TalkColors[i];
             }
         }
+
+        Messages = new MessageLine(Font.English(Version), Engine, n => n is > 0 and < ActorCount ? Actors[n] : null, NameOf, _ => string.Empty);
     }
 
     public ScriptEngine Engine { get; }
@@ -73,8 +75,8 @@ public sealed class GameWorld : IScriptHost, IActorWorld
     /// <summary>The room on screen, or null for room 0, no room.</summary>
     public Room? CurrentRoom { get; private set; }
 
-    /// <summary>The colour of text not said by an actor, set by <c>actorOps</c> on actor 0. Mirrors <c>_string[0].color</c>.</summary>
-    public int StringColor { get; private set; } = 15;
+    /// <summary>The message lines above the room.</summary>
+    public MessageLine Messages { get; }
 
     /// <summary>The world instructions with no subsystem yet, as the scripts ran them.</summary>
     public IReadOnlyList<string> Unhandled => _recorder.Calls;
@@ -132,11 +134,16 @@ public sealed class GameWorld : IScriptHost, IActorWorld
     /// </summary>
     public void Step()
     {
-        Engine.DecreaseScriptDelay(Math.Max(1, Engine.Variables[ScriptEngine.VarTimerNext]));
+        // scummLoop: the step's ticks, at most 15, count the script delays and the message down;
+        // then the message moves on (displayDialog, which versions up to 3 run before input)
+        int ticks = Math.Clamp(Engine.Variables[ScriptEngine.VarTimerNext], 1, 15);
+        Engine.DecreaseScriptDelay(ticks);
+        Messages.CountDown(ticks);
+        Messages.Display();
 
-        // scummLoop_updateScummVars: the camera's column, and whether a message shows (none yet)
+        // scummLoop_updateScummVars: the camera's column, and whether a message shows
         Engine.Variables[VarCameraPosX] = Camera.X >> 3;
-        Engine.Variables[ScriptEngine.VarHaveMessage] = 0;
+        Engine.Variables[ScriptEngine.VarHaveMessage] = Messages.HaveMessage;
 
         Engine.RunAllScripts();
         foreach (var actor in ActorsInRoom())
@@ -213,7 +220,24 @@ public sealed class GameWorld : IScriptHost, IActorWorld
                 return 0;
 
             case "o2_putActor":
-                ActorOf(arguments[0]).Put(arguments[1], arguments[2]);
+                PutActor(ActorOf(arguments[0]), arguments[1], arguments[2]);
+                return 0;
+
+            // o5_print: the first operand is the actor saying it, or 255 for nobody; o5_printEgo: the kid says it
+            case "o5_print":
+                Messages.Talk(arguments[0], MessageLine.Decode(instruction.Operands[1].Text));
+                return 0;
+            case "o5_printEgo":
+                Messages.Talk(engine.Variables[ScriptEngine.VarEgo], MessageLine.Decode(instruction.Operands[0].Text));
+                return 0;
+
+            // o2_waitForMessage: the script waits here while a message shows
+            case "o2_waitForMessage":
+                if (engine.Variables[ScriptEngine.VarHaveMessage] != 0)
+                {
+                    engine.Repeat();
+                }
+
                 return 0;
 
             // o2_putActorInRoom: only the room changes, unless it is room 0, which puts the actor nowhere
@@ -228,7 +252,7 @@ public sealed class GameWorld : IScriptHost, IActorWorld
                             actor.SetDirection(180);
                         }
 
-                        actor.Put(0, 0, 0);
+                        PutActor(actor, 0, 0, 0);
                     }
 
                     return 0;
@@ -245,7 +269,7 @@ public sealed class GameWorld : IScriptHost, IActorWorld
                         (x, y) = (point.X, point.Y);
                     }
 
-                    actor.Put(x, y);
+                    PutActor(actor, x, y);
                     return 0;
                 }
 
@@ -381,6 +405,7 @@ public sealed class GameWorld : IScriptHost, IActorWorld
     /// </summary>
     public void StartScene(int number)
     {
+        Messages.Stop();
         Engine.LeaveRoomScript();
         if (CurrentRoom is { } old)
         {
@@ -529,7 +554,13 @@ public sealed class GameWorld : IScriptHost, IActorWorld
         var layout = ScreenLayout.ForVersion(Version);
         if (CurrentRoom is not { } room)
         {
-            return new Surface8(ScreenLayout.Width, ScreenLayout.Height);
+            var blank = new Surface8(ScreenLayout.Width, ScreenLayout.Height);
+            for (int y = 0; y < MessageLine.Height; y++)
+            {
+                Messages.Text.Row(y).CopyTo(blank.Row(y));
+            }
+
+            return blank;
         }
 
         var view = RoomView.Window(RoomRenderer.Render(room, Engine.GetState), Camera);
@@ -544,7 +575,35 @@ public sealed class GameWorld : IScriptHost, IActorWorld
             RoomView.DrawActor(view, Version, Camera, new ActorDrawing(frame, actor.X, actor.Y, actor.Facing == 270, behind, actor.Elevation));
         }
 
-        return RoomView.Screen(view, layout);
+        var screen = RoomView.Screen(view, layout);
+        for (int y = 0; y < MessageLine.Height && y < layout.RoomTop; y++)
+        {
+            Messages.Text.Row(y).CopyTo(screen.Row(y));
+        }
+
+        return screen;
+    }
+
+    /// <summary>Puts an actor, stopping its speech when it leaves the current room. Mirrors the start of <c>putActor</c>.</summary>
+    private void PutActor(Actor actor, int x, int y, int? room = null)
+    {
+        if (actor.Visible && room is { } newRoom && newRoom != (CurrentRoom?.Number ?? 0) && Messages.TalkingActor == actor.Number)
+        {
+            Messages.Stop();
+        }
+
+        actor.Put(x, y, room);
+    }
+
+    /// <summary>The name of an actor or of an object in the current room. Mirrors <c>getObjOrActorName</c>, without renamed or carried objects yet.</summary>
+    public string NameOf(int number)
+    {
+        if (number is > 0 and < ActorCount)
+        {
+            return Actors[number].Name;
+        }
+
+        return CurrentRoom?.FindObject(number)?.Name ?? string.Empty;
     }
 
     private void ActorOps(IReadOnlyList<int> arguments, Instruction instruction)
@@ -552,7 +611,7 @@ public sealed class GameWorld : IScriptHost, IActorWorld
         int sub = arguments[2];
         if (arguments[0] == 0 && sub == 5)
         {
-            StringColor = arguments[1];
+            Messages.StringColor = arguments[1];
             return;
         }
 

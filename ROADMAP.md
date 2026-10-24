@@ -124,8 +124,13 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   face, wait and distance instructions; `drawObject` without moving; and the per-step engine
   variables of `scummLoop_updateScummVars` (the camera column). The intro plays through in both
   releases, from the meteor to the kids on the driveway.
+- Done: text (`MessageLine`): `decodeParseString`, `convertMessageToString` (numbers, verb and
+  object names, text in variables), `actorTalk`, `displayDialog` with its wrap, new-line, wait and
+  keep escapes, the talk delay of 60 ticks and 6 a character, `stopTalk` and the talk frames;
+  `print`, `printEgo` and `waitForMessage`; and the main loop's tick count and message variable.
+  The intro's text and the kids' first lines show on the message line in both releases.
 - Next: verbs, the sentence and input, so the game can be played: the verb area, the inventory,
-  clicking (`checkExecVerbs`, the sentence script), and the text of `print` with the message line.
+  the sentence line, and clicking (`checkExecVerbs`, the sentence script).
 - Then: objects (`drawObject` positions, pick up), `getClosestObjActor` and `actorFromPos`, sound,
   and dark rooms.
 - `script.cpp`: script slots, `runScript`, `runObjectScript`, `runEntryScript`/`runExitScript`,

@@ -42,8 +42,8 @@ public class GameWorldTests
 
     /// <summary>Pinned after checking the screens by eye: the title, START and the seven kids, after 60 steps with seed 1.</summary>
     [Theory]
-    [InlineData(V1Folder, "21eb3e754d23cd738783c0d2e40a04a4")]
-    [InlineData(V2Folder, "a7588ef2fdfe8fb44fb02ff190564522")]
+    [InlineData(V1Folder, "09c1f7ddfc8ee22b22a3126cebd04151")]
+    [InlineData(V2Folder, "94c5b94df4c443508a7ad9c8ad5bacbd")]
     public void The_title_screen_is_stable(string folder, string md5)
     {
         if (Open(folder) is not { } world)
