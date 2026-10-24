@@ -6,6 +6,7 @@ using Maniacal.Scumm;
 using Maniacal.Scumm.Costumes;
 using Maniacal.Scumm.Graphics;
 using Maniacal.Scumm.Resources;
+using Maniacal.Scumm.View;
 
 namespace Maniacal.Player;
 
@@ -22,6 +23,9 @@ internal static class Program
         int? costume = null;
         int zoom = 1;
         bool font = false;
+        int? view = null;
+        int? cameraX = null;
+        var actors = new List<(int Costume, int X, int Y, int Direction)>();
         string? text = null;
         bool mask = false;
         string objects = "initial";
@@ -52,6 +56,18 @@ internal static class Program
                     i++;
                     break;
                 case "--zoom" when i + 1 < args.Length && int.TryParse(args[i + 1], out zoom) && zoom is >= 1 and <= 8:
+                    i++;
+                    break;
+                case "--view" when i + 1 < args.Length && int.TryParse(args[i + 1], out int viewRoom):
+                    view = viewRoom;
+                    i++;
+                    break;
+                case "--camera" when i + 1 < args.Length && int.TryParse(args[i + 1], out int cx):
+                    cameraX = cx;
+                    i++;
+                    break;
+                case "--actor" when i + 1 < args.Length && ParseActor(args[i + 1]) is { } actor:
+                    actors.Add(actor);
                     i++;
                     break;
                 case "--font":
@@ -101,6 +117,11 @@ internal static class Program
         if (listOnly)
         {
             return 0;
+        }
+
+        if (view is { } viewNumber)
+        {
+            return WriteView(container, viewNumber, cameraX, actors, zoom, output ?? $"view-{viewNumber:D2}.png");
         }
 
         if (font || text is not null)
@@ -235,6 +256,79 @@ internal static class Program
         }
     }
 
+    /// <summary>Parses "costume,x,y" or "costume,x,y,direction", the position in actor units and the direction left, right, front or back.</summary>
+    private static (int Costume, int X, int Y, int Direction)? ParseActor(string value)
+    {
+        var parts = value.Split(',');
+        if (parts.Length is < 3 or > 4 || !int.TryParse(parts[0], out int costume)
+            || !int.TryParse(parts[1], out int x) || !int.TryParse(parts[2], out int y))
+        {
+            return null;
+        }
+
+        int direction = parts.Length == 3 ? CostumeRenderer.Front : parts[3] switch
+        {
+            "left" => CostumeRenderer.Left,
+            "right" => CostumeRenderer.Right,
+            "front" => CostumeRenderer.Front,
+            "back" => CostumeRenderer.Back,
+            _ => -1,
+        };
+
+        return direction < 0 ? null : (costume, x, y, direction);
+    }
+
+    /// <summary>
+    /// Writes the 320x200 screen with a room as the game starts it, the camera at the given centre
+    /// (or the room's left edge), and standing actors. Version 1 colours are those of the actor with
+    /// the costume's number. An actor goes behind the room mask when the walkbox under it says so.
+    /// </summary>
+    private static int WriteView(IGameContainer container, int number, int? cameraX, List<(int Costume, int X, int Y, int Direction)> actors, int zoom, string path)
+    {
+        try
+        {
+            var loader = ResourceLoader.Open(container);
+            if (loader.LoadRoom(number) is not { } room)
+            {
+                Console.Error.WriteLine($"There is no room {number}");
+                return 1;
+            }
+
+            var states = loader.Index.ObjectStates;
+            var camera = new Camera();
+            camera.SetRoom(room.Width);
+            camera.SetAtEx(cameraX ?? 0);
+            camera.Move();
+
+            var image = RoomView.Window(RoomRenderer.Render(room, n => n < states.Count ? states[n] : 0), camera);
+            foreach (var (costumeNumber, x, y, direction) in actors.OrderBy(a => a.Y))
+            {
+                if (loader.LoadCostume(costumeNumber) is not { } costume)
+                {
+                    Console.Error.WriteLine($"There is no costume {costumeNumber}");
+                    return 1;
+                }
+
+                var frame = CostumeRenderer.DrawFrame(costume, direction, [CostumeRenderer.InitFrame, CostumeRenderer.StandFrame], costumeNumber);
+                int box = room.WalkBoxes.FindBox(x, y);
+                bool behind = box >= 0 && room.WalkBoxes.Boxes[box].Mask != 0;
+                RoomView.DrawActor(image, room.Version, camera, new ActorDrawing(frame, x, y, direction == CostumeRenderer.Left, behind));
+                Console.WriteLine($"Costume {costumeNumber} at ({x}, {y}): walkbox {box}{(behind ? ", behind the mask" : "")}");
+            }
+
+            var screen = RoomView.Screen(image, ScreenLayout.ForVersion(room.Version));
+            using var file = File.Create(path);
+            PngWriter.Write(file, screen, Palettes.Ega, zoom, zoom);
+            Console.WriteLine($"Room {number}: camera at {camera.X}, view from x {camera.Left}, written to {path}");
+            return 0;
+        }
+        catch (InvalidDataException ex)
+        {
+            Console.Error.WriteLine(ex.Message);
+            return 3;
+        }
+    }
+
     /// <summary>
     /// Writes the release's built-in font as a PNG: all 128 glyphs in a 16 by 8 grid, or the given
     /// text on one line. White on black.
@@ -314,6 +408,7 @@ internal static class Program
         Console.Error.WriteLine("usage: maniacal <game folder> [--list] [--scale N] [--fullscreen] [--verbose]");
         Console.Error.WriteLine("       maniacal <game folder> --room N [--objects none|initial|all] [--mask] [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --costume N [--zoom N] [--output file.png]");
+        Console.Error.WriteLine("       maniacal <game folder> --view N [--camera X] [--actor costume,x,y[,left|right|front|back]]... [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --font | --text \"words\" [--zoom N] [--output file.png]");
     }
 }

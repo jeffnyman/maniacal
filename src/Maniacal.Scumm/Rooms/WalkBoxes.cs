@@ -55,6 +55,33 @@ public sealed class WalkBoxes
         return (sbyte)_matrix[Count + _matrix[from] + to];
     }
 
+    /// <summary>
+    /// The first box containing a point in actor units, or -1. Each box spans its top and bottom
+    /// lines, with left and right edges running straight from the upper to the lower corners. This is
+    /// a plain containment test for placing actors; ScummVM's <c>checkXYInBoxBounds</c> comes with walking.
+    /// </summary>
+    public int FindBox(int x, int y)
+    {
+        for (int i = 0; i < Count; i++)
+        {
+            var box = Boxes[i];
+            if (y < box.UpperY || y > box.LowerY)
+            {
+                continue;
+            }
+
+            int span = box.LowerY - box.UpperY;
+            int left = span == 0 ? Math.Min(box.UpperLeftX, box.LowerLeftX) : box.UpperLeftX + (box.LowerLeftX - box.UpperLeftX) * (y - box.UpperY) / span;
+            int right = span == 0 ? Math.Max(box.UpperRightX, box.LowerRightX) : box.UpperRightX + (box.LowerRightX - box.UpperRightX) * (y - box.UpperY) / span;
+            if (x >= left && x <= right)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
     /// <summary>Reads the box count, the boxes and the matrix that follows them.</summary>
     internal static WalkBoxes Parse(ReadOnlySpan<byte> data)
     {

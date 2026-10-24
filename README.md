@@ -14,8 +14,9 @@ Early. Releases are identified by ScummVM's MD5 table. For both DOS releases the
 (objects, walkboxes), room pictures, object images and costumes are read; scripts and sounds are
 located but not yet interpreted or played.
 There is no interpreter yet: `maniacal <folder>` names the release and stops. `--room N` writes a
-room as a PNG, with its objects as the game starts, `--costume N` a sheet of a costume's figures,
-and `--font` or `--text "words"` the built-in font.
+room as a PNG, with its objects as the game starts, `--view N` the 320x200 screen with the camera
+and standing actors, `--costume N` a sheet of a costume's figures, and `--font` or `--text "words"`
+the built-in font.
 [ROADMAP.md](ROADMAP.md) gives the order of work.
 
 | Release | SCUMM version | Data | State |
@@ -48,6 +49,7 @@ dotnet build Maniacal.slnx
 dotnet test Maniacal.slnx
 dotnet run --project src/Maniacal.Player -- <game folder> [--list] [--scale N] [--fullscreen]
 dotnet run --project src/Maniacal.Player -- <game folder> --room N [--objects none|initial|all] [--mask] [--zoom N] [--output file.png]
+dotnet run --project src/Maniacal.Player -- <game folder> --view N [--camera X] [--actor costume,x,y[,direction]]... [--zoom N]
 dotnet run --project src/Maniacal.Player -- <game folder> --costume N [--zoom N] [--output file.png]
 dotnet run --project src/Maniacal.Player -- <game folder> --font | --text "words" [--zoom N] [--output file.png]
 ```
