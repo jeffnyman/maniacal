@@ -219,6 +219,58 @@ public class SaveGameTests
     }
 
     /// <summary>
+    /// A C64 game saved in the intro, while the camera follows the meteor, loads with the room's
+    /// own camera limits (the C64 has no variables for them), so the camera waits, as in the game
+    /// played on, until the meteor passes its trigger column, then follows it.
+    /// </summary>
+    [Fact]
+    public void A_c64_camera_follows_on_after_a_load()
+    {
+        if (GameFolders.Find(C64Folder) is not { } path)
+        {
+            return;
+        }
+
+        var world = Fresh(path);
+        world.Boot();
+        for (int i = 0; i < 280; i++)
+        {
+            switch (i)
+            {
+                case 100:
+                    world.Click(76, 121);
+                    break;
+                case 150:
+                    world.Click(236, 121);
+                    break;
+                case 200:
+                    world.Click(290, 69);
+                    break;
+            }
+
+            world.Step();
+        }
+
+        var loaded = Fresh(path);
+        loaded.Load(world.Save("the meteor", DateTime.Now));
+        Assert.Equal((160, world.CurrentRoom!.Width - 160), (loaded.Camera.MinX, loaded.Camera.MaxX));
+
+        var played = new List<int>();
+        var reloaded = new List<int>();
+        for (int i = 0; i < 40; i++)
+        {
+            world.Step();
+            loaded.Step();
+            played.Add(world.Camera.X);
+            reloaded.Add(loaded.Camera.X);
+        }
+
+        // the loaded meteor stalls a frame, as ScummVM's does: its unsaved step position starts at 0
+        Assert.Equal(played.Take(25), reloaded.Take(25));
+        Assert.Equal(played[^2], reloaded[^1]);
+    }
+
+    /// <summary>
     /// The C64's save screen (F5, script 2): Save this game, and the save is in the store; in a
     /// fresh game, Load a saved game, and the save screen ends where the kid was when it was saved.
     /// </summary>

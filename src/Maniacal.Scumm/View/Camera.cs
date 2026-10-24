@@ -184,10 +184,16 @@ public sealed class Camera
         s.CameraMovingToActor = MovingToActor ? 1 : 0;
     }
 
-    /// <summary>Takes the camera from a save, in a room of a width. Mirrors the <c>cameraMoved</c> of <c>loadState</c>.</summary>
+    /// <summary>
+    /// Takes the camera from a save, in a room of a width. Mirrors the <c>cameraMoved</c> of
+    /// <c>loadState</c>. The limits are the room's, as entering it sets them; versions that keep
+    /// them in variables read those after.
+    /// </summary>
     internal void LoadFrom(Saves.ScummState s, int roomWidth)
     {
         _roomWidth = roomWidth;
+        MinX = ScreenWidth / 2;
+        MaxX = roomWidth - ScreenWidth / 2;
         X = s.CameraX;
         DestinationX = s.CameraDestX;
         Mode = Enum.IsDefined((CameraMode)s.CameraMode) ? (CameraMode)s.CameraMode : CameraMode.Normal;

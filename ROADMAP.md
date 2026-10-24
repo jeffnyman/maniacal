@@ -327,10 +327,12 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   test); rounded, and added to the next step, as `ScummEngine::go` does. ScummVM's weights were
   "based on trial/error with visual inspection against WinVice", and are the same in 2.7.0.
   Checked: the boot's first step takes 4 ticks more for the title room, steps with nothing drawn
-  take 4, and steps of a kid walking with the camera scrolling take 8. Against ScummVM 2.7.0, from
-  the same save in the intro, both show the same credit at the same time and the music starts
-  within 0.13 s; a closer look was cut short, as ScummVM's window takes the keyboard when it opens
-  (one run was paused by a key press).
+  take 4, and steps of a kid walking with the camera scrolling take 8. Against ScummVM 2.7.0,
+  recorded from the same save in the intro, the two sounds that follow start 2.83 s apart here and
+  2.96 s there, the camera following the meteor between them; both show the same credit at the
+  same time. That comparison found a load bug: the camera took the limits of a fresh world, there
+  being no camera variables on the C64, and was dragged to the room's left edge; a load now gives
+  it the room's own limits, as entering the room does.
 - Next: the C64's remaining differences from ScummVM, if any show in play.
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
