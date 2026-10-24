@@ -127,9 +127,9 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
     /// <summary>
     /// The ticks the next step lasts: <c>VAR_TIMER_NEXT</c>, at least 1, and in version 1 rounded
-    /// up to a multiple of 3; version 0 has no such variable and takes 4. Mirrors the <c>delta</c> of
-    /// <c>ScummEngine::go</c>, but for the ticks ScummVM adds in version 0 for the time the C64 took
-    /// to redraw (<c>DelayCalculateDelta</c>).
+    /// up to a multiple of 3; version 0 has no such variable and takes 4, and as many more as the C64
+    /// took to draw the last step (<c>DelayCalculateDelta</c>). Mirrors the <c>delta</c> of
+    /// <c>ScummEngine::go</c>.
     /// </summary>
     public int StepTicks
     {
@@ -138,7 +138,12 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             const int NoTimerNext = 4;
             int timerNext = Engine.Vars.TimerNext;
             int delta = Math.Max(1, timerNext == EngineVariables.None ? NoTimerNext : Engine.Variables[timerNext]);
-            return Version == 1 ? (delta + 2) / 3 * 3 : delta;
+            return Version switch
+            {
+                0 => delta + _redrawTicks,
+                1 => (delta + 2) / 3 * 3,
+                _ => delta,
+            };
         }
     }
 
@@ -295,7 +300,9 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         Camera.Move(followed is null ? null : () => followed.X * 8);
         if (Version == 0)
         {
+            NoteRoomRedrawV0();
             AnimateActorsV0();
+            _fullRedraw = false;
         }
 
         _frame = Draw();
@@ -312,6 +319,14 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         // scummLoop_handleSound: the sounds asked for go to the player
         Sound.ProcessQueue();
         Sound.Update(Time);
+
+        // the camera's last place (camera._last), and the time the C64 took to draw this step
+        _lastCameraX = Camera.X;
+        if (Version == 0)
+        {
+            _redrawTicks = DelayCalculateDelta();
+        }
+
         _cursorFrame++;
         Steps++;
     }
@@ -383,8 +398,12 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
                 return 0;
 
-            // the object state changes need nothing more: the screen is drawn from the states
-            case "o2_setStateIntrinsicOn" or "o2_setStateIntrinsicOff" or "o2_setStateLocked" or "o2_setStateUnlocked"
+            // the object state changes need nothing more, the screen being drawn from the states, but
+            // an image turned on or off is redrawn (markObjectRectAsDirty)
+            case "o2_setStateIntrinsicOn" or "o2_setStateIntrinsicOff":
+                MarkObjectRectAsDirty(arguments[0]);
+                return 0;
+            case "o2_setStateLocked" or "o2_setStateUnlocked"
                 or "o2_setStateTouchable" or "o2_setStateUntouchable" or "o2_setStatePickupable" or "o2_setStateUnpickupable":
                 return 0;
 
@@ -641,6 +660,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         }
 
         Engine.Variables[ScriptEngine.VarRoom] = number;
+        _fullRedraw = true;
 
         if (number == 0)
         {

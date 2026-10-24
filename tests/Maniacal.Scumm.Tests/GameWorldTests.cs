@@ -71,8 +71,9 @@ public class GameWorldTests
 
         // the C64 has no variables for the mouse in the room: 30 and 31 are the scripts' own
         Assert.Equal((0, 0), (world.Engine.Variables[30], world.Engine.Variables[31]));
-        // 4 ticks a step, of 4 quarter-frames at 240 a second: 60 steps are 4 seconds
-        Assert.Equal(4.0, world.Time.TotalSeconds, 3);
+        // 4 ticks a step, of 4 quarter-frames at 240 a second: 60 steps are 4 seconds, and 4 ticks
+        // more for the C64's drawing of the title room (3.6, rounded; DelayCalculateDelta)
+        Assert.Equal((60 * 4 + 4) * 4 / 240.0, world.Time.TotalSeconds, 3);
     }
 
     /// <summary>
@@ -212,6 +213,50 @@ public class GameWorldTests
         Assert.Equal((3, 64, 0), (dave.X, dave.Y, dave.Facing));
         Assert.StartsWith("WARNING!!", world.Messages.Plain());
         Assert.Empty(world.Unhandled);
+    }
+
+    /// <summary>
+    /// A C64 step lasts 4 ticks and as many more as the C64 took to draw it (<c>DelayCalculateDelta</c>):
+    /// with nothing to redraw, 4; while the camera scrolls with a walking kid, 4 more for the room
+    /// (3.6) and his limbs (0.3), rounded.
+    /// </summary>
+    [Fact]
+    public void C64_steps_take_longer_to_draw_a_scrolling_room()
+    {
+        if (AfterTheC64Intro() is not { } world)
+        {
+            return;
+        }
+
+        void Steps(int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                world.Step();
+            }
+        }
+
+        // the kids stand still in the street
+        Steps(30);
+        Assert.Equal(4, world.StepTicks);
+
+        // into room 1, then left along the drive with the camera following
+        world.Click(4, 100);
+        Steps(250);
+        world.Click(10, 120);
+        var ticks = new List<int>();
+        for (int i = 0; i < 30; i++)
+        {
+            int cameraX = world.Camera.X;
+            world.Step();
+            if (world.Camera.X != cameraX)
+            {
+                ticks.Add(world.StepTicks);
+            }
+        }
+
+        Assert.NotEmpty(ticks);
+        Assert.All(ticks, t => Assert.Equal(8, t));
     }
 
     /// <summary>

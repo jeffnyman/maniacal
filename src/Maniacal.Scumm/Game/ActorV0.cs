@@ -213,19 +213,25 @@ public sealed class ActorV0 : Actor
     public override void AnimateCostume()
     {
         SpeakCheck();
-        if (CostumeV0 is { } costume)
-        {
-            Limbs.Increase(costume);
-        }
+        LimbsMoved = CostumeV0 is { } costume && Limbs.Increase(costume);
     }
 
-    /// <summary>A talking actor's mouth opens and shuts frame by frame. Mirrors the <c>_speaking</c> flip of <c>processActors</c> for version 0.</summary>
-    public void FlipMouth()
+    /// <summary>Whether a limb moved in the last <see cref="AnimateCostume"/>, which the C64 took time to draw.</summary>
+    public bool LimbsMoved { get; private set; }
+
+    /// <summary>
+    /// A talking actor's mouth opens and shuts frame by frame; true when it did, which the C64 took
+    /// time to draw. Mirrors the <c>_speaking</c> flip of <c>processActors</c> for version 0.
+    /// </summary>
+    public bool FlipMouth()
     {
-        if ((Speaking & 1) != 0)
+        if ((Speaking & 1) == 0)
         {
-            Speaking ^= 0xFE;
+            return false;
         }
+
+        Speaking ^= 0xFE;
+        return true;
     }
 
     /// <summary>

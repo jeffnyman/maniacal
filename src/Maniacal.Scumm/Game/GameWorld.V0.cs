@@ -56,6 +56,12 @@ public sealed partial class GameWorld
     private (int Mode, int Room) _beforeV0Cutscene;
 
     private int _walkToObject, _walkToObjectState, _sentenceNestedCount;
+
+    // what the C64 redrew in a step, which ScummVM turns into time (ScummEngine_v0_Delays), the
+    // flags that make it redraw the room, and the extra ticks the next step lasts
+    private int _redrawnObjects, _redrawnObjectStrips, _redrawnMouths, _redrawnLimbs;
+    private bool _screenRedrawn, _fullRedraw, _backgroundNeedsRedraw;
+    private int _lastCameraX, _redrawTicks;
     private bool _redrawSentenceLine;
 
     /// <summary>An object number with its type, as version 0 keeps them (<c>OBJECT_V0</c>).</summary>
@@ -86,6 +92,7 @@ public sealed partial class GameWorld
 
             // o_lights: 2 lights the room, 1 leaves only the flashlight, else all is dark
             case "o_lights":
+                _fullRedraw = true;
                 CurrentLights = arguments[0] switch
                 {
                     2 => LightActorBasePalette | Flashlight.RoomLightsOn | LightActorColors,
@@ -201,8 +208,16 @@ public sealed partial class GameWorld
 
             // o_pickupObject: 0 is the sentence's object (ScummEngine_v0::o_pickupObject)
             case "o_pickupObject":
-                PickUp(arguments[0] != 0 ? arguments[0] : engine.CommandObject);
-                return true;
+                {
+                    int obj = arguments[0] != 0 ? arguments[0] : engine.CommandObject;
+                    if (WhereIs(obj) != 1 && CurrentRoom?.FindObject(obj) is not null)
+                    {
+                        MarkObjectRectAsDirty(obj);
+                    }
+
+                    PickUp(obj);
+                    return true;
+                }
 
             // o_setOwnerOf: 0 is the sentence's object; given to nobody, it leaves the inventory (setOwnerOf)
             case "o_setOwnerOf":
@@ -325,7 +340,9 @@ public sealed partial class GameWorld
     /// </summary>
     private void AfterLoadV0(Saves.ScummState state)
     {
+        // a load redraws the whole screen (_completeScreenRedraw)
         const int SaveMenuStrings = 128;
+        _fullRedraw = true;
         if (CurrentRoom?.Number == SaveRoom)
         {
             Engine.StopScript(SaveMenuStrings);
@@ -345,12 +362,79 @@ public sealed partial class GameWorld
     {
         foreach (var actor in ActorsInRoom().Cast<ActorV0>())
         {
-            actor.FlipMouth();
+            if (actor.FlipMouth())
+            {
+                _redrawnMouths++;
+            }
+
             if ((actor.MiscFlags & ActorV0.MiscFlagHide) == 0 && actor.CostumeNumber != 0)
             {
                 actor.AnimateCostume();
+                if (actor.LimbsMoved)
+                {
+                    _redrawnLimbs++;
+                }
             }
         }
+    }
+
+    /// <summary>
+    /// The room is redrawn when the camera moved or an object's image changed, or after a change of
+    /// room, lights or a load; on the C64 that took time. Mirrors the test of <c>scummLoop_handleDrawing</c>.
+    /// </summary>
+    private void NoteRoomRedrawV0()
+    {
+        if (Camera.X != _lastCameraX || _backgroundNeedsRedraw || _fullRedraw)
+        {
+            _screenRedrawn = true;
+        }
+
+        _backgroundNeedsRedraw = false;
+    }
+
+    /// <summary>
+    /// The ticks the C64 took to draw the step: 7 for each object redrawn and 0.6 for each of its
+    /// strips on screen, 2 for each mouth and 0.3 for each actor whose limbs moved, 3.6 when the
+    /// room was redrawn; rounded, and the counts start again. ScummVM's weights, "based on trial/error
+    /// with visual inspection against WinVice". Mirrors <c>DelayCalculateDelta</c> and <c>DelayReset</c>.
+    /// </summary>
+    private int DelayCalculateDelta()
+    {
+        float time = 0;
+        time += _redrawnObjects * 7;
+        time += _redrawnObjectStrips * 0.6f;
+        time += _redrawnMouths * 2.0f;
+        time += _redrawnLimbs * 0.3f;
+        if (_screenRedrawn)
+        {
+            time += 3.6f;
+        }
+
+        _redrawnObjects = _redrawnObjectStrips = _redrawnMouths = _redrawnLimbs = 0;
+        _screenRedrawn = false;
+        return (int)MathF.Floor(time + 0.5f);
+    }
+
+    /// <summary>
+    /// An object's image is to be drawn again: on the C64 that took time, the more the more of its
+    /// strips show. Mirrors <c>markObjectRectAsDirty</c>, whose counts only version 0 uses.
+    /// </summary>
+    private void MarkObjectRectAsDirty(int obj)
+    {
+        _redrawnObjects++;
+        if (CurrentRoom?.FindObject(obj) is not { } o || o.Number != obj)
+        {
+            return;
+        }
+
+        if (o.Width != 0)
+        {
+            int minStrip = Math.Max(Camera.StartStrip, o.X / 8);
+            int maxStrip = Math.Min(Camera.StartStrip + Camera.ScreenWidth / 8, o.X / 8 + o.Width / 8);
+            _redrawnObjectStrips += Math.Max(0, maxStrip - minStrip);
+        }
+
+        _backgroundNeedsRedraw = true;
     }
 
     /// <summary>
@@ -379,6 +463,7 @@ public sealed partial class GameWorld
         PutActor(ego, point.X, point.Y, CurrentRoom!.Number);
         Camera.SetAtEx(ego.X * 8);
         Camera.Follow(ego.Number, ego.X * 8, setCamera: true);
+        _fullRedraw = true;
         ResetSentenceV0();
         if (point.X >= 0 && point.Y >= 0)
         {
