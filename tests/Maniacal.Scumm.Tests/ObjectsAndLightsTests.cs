@@ -145,6 +145,38 @@ public class ObjectsAndLightsTests
     }
 
     /// <summary>
+    /// Without the copy protection (the default, as in ScummVM) the steel security door is always
+    /// open; with it, it is as the game leaves it, shut, and drawn so.
+    /// </summary>
+    [Fact]
+    public void The_copy_protection_bypass_keeps_the_security_door_open()
+    {
+        if (World() is not { } bypassed || World() is not { } protectedWorld)
+        {
+            return;
+        }
+
+        const int Door = 182;
+        protectedWorld.Engine.CopyProtection = true;
+        Assert.Equal(0, protectedWorld.Engine.GetState(Door) & ScriptEngine.StateIntrinsic);
+        Assert.NotEqual(0, bypassed.Engine.GetState(Door) & ScriptEngine.StateIntrinsic);
+        Assert.NotEqual(0, bypassed.Engine.GetState(193) & ScriptEngine.StateIntrinsic);
+
+        // in room 11 the open door draws its image, the shut one the room behind it
+        bypassed.StartScene(11);
+        protectedWorld.StartScene(11);
+        var door = bypassed.CurrentRoom!.FindObject(Door)!;
+        bypassed.Camera.SetAt(door.X + door.Width / 2);
+        protectedWorld.Camera.SetAt(door.X + door.Width / 2);
+        var open = bypassed.Screen();
+        var shut = protectedWorld.Screen();
+        int left = door.X - bypassed.Camera.Left;
+        int differing = Enumerable.Range(door.Y + 16, door.Height)
+            .Sum(y => Enumerable.Range(left, door.Width).Count(x => open[x, y] != shut[x, y]));
+        Assert.True(differing > 100, $"{differing} pixels of the door differ");
+    }
+
+    /// <summary>
     /// Room 5 starts dark: on the way in, script 55 turns the lights off, or to the flashlight when its owner is
     /// here with it switched on. Dark, the room is black and the kid grey; the flashlight lights the
     /// room around the mouse and shows the kid in colour.

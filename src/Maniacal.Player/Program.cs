@@ -37,6 +37,7 @@ internal static class Program
         string? saveFile = null;
         int saveVersion = Maniacal.Scumm.Saves.SaveFile.CompatibleVersion;
         bool speaker = false;
+        bool copyProtection = false;
         var settings = new List<(int Variable, int Value)>();
         var skips = new List<int>();
         var inputs = new List<(int Step, Action<Maniacal.Scumm.Game.GameWorld> Give)>();
@@ -130,6 +131,9 @@ internal static class Program
                 case "--speaker":
                     speaker = true;
                     break;
+                case "--copy-protection":
+                    copyProtection = true;
+                    break;
                 case "--click" when i + 1 < args.Length && ParseClick(args[i + 1]) is { } click:
                     inputs.Add((click.Step, w => w.Click(click.X, click.Y)));
                     i++;
@@ -198,7 +202,7 @@ internal static class Program
 
         if (runSteps is { } stepCount)
         {
-            return RunHeadless(container, stepCount, screenshot, wav, speaker, zoom, settings, skips, inputs, loadFile, saveFile, saveVersion, savesDir, target);
+            return RunHeadless(container, stepCount, screenshot, wav, speaker, zoom, settings, skips, inputs, loadFile, saveFile, saveVersion, savesDir, target, copyProtection);
         }
 
         if (script is not null || roomScripts is not null)
@@ -254,6 +258,7 @@ internal static class Program
             if (engine is ScummEngine scumm)
             {
                 scumm.Pcjr = !speaker;
+                scumm.CopyProtection = copyProtection;
             }
 
             // the game draws its own cursor, the crosshair
@@ -362,10 +367,11 @@ internal static class Program
     /// </summary>
     private static int RunHeadless(IGameContainer container, int steps, string? screenshot, string? wav, bool speaker, int zoom, List<(int Variable, int Value)> settings, List<int> skips,
         List<(int Step, Action<Maniacal.Scumm.Game.GameWorld> Give)> inputs, string? loadFile = null, string? saveFile = null, int saveVersion = Maniacal.Scumm.Saves.SaveFile.CompatibleVersion,
-        string? savesDir = null, string target = "maniac")
+        string? savesDir = null, string target = "maniac", bool copyProtection = false)
     {
         var world = new Maniacal.Scumm.Game.GameWorld(ResourceLoader.Open(container), pcjr: !speaker);
         var engine = world.Engine;
+        engine.CopyProtection = copyProtection;
 
         // the game's own save screen saves to and loads from a folder, named as ScummVM names saves
         if (savesDir is not null)
@@ -743,7 +749,7 @@ internal static class Program
 
     private static void PrintUsage()
     {
-        Console.Error.WriteLine("usage: maniacal <game folder> [--list] [--scale N] [--fullscreen] [--speaker] [--frames N] [--verbose]");
+        Console.Error.WriteLine("usage: maniacal <game folder> [--list] [--scale N] [--fullscreen] [--speaker] [--copy-protection] [--frames N] [--verbose]");
         Console.Error.WriteLine("       maniacal <game folder> --room N [--objects none|initial|all] [--mask] [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --costume N [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --view N [--camera X] [--actor costume,x,y[,left|right|front|back]]... [--zoom N] [--output file.png]");

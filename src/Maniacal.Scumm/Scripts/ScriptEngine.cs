@@ -149,7 +149,28 @@ public sealed class ScriptEngine
         Variables[number] = value;
     }
 
-    public int GetState(int obj) => ObjectStates[obj];
+    /// <summary>
+    /// Whether the game's copy protection is kept: the security door's code has to be found in the
+    /// manual. Off by default, as ScummVM's <c>copy_protection</c> option is.
+    /// </summary>
+    public bool CopyProtection { get; set; }
+
+    // the two sides of the steel security door (rooms 11 and 13), which the bypass keeps open
+    private const int SecurityDoorOutside = 182, SecurityDoorInside = 193;
+
+    /// <summary>
+    /// An object's state. Without the copy protection, the security door is always open: its
+    /// Intrinsic bit is set whenever its state is read. Mirrors <c>ScummEngine::getState</c>.
+    /// </summary>
+    public int GetState(int obj)
+    {
+        if (!CopyProtection && obj is SecurityDoorOutside or SecurityDoorInside)
+        {
+            ObjectStates[obj] |= StateIntrinsic;
+        }
+
+        return ObjectStates[obj];
+    }
 
     public void PutState(int obj, int state) => ObjectStates[obj] = (byte)state;
 

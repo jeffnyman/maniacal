@@ -145,7 +145,7 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   `getClosestObjActor`, and dark rooms: black where the room lights are off (`clear8Col`), with
   the flashlight of `o2_lights` and `drawFlashlight`, its corners rounded by the version 1 and 2
   curves, lighting the room around the mouse. Rooms 5, 8, 9, 15, 22 and 23 start dark.
-- Next: the rest of Phase 4 (the copy protection), then the game beyond the front door.
+- Next: playing the game beyond the front door, checking it against ScummVM, then Phase 5 (the C64).
 - `script.cpp`: script slots, `runScript`, `runObjectScript`, `runEntryScript`/`runExitScript`,
   cutscenes, `stopScript`, freeze and unfreeze, the bit variables.
 - `script_v2.cpp`: the V2 opcode table (also used by V1) and every handler.
@@ -183,7 +183,9 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   save was made outside the save room. Checked against ScummVM 2.7.0: a save made here loads
   there; a save-screen save made here, loaded there, is saved again by ScummVM and loads back
   here; and the two saves of the same moment differ only in the mouse and a few ticks of time.
-- The copy-protection door code (`GAMEOPTION_COPY_PROTECTION`): ScummVM bypasses it by default.
+- Done: the copy protection (`GAMEOPTION_COPY_PROTECTION`): as in ScummVM, it is bypassed by
+  default, `getState` keeping both sides of the steel security door (objects 182 and 193) open so
+  its code is never asked for; `--copy-protection` keeps it.
 
 ## Phase 5: Commodore 64 (V0)
 

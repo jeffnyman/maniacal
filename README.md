@@ -20,6 +20,8 @@ room and pick things up; dark rooms are black but for the flashlight. The game b
 door is not checked yet. The music and sound effects play as the PCjr made them, or as the PC
 speaker did with `--speaker`. F5 opens the game's own save screen; saves are ScummVM's own files
 (`maniac.s01` for Game A, and so on), so they can be moved between Maniacal and ScummVM 2.7 or later.
+As in ScummVM, the copy protection is bypassed: the steel security door stays open, so its code
+from the manual is never needed; `--copy-protection` keeps it.
 
 A verb is clicked, then an object; clicking the object again, or clicking the sentence line,
 carries the sentence out, as in the original. The right button, Escape or F4 skip a cutscene, and
@@ -61,7 +63,7 @@ Needs the .NET 10 SDK.
 ```
 dotnet build Maniacal.slnx
 dotnet test Maniacal.slnx
-dotnet run --project src/Maniacal.Player -- <game folder> [--list] [--scale N] [--fullscreen] [--speaker] [--frames N]
+dotnet run --project src/Maniacal.Player -- <game folder> [--list] [--scale N] [--fullscreen] [--speaker] [--copy-protection] [--frames N]
 dotnet run --project src/Maniacal.Player -- <game folder> --room N [--objects none|initial|all] [--mask] [--zoom N] [--output file.png]
 dotnet run --project src/Maniacal.Player -- <game folder> --view N [--camera X] [--actor costume,x,y[,direction]]... [--zoom N]
 dotnet run --project src/Maniacal.Player -- <game folder> --costume N [--zoom N] [--output file.png]

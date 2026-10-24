@@ -26,6 +26,9 @@ public sealed class ScummEngine : Engine
     /// <summary>Whether the sound is the PCjr's, as ScummVM chooses by default, or the PC speaker's. Set before <see cref="Initialize"/>.</summary>
     public bool Pcjr { get; set; } = true;
 
+    /// <summary>Whether the game's copy protection is kept (the security door's code). Off by default, as in ScummVM. Set before <see cref="Initialize"/>.</summary>
+    public bool CopyProtection { get; set; }
+
     /// <summary>The world being played, from <see cref="Initialize"/> on.</summary>
     public GameWorld World => _world ?? throw new InvalidOperationException("The engine is not initialized.");
 
@@ -36,6 +39,7 @@ public sealed class ScummEngine : Engine
             SaveStore = Host.Saves,
             SaveTarget = Detected.GameId,
         };
+        _world.Engine.CopyProtection = CopyProtection;
         Host.Graphics.SetMode(ScreenLayout.Width, ScreenLayout.Height);
         Host.Graphics.SetTitle($"Maniacal - {Detected.Title}");
         Host.Graphics.SetPalette(Palettes.Ega);
