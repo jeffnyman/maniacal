@@ -27,6 +27,7 @@ internal static class Program
         int? view = null;
         int? script = null;
         int? roomScripts = null;
+        int? runSteps = null;
         int? cameraX = null;
         var actors = new List<(int Costume, int X, int Y, int Direction)>();
         string? text = null;
@@ -81,6 +82,14 @@ internal static class Program
                     roomScripts = scriptsRoom;
                     i++;
                     break;
+                case "--run":
+                    runSteps = i + 1 < args.Length && int.TryParse(args[i + 1], out int steps) ? steps : 0;
+                    if (runSteps > 0 || (i + 1 < args.Length && args[i + 1] == "0"))
+                    {
+                        i++;
+                    }
+
+                    break;
                 case "--font":
                     font = true;
                     break;
@@ -128,6 +137,11 @@ internal static class Program
         if (listOnly)
         {
             return 0;
+        }
+
+        if (runSteps is { } stepCount)
+        {
+            return RunHeadless(container, stepCount);
         }
 
         if (script is not null || roomScripts is not null)
@@ -270,6 +284,49 @@ internal static class Program
             Console.Error.WriteLine(ex.Message);
             return 3;
         }
+    }
+
+    /// <summary>
+    /// Runs the boot script headless, then the given number of main-loop steps: script delays count
+    /// down by the step's length in ticks (<c>VAR_TIMER_NEXT</c>, at least 1, as <c>scummLoop</c>
+    /// does) and every running script runs once. Prints what the scripts asked of the world, the
+    /// slots still alive and the variables that are not 0.
+    /// </summary>
+    private static int RunHeadless(IGameContainer container, int steps)
+    {
+        var loader = ResourceLoader.Open(container);
+        var host = new RecordingHost();
+        var engine = new ScriptEngine(
+            loader.Index.Version,
+            n => loader.Index.Locate(ResourceType.Script, n).IsPresent ? loader.Load(ResourceType.Script, n) : null,
+            host,
+            loader.Index.ObjectOwners,
+            loader.Index.ObjectStates);
+
+        try
+        {
+            engine.RunScript(1);
+            for (int step = 0; step < steps; step++)
+            {
+                engine.DecreaseScriptDelay(Math.Max(1, engine.Variables[ScriptEngine.VarTimerNext]));
+                engine.RunAllScripts();
+            }
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or InvalidDataException)
+        {
+            Console.WriteLine($"Stopped in script {engine.CurrentScriptNumber}: {ex.Message}");
+        }
+
+        foreach (var call in host.Calls)
+        {
+            Console.WriteLine(call);
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("Slots: " + string.Join(", ", engine.Slots.Select((s, i) => (s, i)).Where(p => !p.s.IsDead)
+            .Select(p => $"{p.i}: {p.s.Kind} {p.s.Number} at {p.s.Offset:X4} status {p.s.Status:X2}{(p.s.Status == SlotStatus.Paused ? $" delay {p.s.Delay}" : "")}")));
+        Console.WriteLine("Variables: " + string.Join(", ", engine.Variables.Select((v, i) => (v, i)).Where(p => p.v != 0).Select(p => $"{p.i}={p.v}")));
+        return 0;
     }
 
     /// <summary>
@@ -520,6 +577,7 @@ internal static class Program
         Console.Error.WriteLine("       maniacal <game folder> --costume N [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --view N [--camera X] [--actor costume,x,y[,left|right|front|back]]... [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --script N | --room-scripts N");
+        Console.Error.WriteLine("       maniacal <game folder> --run [steps]");
         Console.Error.WriteLine("       maniacal <game folder> --font | --text \"words\" [--zoom N] [--output file.png]");
     }
 }

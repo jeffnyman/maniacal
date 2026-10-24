@@ -99,6 +99,14 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   object script of both releases decodes, with jumps landing on instruction boundaries; the only
   leftover bytes are 20 after V2 script 59. `maniacal <folder> --script N` and `--room-scripts N`
   print the disassembly.
+- Done: the script engine core (`ScriptEngine`): 80 slots, nested starts, `runAllScripts`, delays,
+  freezing, the user state, cutscenes and overrides, variables (with the 14-16 redirection and the
+  exit-key remap), bit variables, object states and owners, and the variable, arithmetic,
+  condition, jump and script-control instructions. Every other instruction goes to an
+  `IScriptHost` with its operands evaluated. `maniacal <folder> --run [steps]` runs the boot script
+  headless and lists what the scripts asked of the world: both releases reach the kid selection.
+- Next: hosts for the world instructions, subsystem by subsystem (rooms and objects, actors,
+  verbs and the sentence, text, sound), starting with `loadRoom` and the room entry and exit scripts.
 - `script.cpp`: script slots, `runScript`, `runObjectScript`, `runEntryScript`/`runExitScript`,
   cutscenes, `stopScript`, freeze and unfreeze, the bit variables.
 - `script_v2.cpp`: the V2 opcode table (also used by V1) and every handler.
