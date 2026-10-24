@@ -269,7 +269,10 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         }
 
         // updateMusicTimer: the player's timer, in quarter-frames of 240 a second
-        SetVar(Engine.Vars.MusicTimer, (int)(Sound.Player.MusicTimer * TimerFrequency / 240.0));
+        if (Engine.Vars.MusicTimer != EngineVariables.None)
+        {
+            Engine.Variables[Engine.Vars.MusicTimer] = (int)(Sound.Player.MusicTimer * TimerFrequency / 240.0);
+        }
 
         Engine.RunAllScripts();
         if (Version == 0)

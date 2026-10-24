@@ -13,7 +13,7 @@ namespace Maniacal.Scumm.Sound;
 /// The game thread starts and stops sounds while the host's audio thread renders samples, so
 /// both go through <see cref="Sync"/>, as ScummVM's players lock their mutex.
 /// </remarks>
-public abstract class SpeakerSynth : MonoAudioSource
+public abstract class SpeakerSynth : MusicPlayer
 {
     protected const int FixpShift = 16;
 
@@ -70,20 +70,8 @@ public abstract class SpeakerSynth : MonoAudioSource
     /// <summary>The volume of each of the 16 attenuation steps, 2 dB apart; the last is silence. Mirrors <c>_volumetable</c>.</summary>
     protected uint[] VolumeTable { get; } = new uint[16];
 
-    /// <summary>The music timer the scripts read. Mirrors <c>getMusicTimer</c>.</summary>
-    public abstract int MusicTimer { get; }
-
-    /// <summary>Plays a sound resource, or queues it, as its priority allows. Mirrors <c>startSound</c>.</summary>
-    public abstract void StartSound(int number, byte[] data);
-
-    /// <summary>Mirrors <c>stopSound</c>.</summary>
-    public abstract void StopSound(int number);
-
-    /// <summary>Mirrors <c>stopAllSounds</c>.</summary>
-    public abstract void StopAllSounds();
-
     /// <summary>Whether a sound plays or waits to. Mirrors <c>Player_V2::getSoundStatus</c>.</summary>
-    public bool IsPlaying(int number)
+    public override bool IsPlaying(int number)
     {
         lock (Sync)
         {

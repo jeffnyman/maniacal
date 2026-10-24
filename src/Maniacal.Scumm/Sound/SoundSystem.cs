@@ -7,27 +7,28 @@ namespace Maniacal.Scumm.Sound;
 /// ScummVM's <c>Sound</c> does for these versions (<c>startSound</c>, <c>addSoundToQueue</c>,
 /// <c>processSoundQueues</c>, <c>triggerSound</c>, <c>stopSound</c>, <c>stopAllSounds</c> and
 /// <c>isSoundRunning</c>). The player is version 1's or version 2's, on the PCjr by default, as
-/// ScummVM prefers it when a release supports both.
+/// ScummVM prefers it when a release supports both, or the C64's SID player.
 /// </summary>
 public sealed class SoundSystem
 {
     private readonly Func<int, byte[]?> _load;
     private readonly List<int> _queue = [];
 
-    // version 0 has no player yet: its sounds go nowhere, as in ScummVM built without SID audio
-    private readonly bool _silent;
-
     public SoundSystem(int version, Func<int, byte[]?> load, int sampleRate, bool pcjr = true)
     {
         _load = load;
-        _silent = version == 0;
 
-        // ScummVM gives Player_V1 to version 1 of Maniac Mansion only; version 0 (the C64) has its own player, not ported yet
-        Player = version == 1 ? new PlayerV1(sampleRate, pcjr) : new PlayerV2(sampleRate, pcjr);
+        // ScummVM gives Player_V1 to version 1 of Maniac Mansion only, and Player_SID to the C64
+        Player = version switch
+        {
+            0 => new PlayerSid(sampleRate),
+            1 => new PlayerV1(sampleRate, pcjr),
+            _ => new PlayerV2(sampleRate, pcjr),
+        };
         Output = new ClockedSource(Player, sampleRate);
     }
 
-    public SpeakerSynth Player { get; }
+    public MusicPlayer Player { get; }
 
     /// <summary>What a host plays; it renders the sound itself in step with the game when the host reads none.</summary>
     public ClockedSource Output { get; }
@@ -51,7 +52,7 @@ public sealed class SoundSystem
         for (int i = _queue.Count - 1; i >= 0; i--)
         {
             int sound = _queue[i];
-            if (!_silent && sound != 0 && _load(sound) is { } data)
+            if (sound != 0 && _load(sound) is { } data)
             {
                 Player.StartSound(sound, data);
             }

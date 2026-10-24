@@ -306,8 +306,21 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   none), the actors' clips (which its load starts again) and the cursor's colours, which are the
   DOS ones in 2.7.0 and the C64's in ScummVM now. The C64 was only checked through saves, which
   need no input, not by playing it there.
-- Next: the SID player (`players/player_sid.cpp`), and the time ScummVM adds for the C64's redraw
-  (`DelayCalculateDelta`).
+- Done: the C64's sound. `Sid` is ScummVM's SID emulator (`audio/softsynth/sid.cpp`, from reSID):
+  three voices of a 24-bit oscillator, noise register and ADSR envelope, the combined waveforms of
+  the 6581, its filter with the cutoff curve reSID's spline draws, and the C64's output stage,
+  clocked at the NTSC rate and sampled; its tables come from `sid.cpp` and `wave6581.cpp` by
+  `tools/port_sid_tables.py`. `PlayerSid` is `Player_SID`, ported from the C64 engine's own
+  driver: songs on the three voices through the player's channel buffers, sounds that take voices,
+  pulse widths and the filter by priority, a background sound stepped out of sight while it waits
+  for a voice, ticked 60 times a second (`EmulatedChip::readBuffer`); its resource locking, which
+  changes nothing, is left out. The players share a base (`MusicPlayer`, ScummVM's `MusicEngine`).
+  Checked against ScummVM 2.7.0, recorded with SDL's disk audio driver from the same save: a sound
+  came out sample for sample the same, and a later one, started at another point of the chip's
+  frame, correlates at 0.998; the loudness runs alike through the intro, ScummVM's pauses longer
+  by the redraw time it adds. Every one of the 66 sounds (6 songs) plays.
+- Next: the time ScummVM adds for the C64's redraw (`DelayCalculateDelta`), then the C64's
+  remaining differences from ScummVM, if any show in play.
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).
