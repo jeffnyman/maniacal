@@ -31,6 +31,26 @@ public class DetectionTests
         Assert.False(game.IsDemo);
     }
 
+    /// <summary>The C64 release is identified by the index built from its disks, as ScummVM does.</summary>
+    [Fact]
+    public void Identifies_the_c64_release_from_its_disks()
+    {
+        if (GameFolders.Find("maniac_mansion_c64") is not { } path)
+        {
+            return;
+        }
+
+        var game = ScummDetector.Identify(new DirectoryGameContainer(path));
+
+        Assert.NotNull(game);
+        Assert.Equal("C64", game.Variant);
+        Assert.Equal(0, game.Version);
+        Assert.Equal("c64", game.Platform);
+        Assert.Equal(1188, game.Entry.Size);
+        Assert.Equal("eea4d9ac2fb6f145945a308e8866915b", game.Entry.Md5);
+        Assert.False(game.IsDemo);
+    }
+
     [Fact]
     public void Provider_reports_maniac_mansion()
     {

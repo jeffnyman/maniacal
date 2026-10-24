@@ -1,4 +1,5 @@
 using Daventry.Core.Storage;
+using Maniacal.Scumm.Resources;
 
 namespace Maniacal.Scumm.Detection;
 
@@ -17,9 +18,9 @@ public sealed record ScummGame(Md5Entry Entry, int Version, bool IsDemo)
 
 /// <summary>
 /// Identifies Maniac Mansion releases the way ScummVM's <c>detection_internal.h</c> does: by the
-/// MD5 of the first megabyte of the room-0 index file. Only the DOS-style releases, whose index is
-/// a loose 00.LFL (or 00.MAN for the V1 demo), are recognised so far; the C64 disk images and the
-/// NES ROM need their own readers first.
+/// MD5 of the first megabyte of the room-0 index file: a loose 00.LFL (or 00.MAN for the V1 demo),
+/// or for the C64 the 00.LFL that <see cref="C64DiskImage"/> builds from the disks, as ScummVM's
+/// <c>openDiskImage</c> does. The NES ROM needs its own reader first.
 /// </summary>
 public static class ScummDetector
 {
@@ -47,6 +48,7 @@ public static class ScummDetector
     /// <summary>The MD5 of the index file ScummVM detects a release by, as the bytes ScummVM keeps in its saves (<c>_gameMD5</c>).</summary>
     public static byte[] IndexMd5(IGameContainer container)
     {
+        container = C64DiskImage.Open(container) ?? container;
         foreach (var name in IndexFiles)
         {
             if (container.Exists(name))
@@ -63,6 +65,7 @@ public static class ScummDetector
 
     public static ScummGame? Identify(IGameContainer container)
     {
+        container = C64DiskImage.Open(container) ?? container;
         foreach (var name in IndexFiles)
         {
             if (!container.Exists(name))

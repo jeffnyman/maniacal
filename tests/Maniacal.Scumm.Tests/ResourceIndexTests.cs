@@ -8,6 +8,7 @@ public class ResourceIndexTests
 {
     private const string V1Folder = "maniac_mansion_original_DOS.com";
     private const string V2Folder = "maniac_mansion_enhanced_DOS.com";
+    private const string C64Folder = "maniac_mansion_c64";
 
     [Fact]
     public void Lfl_decoding_is_xor_ff()
@@ -23,8 +24,9 @@ public class ResourceIndexTests
     [Fact]
     public void Unknown_magic_is_rejected()
     {
-        var ex = Assert.Throws<InvalidDataException>(() => ResourceIndex.Parse([0x32, 0x01, 0, 0]));
-        Assert.Contains("0x0132", ex.Message);
+        // the NES index, which needs its own reader
+        var ex = Assert.Throws<InvalidDataException>(() => ResourceIndex.Parse([0x43, 0x46, 0, 0]));
+        Assert.Contains("0x4643", ex.Message);
     }
 
     [Fact]
@@ -39,6 +41,7 @@ public class ResourceIndexTests
     [Theory]
     [InlineData(V1Folder, 1, 800, 55, 35, 200, 100)]
     [InlineData(V2Folder, 2, 780, 61, 40, 179, 120)]
+    [InlineData(C64Folder, 0, 256, 55, 25, 160, 70)]
     public void Index_has_the_tables_of_its_version(string folder, int version, int objects, int rooms, int costumes, int scripts, int sounds)
     {
         if (Open(folder) is not { } loader)
@@ -61,14 +64,15 @@ public class ResourceIndexTests
     [Theory]
     [InlineData(V1Folder, 52)]
     [InlineData(V2Folder, 53)]
+    [InlineData(C64Folder, 52)]
     public void Every_room_file_is_in_the_index_and_loads(string folder, int lastRoom)
     {
-        if (Open(folder) is not { } loader || GameFolders.Find(folder) is not { } path)
+        if (Open(folder) is not { } loader)
         {
             return;
         }
 
-        var game = new DirectoryGameContainer(path);
+        var game = loader.Game;
         for (int room = 1; room <= lastRoom; room++)
         {
             Assert.True(LflFile.Exists(game, room), $"{LflFile.NameOf(room)} missing");
@@ -84,11 +88,13 @@ public class ResourceIndexTests
 
     /// <summary>
     /// A room file is a chain of resources, each starting with its own size. Version 1 files end
-    /// with one or two bytes of padding after the last resource; version 2 files end exactly.
+    /// with one or two bytes of padding after the last resource; version 2 files end exactly, as do
+    /// the C64's, which are made of just their resources.
     /// </summary>
     [Theory]
     [InlineData(V1Folder, 2)]
     [InlineData(V2Folder, 0)]
+    [InlineData(C64Folder, 0)]
     public void Room_files_are_chains_of_sized_resources(string folder, int maxTrailer)
     {
         if (Open(folder) is not { } loader)
@@ -107,12 +113,13 @@ public class ResourceIndexTests
 
     /// <summary>
     /// How many index entries of each type point at the start of a real resource. The rest are
-    /// entry 0, version 1's unused table slots, and a few stale entries in both versions. Pinned
+    /// entry 0, version 1's unused table slots, and a few stale entries in every release. Pinned
     /// so a change in how the index is read shows up.
     /// </summary>
     [Theory]
     [InlineData(V1Folder, 23, 172, 64)]
     [InlineData(V2Folder, 24, 169, 59)]
+    [InlineData(C64Folder, 24, 154, 66)]
     public void Index_entries_point_at_resource_starts(string folder, int costumes, int scripts, int sounds)
     {
         if (Open(folder) is not { } loader)
@@ -162,10 +169,7 @@ public class ResourceIndexTests
         => GameFolders.Find(folder) is { } path ? ResourceLoader.Open(new DirectoryGameContainer(path)) : null;
 
     private static IEnumerable<int> RoomsWithFiles(ResourceLoader loader, string folder)
-    {
-        var game = new DirectoryGameContainer(GameFolders.Find(folder)!);
-        return Enumerable.Range(1, loader.Index.Count(ResourceType.Room) - 1).Where(room => LflFile.Exists(game, room));
-    }
+        => Enumerable.Range(1, loader.Index.Count(ResourceType.Room) - 1).Where(room => LflFile.Exists(loader.Game, room));
 
     /// <summary>Offsets of the resources in a room file, following the size words from offset 0.</summary>
     private static List<int> ResourceStarts(ReadOnlySpan<byte> file)

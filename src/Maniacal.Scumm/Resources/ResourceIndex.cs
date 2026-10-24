@@ -26,10 +26,11 @@ public readonly record struct ResourceLocation(int Room, int Offset)
 }
 
 /// <summary>
-/// The index in room 0 (<c>00.LFL</c>) of the DOS releases: the initial owner and state of every
-/// global object, and where every room, costume, script and sound is. Mirrors ScummVM's
-/// <c>ScummEngine_v2::readIndexFile</c>, <c>readClassicIndexFile</c> (version 1) and
-/// <c>readEnhancedIndexFile</c> (version 2).
+/// The index in room 0 (<c>00.LFL</c>): the initial owner and state of every global object, and
+/// where every room, costume, script and sound is. Mirrors ScummVM's
+/// <c>ScummEngine_v2::readIndexFile</c>, <c>readClassicIndexFile</c> (versions 0 and 1) and
+/// <c>readEnhancedIndexFile</c> (version 2). The C64's index is the one <see cref="C64DiskImage"/>
+/// builds, whose room offsets are disk places, of which only "none" matters.
 /// </summary>
 /// <remarks>
 /// The index is taken at face value, as ScummVM takes it. Entry 0 of each type is never used, and
@@ -44,6 +45,9 @@ public sealed class ResourceIndex
     /// <summary>First word of a version 2 index. Mirrors the <c>0x0100</c> case of <c>readIndexFile</c>.</summary>
     public const ushort EnhancedMagic = 0x0100;
 
+    /// <summary>First word of a version 0 index, as <see cref="C64DiskImage"/> builds it. Mirrors the <c>0x132</c> case of <c>readIndexFile</c>.</summary>
+    public const ushort C64Magic = 0x0132;
+
     /// <summary>Mirrors ScummVM's <c>OF_OWNER_MASK</c>.</summary>
     private const byte OwnerMask = 0x0F;
 
@@ -56,6 +60,13 @@ public sealed class ResourceIndex
     private const int ClassicCostumes = 35;
     private const int ClassicScripts = 200;
     private const int ClassicSounds = 100;
+
+    // the C64's (readClassicIndexFile, version 0); the demo has fewer scripts and sounds, and so a shorter index
+    private const int C64GlobalObjects = 256;
+    private const int C64Costumes = 25;
+    private const int C64Scripts = 160, C64DemoScripts = 55;
+    private const int C64Sounds = 70, C64DemoSounds = 40;
+    private const int C64DemoIndexLength = 783;
 
     private readonly ResourceLocation[][] _locations;
 
@@ -96,7 +107,8 @@ public sealed class ResourceIndex
         {
             ClassicMagic => ParseClassic(ref reader),
             EnhancedMagic => ParseEnhanced(ref reader),
-            _ => throw new InvalidDataException($"Unknown index magic 0x{magic:X4}; only the DOS releases of Maniac Mansion are supported."),
+            C64Magic => ParseC64(ref reader, demo: data.Length == C64DemoIndexLength),
+            _ => throw new InvalidDataException($"Unknown index magic 0x{magic:X4}; only Maniac Mansion's DOS and C64 releases are supported."),
         };
     }
 
@@ -112,6 +124,19 @@ public sealed class ResourceIndex
             ReadResourceList(ref reader, ResourceType.Sound, ClassicSounds),
         };
         return new ResourceIndex(1, owners, states, locations);
+    }
+
+    private static ResourceIndex ParseC64(ref IndexReader reader, bool demo)
+    {
+        var (owners, states) = ReadGlobalObjects(ref reader, C64GlobalObjects);
+        var locations = new[]
+        {
+            ReadResourceList(ref reader, ResourceType.Room, ClassicRooms),
+            ReadResourceList(ref reader, ResourceType.Costume, C64Costumes),
+            ReadResourceList(ref reader, ResourceType.Script, demo ? C64DemoScripts : C64Scripts),
+            ReadResourceList(ref reader, ResourceType.Sound, demo ? C64DemoSounds : C64Sounds),
+        };
+        return new ResourceIndex(0, owners, states, locations);
     }
 
     /// <summary>Version 2: each table is preceded by its count. Mirrors <c>readGlobalObjects</c> and <c>ScummEngine_v3old::readResTypeList</c>.</summary>

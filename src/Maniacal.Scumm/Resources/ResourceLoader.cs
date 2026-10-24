@@ -29,7 +29,10 @@ public sealed class ResourceLoader
 
     /// <summary>Reads the index from <c>00.LFL</c> and returns a loader over it.</summary>
     public static ResourceLoader Open(IGameContainer game)
-        => new(game, ResourceIndex.Parse(LflFile.Read(game, 0)));
+    {
+        game = C64DiskImage.Open(game) ?? game;
+        return new(game, ResourceIndex.Parse(LflFile.Read(game, 0)));
+    }
 
     /// <summary>The decoded contents of a room file.</summary>
     public ReadOnlyMemory<byte> RoomFile(int room)
