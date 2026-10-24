@@ -21,6 +21,8 @@ internal static class Program
         int? room = null;
         int? costume = null;
         int zoom = 1;
+        bool font = false;
+        string? text = null;
         bool mask = false;
         string objects = "initial";
         string? output = null;
@@ -51,6 +53,12 @@ internal static class Program
                     break;
                 case "--zoom" when i + 1 < args.Length && int.TryParse(args[i + 1], out zoom) && zoom is >= 1 and <= 8:
                     i++;
+                    break;
+                case "--font":
+                    font = true;
+                    break;
+                case "--text" when i + 1 < args.Length:
+                    text = args[++i];
                     break;
                 case "--mask":
                     mask = true;
@@ -93,6 +101,11 @@ internal static class Program
         if (listOnly)
         {
             return 0;
+        }
+
+        if (font || text is not null)
+        {
+            return WriteFont(detected[0], text, zoom, output ?? (text is null ? "font.png" : "text.png"));
         }
 
         if (costume is { } costumeId)
@@ -222,6 +235,43 @@ internal static class Program
         }
     }
 
+    /// <summary>
+    /// Writes the release's built-in font as a PNG: all 128 glyphs in a 16 by 8 grid, or the given
+    /// text on one line. White on black.
+    /// </summary>
+    private static int WriteFont(DetectedGame game, string? text, int zoom, string path)
+    {
+        bool v1 = game.Variant.StartsWith("V1", StringComparison.Ordinal);
+        var englishFont = Font.English(v1 ? 1 : 2, game.Variant.Contains("Demo", StringComparison.Ordinal));
+
+        Surface8 surface;
+        if (text is null)
+        {
+            surface = new Surface8(16 * Font.CharWidth, 8 * Font.Height);
+            for (int glyph = 0; glyph < Font.GlyphCount; glyph++)
+            {
+                englishFont.DrawGlyph(surface, glyph, glyph % 16 * Font.CharWidth, glyph / 16 * Font.Height, 15);
+            }
+        }
+        else
+        {
+            var bytes = System.Text.Encoding.Latin1.GetBytes(text);
+            if (bytes.Any(b => b >= Font.GlyphCount))
+            {
+                Console.Error.WriteLine("The font has only the 128 ASCII characters");
+                return 2;
+            }
+
+            surface = new Surface8(Math.Max(Font.Width(bytes), 1), Font.Height);
+            englishFont.DrawText(surface, bytes, 0, 0, 15);
+        }
+
+        using var file = File.Create(path);
+        PngWriter.Write(file, surface, Palettes.Ega, zoom, zoom);
+        Console.WriteLine($"{(text is null ? "Font" : "Text")} ({(v1 ? "V1" : "V2")}), written to {path}");
+        return 0;
+    }
+
     /// <summary>Lays figures out in rows of equal cells, every figure standing on the same point of its cell.</summary>
     private static Surface8 Sheet(List<List<CostumeFrame>> rows)
     {
@@ -264,5 +314,6 @@ internal static class Program
         Console.Error.WriteLine("usage: maniacal <game folder> [--list] [--scale N] [--fullscreen] [--verbose]");
         Console.Error.WriteLine("       maniacal <game folder> --room N [--objects none|initial|all] [--mask] [--zoom N] [--output file.png]");
         Console.Error.WriteLine("       maniacal <game folder> --costume N [--zoom N] [--output file.png]");
+        Console.Error.WriteLine("       maniacal <game folder> --font | --text \"words\" [--zoom N] [--output file.png]");
     }
 }

@@ -14,7 +14,8 @@ Early. Releases are identified by ScummVM's MD5 table. For both DOS releases the
 (objects, walkboxes), room pictures, object images and costumes are read; scripts and sounds are
 located but not yet interpreted or played.
 There is no interpreter yet: `maniacal <folder>` names the release and stops. `--room N` writes a
-room as a PNG, with its objects as the game starts, and `--costume N` a sheet of a costume's figures.
+room as a PNG, with its objects as the game starts, `--costume N` a sheet of a costume's figures,
+and `--font` or `--text "words"` the built-in font.
 [ROADMAP.md](ROADMAP.md) gives the order of work.
 
 | Release | SCUMM version | Data | State |
@@ -31,7 +32,7 @@ room as a PNG, with its objects as the game starts, and `--costume N` a sheet of
 | `src/Maniacal.Scumm` | The interpreter: detection, resources, script VM, rooms, actors, walkboxes, costumes, verbs, text, sound, saves. |
 | `src/Maniacal.Player` | The `maniacal` command line player on the SDL host. |
 | `tests/Maniacal.Scumm.Tests` | Unit tests, and tests that run against the real game data when it is present. |
-| `tools` | Generators that port tables from the ScummVM source (`port_md5_table.py`). |
+| `tools` | Generators that port tables from the ScummVM source (`port_md5_table.py`, `port_fonts.py`). |
 | `docs` | How Maniac Mansion works and how an interpreter for it is built: the commented C64 engine, the game's scripts, the boot loader, the NES data, and the game itself. Start at [docs/README.md](docs/README.md). |
 
 The host contract (`Daventry.Core`), the audio mixer (`Daventry.Audio`) and the SDL host
@@ -48,6 +49,7 @@ dotnet test Maniacal.slnx
 dotnet run --project src/Maniacal.Player -- <game folder> [--list] [--scale N] [--fullscreen]
 dotnet run --project src/Maniacal.Player -- <game folder> --room N [--objects none|initial|all] [--mask] [--zoom N] [--output file.png]
 dotnet run --project src/Maniacal.Player -- <game folder> --costume N [--zoom N] [--output file.png]
+dotnet run --project src/Maniacal.Player -- <game folder> --font | --text "words" [--zoom N] [--output file.png]
 ```
 
 ## Game data
