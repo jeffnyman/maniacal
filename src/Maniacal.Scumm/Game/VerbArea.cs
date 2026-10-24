@@ -65,22 +65,29 @@ public sealed class VerbArea
 
     // the DOS colours of initV2MouseOver, o2_verbOps and drawSentence
     private const int TextColor = 13, ArrowColor = 1, HighlightColor = 14;
+
+    // the C64's (initV2MouseOver, ScummEngine_v0::resetVerbs, flushSentenceLine)
+    private const int C64TextColor = 16, C64ArrowColor = 6, C64HighlightColor = 7;
+    private const int C64VerbColor = 5, C64VerbHighlight = 7, C64VerbDimColor = 11;
     private const int VerbColor = 2, VerbDimColor = 8;
     private const int SentenceChars = 40, InventoryChars = 18;
 
     // the keys o2_verbOps gives the first 15 slots
     private const string Keys = "qwertasdfgzxcvb";
 
-    private static readonly (Rect Rect, int Color)[] Boxes =
+    private static (Rect Rect, int Color)[] MakeBoxes(int text, int arrow, int offset) =>
     [
-        (new Rect(0, 32, 144, 8), TextColor),
-        (new Rect(176, 32, 144, 8), TextColor),
-        (new Rect(0, 40, 144, 8), TextColor),
-        (new Rect(176, 40, 144, 8), TextColor),
-        (new Rect(144, 32, 32, 8), ArrowColor),
-        (new Rect(144, 40, 32, 8), ArrowColor),
-        (new Rect(0, 0, 320, 8), TextColor),
+        (new Rect(0 + offset, 32 + offset, 144, 8), text),
+        (new Rect(176 + offset, 32 + offset, 144, 8), text),
+        (new Rect(0 + offset, 40 + offset, 144, 8), text),
+        (new Rect(176 + offset, 40 + offset, 144, 8), text),
+        (new Rect(144 + offset, 32 + offset, 32, 8), arrow),
+        (new Rect(144 + offset, 40 + offset, 32, 8), arrow),
+        (new Rect(0 + offset, 0 + offset, 320, 8), text),
     ];
+
+    private readonly (Rect Rect, int Color)[] _boxes;
+    private readonly int _textColor, _highlightColor, _offset;
 
     // the interface bits of the user state (USERSTATE_IFACE_*)
     public const int ShowSentence = 0x20, ShowInventory = 0x40, ShowVerbs = 0x80;
@@ -92,10 +99,15 @@ public sealed class VerbArea
     /// <param name="font">The font the names are drawn in.</param>
     /// <param name="top">The screen line the area starts at.</param>
     /// <param name="userState">The user state, whose interface bits say what shows (<c>_userState</c>).</param>
-    public VerbArea(Font font, int top, Func<int> userState)
+    /// <param name="c64">Whether this is the C64's: its colours, and the sentence line and inventory a pixel right and down.</param>
+    public VerbArea(Font font, int top, Func<int> userState, bool c64 = false)
     {
         _font = font;
         _userState = userState;
+        _offset = c64 ? 1 : 0;
+        _textColor = c64 ? C64TextColor : TextColor;
+        _highlightColor = c64 ? C64HighlightColor : HighlightColor;
+        _boxes = MakeBoxes(_textColor, c64 ? C64ArrowColor : ArrowColor, _offset);
         Top = top;
         Pixels = new Surface8(Width, ScreenHeight - top);
         for (int i = 0; i < SlotCount; i++)
@@ -141,6 +153,26 @@ public sealed class VerbArea
         verb.Y = row * 8 + (version == 1 ? 8 : 0);
         Draw(slot, false);
         MouseOver(0);
+    }
+
+    /// <summary>
+    /// Makes one of the C64's verbs, which its engine makes itself, at a column and a row under the
+    /// sentence line, and draws it. Mirrors a verb of <c>ScummEngine_v0::resetVerbs</c>.
+    /// </summary>
+    public void SetVerbV0(int slot, int id, int column, int row, int preposition, string name)
+    {
+        var verb = Slot(slot);
+        verb.Id = id;
+        verb.Color = C64VerbColor;
+        verb.HiColor = C64VerbHighlight;
+        verb.DimColor = C64VerbDimColor;
+        verb.Mode = 1;
+        verb.Key = 0;
+        verb.Preposition = preposition;
+        verb.Name = System.Text.Encoding.Latin1.GetBytes(name);
+        verb.X = column * 8;
+        verb.Y = row * 8 + 8;
+        Draw(slot, false);
     }
 
     /// <summary>Removes a verb, clearing where it showed. Mirrors <c>killVerb</c>.</summary>
@@ -285,8 +317,8 @@ public sealed class VerbArea
             end++;
         }
 
-        Pixels.FillRect(Boxes[SentenceLine].Rect, 0);
-        DrawString(sentence[..end], 0, Top, Width - 1, TextColor);
+        Pixels.FillRect(_boxes[SentenceLine].Rect, 0);
+        DrawString(sentence[..end], _offset, Top + _offset, Width - 1 + _offset, _textColor);
     }
 
     /// <summary>
@@ -305,20 +337,20 @@ public sealed class VerbArea
         int shown = Math.Min(names.Count - InventoryOffset, 4);
         for (int i = 0; i < shown; i++)
         {
-            var box = Boxes[i];
+            var box = _boxes[i];
             var name = System.Text.Encoding.Latin1.GetBytes(names[InventoryOffset + i]);
             DrawString(name.AsSpan(0, Math.Min(name.Length, InventoryChars)), box.Rect.Left, Top + box.Rect.Top, box.Rect.Right - 1, box.Color);
         }
 
         if (InventoryOffset > 0)
         {
-            var box = Boxes[UpArrow];
+            var box = _boxes[UpArrow];
             DrawString(" \x01\x02"u8, box.Rect.Left, Top + box.Rect.Top, box.Rect.Right - 1, box.Color);
         }
 
         if (InventoryOffset + 4 < names.Count)
         {
-            var box = Boxes[DownArrow];
+            var box = _boxes[DownArrow];
             DrawString(" \x03\x04"u8, box.Rect.Left, Top + box.Rect.Top, box.Rect.Right - 1, box.Color);
         }
     }
@@ -338,7 +370,7 @@ public sealed class VerbArea
         int box = -1;
         if (cursorShown)
         {
-            box = Array.FindIndex(Boxes, b => b.Rect.Contains(x, y - Top));
+            box = Array.FindIndex(_boxes, b => b.Rect.Contains(x, y - Top));
         }
 
         if (box == MouseOverBox)
@@ -348,12 +380,12 @@ public sealed class VerbArea
 
         if (MouseOverBox != -1)
         {
-            Recolor(Boxes[MouseOverBox].Rect, HighlightColor, Boxes[MouseOverBox].Color);
+            Recolor(_boxes[MouseOverBox].Rect, _highlightColor, _boxes[MouseOverBox].Color);
         }
 
         if (box != -1)
         {
-            Recolor(Boxes[box].Rect, Boxes[box].Color, HighlightColor);
+            Recolor(_boxes[box].Rect, _boxes[box].Color, _highlightColor);
         }
 
         MouseOverBox = box;
@@ -371,7 +403,7 @@ public sealed class VerbArea
             return -1;
         }
 
-        if (Boxes[UpArrow].Rect.Contains(x, y))
+        if (_boxes[UpArrow].Rect.Contains(x, y))
         {
             if (InventoryOffset >= 2)
             {
@@ -379,7 +411,7 @@ public sealed class VerbArea
                 return -2;
             }
         }
-        else if (Boxes[DownArrow].Rect.Contains(x, y))
+        else if (_boxes[DownArrow].Rect.Contains(x, y))
         {
             if (InventoryOffset + 4 < carried)
             {
@@ -390,7 +422,7 @@ public sealed class VerbArea
 
         for (int place = 0; place < 4; place++)
         {
-            if (Boxes[place].Rect.Contains(x, y))
+            if (_boxes[place].Rect.Contains(x, y))
             {
                 return place;
             }

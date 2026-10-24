@@ -87,7 +87,13 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
         var font = Font.English(Version);
         Messages = new MessageLine(font, Engine, n => n is > 0 and < ActorCount ? Actors[n] : null, NameOf, VerbName);
-        Verbs = new VerbArea(font, ScreenLayout.ForVersion(Version).RoomBottom, () => Engine.Interface);
+        Verbs = new VerbArea(font, ScreenLayout.ForVersion(Version).RoomBottom, () => Engine.Interface, c64: Version == 0);
+
+        // ScummEngine_v0::resetScumm: the C64's engine makes its verbs itself
+        if (Version == 0)
+        {
+            ResetVerbsV0();
+        }
         _initial = Capture();
     }
 
@@ -217,7 +223,11 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         Messages.Display();
 
         // version 0's input, verbs and sentences are its own (ScummEngine_v0::processInput, checkExecVerbs)
-        if (Version >= 1)
+        if (Version == 0)
+        {
+            ProcessInputV0();
+        }
+        else
         {
             ProcessInput();
         }
@@ -234,7 +244,12 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         SetVar(Engine.Vars.MusicTimer, (int)(Sound.Player.MusicTimer * TimerFrequency / 240.0));
 
         Engine.RunAllScripts();
-        if (Version >= 1)
+        if (Version == 0)
+        {
+            CheckExecVerbsV0();
+            CheckAndRunSentenceScriptV0();
+        }
+        else
         {
             CheckExecVerbs();
             CheckAndRunSentenceScript();
@@ -253,10 +268,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             actor.AnimateCostume();
         }
 
-        if (Version >= 1)
-        {
-            HandleMouseOver(oldEgo != Engine.Variables[ScriptEngine.VarEgo]);
-        }
+        HandleMouseOver(oldEgo != Engine.Variables[ScriptEngine.VarEgo]);
 
         // scummLoop_handleSound: the sounds asked for go to the player
         Sound.ProcessQueue();
@@ -683,8 +695,14 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             return null;
         }
 
-        // a moved object's walk-to point moves with it (o2_drawObject)
+        // a moved object's walk-to point moves with it (o2_drawObject); in version 0 an object with
+        // no direction is walked to at its middle (getObjectXYPos)
         var (x, y) = PositionOf(o);
+        if (Version == 0 && o.ActorDir == 0)
+        {
+            return ((x + o.Width / 2) / 8, (y + o.Height / 2) / 2, Actor.OldDirToNewDir(0));
+        }
+
         return ((o.WalkX + x - o.X) / 8, (o.WalkY + y - o.Y) / 2, Actor.OldDirToNewDir(o.ActorDir & 3));
     }
 
@@ -813,9 +831,11 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// <summary>The name of an actor, or of an object: the name a script gave it, or its own, carried or in the room. Mirrors <c>getObjOrActorName</c>.</summary>
     public string NameOf(int number)
     {
-        if (number is > 0 and < ActorCount)
+        // in version 0 only an object of the actor type is an actor (objIsActor)
+        if (Version == 0 ? number >> 8 == TypeActor : number is > 0 and < ActorCount)
         {
-            return Actors[number].Name;
+            int actor = number & 0xFF;
+            return actor is > 0 and < ActorCount ? Actors[actor].Name : string.Empty;
         }
 
         return _newNames.TryGetValue(number, out string? name) ? name : ObjectCode(number)?.Name ?? string.Empty;

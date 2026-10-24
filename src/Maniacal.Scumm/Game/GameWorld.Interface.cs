@@ -154,16 +154,19 @@ public sealed partial class GameWorld
 
     /// <summary>
     /// Where an object is: 1 carried, 2 in the current room, 0 nowhere to be found. Mirrors
-    /// <c>whereIsObject</c>: an object not owned by the room is only ever in the inventory.
+    /// <c>whereIsObject</c>: an object not owned by the room is only ever in the inventory. In
+    /// version 0 an object that is part of a room, or an actor, has no owner and is only looked
+    /// for in the room.
     /// </summary>
     public int WhereIs(int obj)
     {
-        if (obj < 1 || obj >= Engine.ObjectOwners.Length)
+        bool owned = Version != 0 || obj >> 8 == TypeForeground;
+        if (obj < 1 || (owned && obj >= Engine.ObjectOwners.Length))
         {
             return 0;
         }
 
-        if (Engine.GetOwner(obj) != OwnerRoom)
+        if (owned && Engine.GetOwner(obj) != OwnerRoom)
         {
             return obj != 0 && _inventory.Contains(obj) ? 1 : 0;
         }

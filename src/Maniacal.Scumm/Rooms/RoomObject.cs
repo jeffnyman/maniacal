@@ -20,13 +20,19 @@ public readonly record struct VerbEntry(byte Verb, int Offset);
 /// </remarks>
 public sealed class RoomObject
 {
-    /// <summary>The verb-table entry that matches any verb. Mirrors <c>kFallbackEntry</c> in <c>getVerbEntrypoint</c>.</summary>
-    public const byte FallbackVerb = 0xFF;
+    /// <summary>
+    /// The verb-table entry that matches any verb: 0xFF, and in version 0 What is, 0x0F. Mirrors
+    /// <c>kFallbackEntry</c> in <c>getVerbEntrypoint</c>.
+    /// </summary>
+    public const byte FallbackVerb = 0xFF, FallbackVerbV0 = 0x0F;
+
+    private readonly byte _fallback;
 
     private RoomObject(ReadOnlyMemory<byte> code, int imageOffset, int codeOffset, int version)
     {
         var block = code.Span;
         Code = code;
+        _fallback = version == 0 ? FallbackVerbV0 : FallbackVerb;
         ImageOffset = imageOffset;
         CodeOffset = codeOffset;
         Number = block[4] | (block[5] << 8);
@@ -95,7 +101,7 @@ public sealed class RoomObject
     {
         foreach (var entry in Verbs)
         {
-            if (entry.Verb == verb || entry.Verb == FallbackVerb)
+            if (entry.Verb == verb || entry.Verb == _fallback)
             {
                 return entry.Offset;
             }

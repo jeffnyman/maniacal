@@ -75,6 +75,78 @@ public class GameWorldTests
         Assert.Equal(4.0, world.Time.TotalSeconds, 3);
     }
 
+    /// <summary>
+    /// The C64's kid selection, by clicking: the keypad mode makes each click a Push, which the
+    /// portraits answer with their What is script, version 0's catch-all. A kid's portrait tells
+    /// who the kid is and picks them; START, with two picked, starts the intro.
+    /// </summary>
+    [Fact]
+    public void The_c64_kids_are_picked_by_clicking()
+    {
+        if (Open(C64Folder) is not { } world)
+        {
+            return;
+        }
+
+        const int VarPicked = 90, VarStarted = 91, VarKidCount = 92, VarKids = 97, Intro = 115;
+        void Steps(int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                world.Step();
+            }
+        }
+
+        world.Boot();
+        Steps(100);
+
+        // Syd's portrait, at (56, 88) in the room, which starts 9 lines down the screen
+        world.Click(76, 121);
+        Steps(10);
+        Assert.Equal(1, world.Engine.Variables[VarPicked]);
+        Assert.StartsWith("Syd - an aspiring musician", world.Messages.Plain());
+
+        // Razor's, then START
+        world.Click(236, 121);
+        Steps(50);
+        world.Click(290, 69);
+        Steps(20);
+
+        Assert.Equal(1, world.Engine.Variables[VarStarted]);
+        Assert.Equal(3, world.Engine.Variables[VarKidCount]);
+        Assert.Equal([3, 1, 2], world.Engine.Variables[VarKids..(VarKids + 3)]);
+        Assert.True(world.Engine.IsScriptRunning(Intro));
+        Assert.Empty(world.Unhandled);
+    }
+
+    /// <summary>
+    /// The C64's engine makes its 15 verbs itself, at columns and rows under the sentence line, in
+    /// its colours; Give takes "to", Unlock and Fix "with", and Use the preposition of its object.
+    /// </summary>
+    [Fact]
+    public void The_c64_makes_its_own_verbs()
+    {
+        if (Open(C64Folder) is not { } world)
+        {
+            return;
+        }
+
+        const int Give = 3, Fix = 6, NewKid = 7, Unlock = 8, Push = 9, Use = 11, WalkTo = 13;
+        var verbs = world.Verbs;
+
+        Assert.Equal(15, verbs.Slots.Count(v => v.Id != 0));
+        var newKid = verbs.Slots[verbs.SlotOf(NewKid)];
+        Assert.Equal("New Kid", System.Text.Encoding.Latin1.GetString(newKid.Name));
+        Assert.Equal((24 * 8, 8), (newKid.X, newKid.Y));
+        Assert.Equal((5, 7, 11), (newKid.Color, newKid.HiColor, newKid.DimColor));
+        Assert.Equal((15 * 8, 8), (verbs.Slots[verbs.SlotOf(WalkTo)].X, verbs.Slots[verbs.SlotOf(WalkTo)].Y));
+        Assert.Equal(4, verbs.Slots[verbs.SlotOf(Give)].Preposition);
+        Assert.Equal((2, 2), (verbs.Slots[verbs.SlotOf(Unlock)].Preposition, verbs.Slots[verbs.SlotOf(Fix)].Preposition));
+        Assert.Equal(0xFF, verbs.Slots[verbs.SlotOf(Use)].Preposition);
+        Assert.Equal(0, verbs.Slots[verbs.SlotOf(Push)].Preposition);
+        Assert.Equal(13, world.ActiveVerb);
+    }
+
     /// <summary>Pinned after checking the screens by eye: the title, START and the seven kids, after 60 steps with seed 1.</summary>
     [Theory]
     [InlineData(V1Folder, "09c1f7ddfc8ee22b22a3126cebd04151")]
