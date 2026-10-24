@@ -38,6 +38,9 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     private static readonly int[] V1TalkColors = [1, 7, 2, 14, 8, 1, 3, 7, 7, 12, 1, 13, 1, 4, 5, 5, 4, 3, 1, 5, 1, 1, 1, 7, 7];
 
     private readonly ResourceLoader _loader;
+
+    // the world before the boot script, which a restart goes back to
+    private readonly Saves.ScummState _initial;
     private readonly RecordingHost _recorder = new();
     private readonly Dictionary<int, Costume?> _costumes = [];
     private readonly Dictionary<int, byte[]?> _sounds = [];
@@ -82,6 +85,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         var font = Font.English(Version);
         Messages = new MessageLine(font, Engine, n => n is > 0 and < ActorCount ? Actors[n] : null, NameOf, VerbName);
         Verbs = new VerbArea(font, ScreenLayout.ForVersion(Version).RoomBottom, () => Engine.Interface);
+        _initial = Capture();
     }
 
     public ScriptEngine Engine { get; }

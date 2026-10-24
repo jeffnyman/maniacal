@@ -170,6 +170,59 @@ public class PlayingTests
         }
     }
 
+    /// <summary>
+    /// A verb, then the object twice: the first click puts it in the sentence, the second carries it
+    /// out. With a second object, that one is clicked in the inventory instead, twice. Walk to goes
+    /// on the first click.
+    /// </summary>
+    internal static void Use(GameWorld world, int verb, int obj, int inventoryObj = 0)
+    {
+        var slot = world.Verbs.Slots[world.Verbs.SlotOf(verb)];
+        world.Click(slot.X + 4, slot.Y + 4);
+        Steps(world, 2);
+        var point = PointOn(world, obj);
+        world.Click(point.X, point.Y);
+        Steps(world, 2);
+
+        // Walk to needs no second click: the sentence goes at once
+        const int WalkTo = 13;
+        Assert.Equal(verb == WalkTo ? 0 : obj, world.Engine.Variables[GameWorld.VarSentenceObject1]);
+        if (inventoryObj != 0)
+        {
+            // the inventory's first place, top left
+            int place = world.Inventory.ToList().IndexOf(inventoryObj);
+            Assert.Equal(0, place);
+            point = (8, world.Verbs.Top + VerbArea.InventoryTop + 4);
+            world.Click(point.X, point.Y);
+            Steps(world, 2);
+            Assert.Equal(inventoryObj, world.Engine.Variables[GameWorld.VarSentenceObject2]);
+        }
+
+        world.Click(point.X, point.Y);
+        var ego = world.Actors[world.Engine.Variables[ScriptEngine.VarEgo]];
+        for (int step = 0; step < 600 && (world.Sentences.Count > 0 || ego.Moving != 0 || world.Engine.IsScriptRunning(ScriptEngine.SentenceScript)); step++)
+        {
+            world.Step();
+        }
+
+        Steps(world, 20);
+    }
+
+    /// <summary>A point on screen where the mouse finds the object: its middle, or the nearest place in its box that is not another object's.</summary>
+    private static (int X, int Y) PointOn(GameWorld world, int obj)
+    {
+        var target = world.CurrentRoom!.FindObject(obj)!;
+        var (x, y) = world.PositionOf(target);
+        var points = from dy in Enumerable.Range(0, target.Height)
+                     from dx in Enumerable.Range(0, target.Width)
+                     let px = x + dx
+                     let py = y + dy
+                     orderby Math.Abs(dx - target.Width / 2) + Math.Abs(dy - target.Height / 2)
+                     where px >= world.Camera.Left && px < world.Camera.Left + 320 && world.FindObject(px, py) == obj
+                     select (px - world.Camera.Left, py + 16);
+        return points.First();
+    }
+
     /// <summary>Boots a release and picks Syd and Bernard by clicking, then plays on to the driveway.</summary>
     internal static GameWorld? SelectedKids(string folder)
     {
@@ -293,36 +346,68 @@ public class PlayingTests
             Steps(world, 40);
         }
 
-        // a verb, then the object twice: the first click puts it in the sentence, the second carries it out
-        void Use(int verb, int obj)
-        {
-            var slot = world.Verbs.Slots[world.Verbs.SlotOf(verb)];
-            world.Click(slot.X + 4, slot.Y + 4);
-            Steps(world, 2);
-            var target = world.CurrentRoom!.FindObject(obj)!;
-            var point = (X: target.X + target.Width / 2 - world.Camera.Left, Y: target.Y + target.Height / 2 + 16);
-            world.Click(point.X, point.Y);
-            Steps(world, 2);
-            Assert.Equal(obj, world.Engine.Variables[GameWorld.VarSentenceObject1]);
-            world.Click(point.X, point.Y);
-            for (int step = 0; step < 600 && (world.Sentences.Count > 0 || dave.Moving != 0 || world.Engine.IsScriptRunning(ScriptEngine.SentenceScript)); step++)
-            {
-                world.Step();
-            }
-
-            Steps(world, 20);
-        }
-
-        Use(Pull, DoorMat);
+        Use(world, Pull, DoorMat);
         Assert.NotEqual(0, world.Engine.GetState(DoorMat) & ScriptEngine.StateIntrinsic);
         var key = world.CurrentRoom!.FindObject(Key)!;
         Assert.Equal(Key, world.FindObject(key.X + 4, key.Y + 4));
 
-        Use(PickUp, Key);
+        Use(world, PickUp, Key);
         Assert.Equal([Key], world.Inventory);
         Assert.Equal(1, world.InventoryCount(3));
         Assert.Equal("key", world.NameOf(Key));
         Assert.Contains((byte)13, world.Verbs.Pixels.Row(VerbArea.InventoryTop + 2).ToArray());
+    }
+
+    /// <summary>
+    /// Into the house: the key unlocks the front door, which opens on the hall. There, pulling a
+    /// gargoyle opens the door beside it for as long as the kid stands still (script 149).
+    /// </summary>
+    [Fact]
+    public void The_key_opens_the_front_door_and_a_gargoyle_holds_a_door_open()
+    {
+        if (SelectedKids(V2Folder) is not { } world)
+        {
+            return;
+        }
+
+        const int Open = 1, Unlock = 8, Pull = 10, WalkTo = 13, PickUp = 14;
+        const int DoorMat = 54, Key = 55, FrontDoor = 61, Gargoyle = 351, HiddenDoor = 69;
+        var dave = world.Actors[3];
+        world.Click(4, 100);
+        for (int step = 0; step < 1000 && (world.CurrentRoom?.Number != 1 || dave.Moving != 0); step++)
+        {
+            world.Step();
+        }
+
+        var mat = world.CurrentRoom!.FindObject(DoorMat)!;
+        for (int tries = 0; tries < 20 && (mat.X < world.Camera.Left + 8 || mat.X + mat.Width > world.Camera.Left + 312); tries++)
+        {
+            world.Click(10, 120);
+            Steps(world, 40);
+        }
+
+        Use(world, Pull, DoorMat);
+        Use(world, PickUp, Key);
+        Use(world, Unlock, FrontDoor, Key);
+        Assert.Equal(0, world.Engine.GetState(FrontDoor) & ScriptEngine.StateLocked);
+        Use(world, Open, FrontDoor);
+        Assert.NotEqual(0, world.Engine.GetState(FrontDoor) & ScriptEngine.StateIntrinsic);
+        Use(world, WalkTo, FrontDoor);
+        Assert.Equal(10, world.CurrentRoom?.Number);
+
+        // along the hall until the gargoyle is on screen, then pull it
+        world.Click(300, 120);
+        Steps(world, 60);
+        Use(world, Pull, Gargoyle);
+        Assert.NotEqual(0, world.Engine.GetState(HiddenDoor) & ScriptEngine.StateIntrinsic);
+        Steps(world, 100);
+        Assert.NotEqual(0, world.Engine.GetState(HiddenDoor) & ScriptEngine.StateIntrinsic);
+
+        // a step away and it shuts
+        world.Click(100, 125);
+        Steps(world, 30);
+        Assert.Equal(0, world.Engine.GetState(HiddenDoor) & ScriptEngine.StateIntrinsic);
+        Assert.Equal(10, world.CurrentRoom?.Number);
     }
 
     /// <summary>The engine on a host: the screen is presented and keys reach the game.</summary>

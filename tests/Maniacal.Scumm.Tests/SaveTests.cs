@@ -71,6 +71,15 @@ public class SaveGameTests
 
     private static GameWorld Fresh(string path) => new(ResourceLoader.Open(new DirectoryGameContainer(path)));
 
+    // a fresh world with a save's state, as the save screen restores it, without Load's trip through the save room
+    private static (GameWorld World, SaveInfo Info) Restored(string path, byte[] file)
+    {
+        var world = Fresh(path);
+        var (info, state) = SaveFile.Read(file, world.Engine.ObjectOwners.Length);
+        world.Restore(state);
+        return (world, info);
+    }
+
     [Theory]
     [InlineData(V1Folder, SaveFile.CompatibleVersion)]
     [InlineData(V2Folder, SaveFile.CompatibleVersion)]
@@ -90,8 +99,7 @@ public class SaveGameTests
         }
 
         var file = world.Save("on the way", DateTime.Now, version);
-        var loaded = Fresh(path);
-        var info = loaded.Load(file);
+        var (loaded, info) = Restored(path, file);
 
         Assert.Equal("on the way", info.Name);
         Assert.Equal(world.CurrentRoom?.Number, loaded.CurrentRoom?.Number);
@@ -193,12 +201,74 @@ public class SaveGameTests
         world.Engine.RunRoomScript(Scripts.ScriptEngine.EntryScriptNumber, (byte[])[0x50, 55, 0, 0x00]);
         Assert.Equal([55], world.Inventory);
 
-        var loaded = Fresh(path);
-        loaded.Load(world.Save("key", DateTime.Now));
+        var (loaded, _) = Restored(path, world.Save("key", DateTime.Now));
 
         Assert.Equal([55], loaded.Inventory);
         Assert.Equal("key", loaded.NameOf(55));
         Assert.Equal(world.Engine.ObjectStates, loaded.Engine.ObjectStates);
         Assert.Equal(world.Engine.ObjectOwners, loaded.Engine.ObjectOwners);
+    }
+
+    /// <summary>
+    /// A restart in the middle of the game starts it over: the kid's inventory goes, and the game
+    /// goes through the same rooms as a fresh boot, step for step, to the kid selection. Only what
+    /// the random numbers move, as the portraits' faces, may differ: a restart keeps them going.
+    /// </summary>
+    [Fact]
+    public void A_restart_starts_the_game_over()
+    {
+        if (GameFolders.Find(V2Folder) is not { } path || PlayingTests.SelectedKids(V2Folder) is not { } world)
+        {
+            return;
+        }
+
+        world.Engine.RunRoomScript(Scripts.ScriptEngine.EntryScriptNumber, (byte[])[0x98]);
+        Assert.Empty(world.Inventory);
+
+        var fresh = Fresh(path);
+        fresh.Boot();
+        for (int step = 0; step < 300; step++)
+        {
+            world.Step();
+            fresh.Step();
+            Assert.Equal(fresh.CurrentRoom?.Number, world.CurrentRoom?.Number);
+        }
+
+        Assert.Equal(fresh.Engine.Variables[Scripts.ScriptEngine.VarCursorState], world.Engine.Variables[Scripts.ScriptEngine.VarCursorState]);
+        Assert.Equal(fresh.Engine.ObjectOwners, world.Engine.ObjectOwners);
+    }
+
+    /// <summary>
+    /// A load from outside the save screen goes through the save room and back, as ScummVM's does:
+    /// the kid's room again, the camera on the kid, and the interface back on.
+    /// </summary>
+    [Fact]
+    public void A_load_goes_through_the_save_room_and_puts_the_camera_on_the_kid()
+    {
+        if (GameFolders.Find(V2Folder) is not { } path || PlayingTests.SelectedKids(V2Folder) is not { } world)
+        {
+            return;
+        }
+
+        // to the front of the house, then a few steps left, inside the camera's triggers
+        world.Click(4, 100);
+        for (int i = 0; i < 1000 && (world.CurrentRoom?.Number != 1 || world.Actors[3].Moving != 0); i++)
+        {
+            world.Step();
+        }
+
+        world.Click(100, 120);
+        Steps(world, 200);
+        var dave = world.Actors[3];
+        Assert.NotEqual(Math.Clamp(dave.X * 8, world.Camera.MinX, world.Camera.MaxX), world.Camera.X);
+
+        var loaded = Fresh(path);
+        loaded.Load(world.Save("front", DateTime.Now));
+
+        Assert.Equal(1, loaded.CurrentRoom?.Number);
+        Assert.Equal(Math.Clamp(dave.X * 8, loaded.Camera.MinX, loaded.Camera.MaxX), loaded.Camera.X);
+        Assert.True(loaded.CursorShown);
+        Assert.Equal(world.Engine.Variables[Scripts.ScriptEngine.VarCursorState], loaded.Engine.Variables[Scripts.ScriptEngine.VarCursorState]);
+        Assert.Equal(world.Engine.Interface, loaded.Engine.Interface);
     }
 }

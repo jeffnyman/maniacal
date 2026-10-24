@@ -156,7 +156,7 @@ public sealed class ScriptEngine
     public bool CopyProtection { get; set; }
 
     // the two sides of the steel security door (rooms 11 and 13), which the bypass keeps open
-    private const int SecurityDoorOutside = 182, SecurityDoorInside = 193;
+    internal const int SecurityDoorOutside = 182, SecurityDoorInside = 193;
 
     /// <summary>
     /// An object's state. Without the copy protection, the security door is always open: its
@@ -410,6 +410,35 @@ public sealed class ScriptEngine
         }
     }
 
+    /// <summary>
+    /// The script side of <c>o2_cutscene</c>: the interface and cursor state are kept, then hidden,
+    /// the other scripts freeze and the sentence script stops.
+    /// </summary>
+    internal void BeginCutscene()
+    {
+        SavedForCutscene = (Interface | (CursorOn ? UserCursorOn : 0), Variables[VarCursorState]);
+        Variables[VarCursorState] = 200;
+        SetUserState(UserSetInterface | UserSetCursor | UserSetFreeze | UserFreezeOn);
+        StopScript(SentenceScript);
+        Override = null;
+    }
+
+    /// <summary>The script side of <c>o2_endCutscene</c>: the interface and cursor state kept by <see cref="BeginCutscene"/> come back.</summary>
+    internal void EndCutscene()
+    {
+        Override = null;
+        Variables[VarOverride] = 0;
+        Variables[VarCursorState] = SavedForCutscene.CursorState;
+        SetUserState(SavedForCutscene.UserState | UserSetInterface | UserSetCursor | UserSetFreeze);
+    }
+
+    /// <summary>Stops the script in a slot as <c>stopObjectCode</c> does when the slot is the one running.</summary>
+    internal void StopObjectCode(int slot)
+    {
+        CurrentSlot = slot;
+        StopObjectCode();
+    }
+
     /// <summary>Ends the running script's turn; it carries on from the next instruction next time. Mirrors <c>o5_breakHere</c>.</summary>
     public void BreakHere() => CurrentSlot = -1;
 
@@ -477,6 +506,13 @@ public sealed class ScriptEngine
         CurrentSlot = index;
         Slots[index].ResumeOffset = Slots[index].Offset;
         Execute();
+
+        // a load or restart in the script cleared the nesting: no caller is left to go back to
+        if (_nested.Count <= level)
+        {
+            CurrentSlot = -1;
+            return;
+        }
 
         var nest = _nested[level];
         _nested.RemoveAt(level);
@@ -659,20 +695,13 @@ public sealed class ScriptEngine
 
             // o2_cutscene: save the interface, hide it and the cursor, freeze the other scripts and stop the sentence
             case "o2_cutscene":
-                SavedForCutscene = (Interface | (CursorOn ? UserCursorOn : 0), Variables[VarCursorState]);
-                Variables[VarCursorState] = 200;
-                SetUserState(UserSetInterface | UserSetCursor | UserSetFreeze | UserFreezeOn);
-                StopScript(SentenceScript);
-                Override = null;
+                BeginCutscene();
                 _host.Execute(this, instruction, args);
                 break;
 
             // o2_endCutscene: put the interface back; the saved state never holds the freeze bit, so scripts thaw
             case "o2_endCutscene":
-                Override = null;
-                Variables[VarOverride] = 0;
-                Variables[VarCursorState] = SavedForCutscene.CursorState;
-                SetUserState(SavedForCutscene.UserState | UserSetInterface | UserSetCursor | UserSetFreeze);
+                EndCutscene();
                 _host.Execute(this, instruction, args);
                 break;
 

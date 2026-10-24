@@ -42,12 +42,78 @@ public sealed partial class GameWorld
     public byte[] Save(string name, DateTime saved, int version = SaveFile.CompatibleVersion)
         => SaveFile.Write(Capture(), name, Time, saved, version);
 
-    /// <summary>Loads a ScummVM save file made here or by ScummVM.</summary>
+    /// <summary>
+    /// Loads a ScummVM save file made here or by ScummVM, as ScummVM's own load does: the save is
+    /// restored, then the game goes through its save room as if the save screen had loaded it.
+    /// </summary>
     public SaveInfo Load(byte[] file)
     {
         var (info, state) = SaveFile.Read(file, Engine.ObjectOwners.Length);
         Restore(state);
+        AfterLoad(state);
         return info;
+    }
+
+    /// <summary>
+    /// What ScummVM does after a load from outside the game's save screen, for Maniac Mansion on
+    /// DOS (<c>ScummEngine_v3::scummLoop_handleSaveLoad</c>). A save made in the save room ends the
+    /// save screen's script (<c>terminateSaveMenuScript</c>); a save made where the save screen could
+    /// have been opened goes through the save room inside a cutscene, whose end brings the kid's room
+    /// back with the camera on the kid.
+    /// </summary>
+    private void AfterLoad(ScummState state)
+    {
+        const int SaveMenuScript = 133, VarGameStarted = 164, VarSaveAllowed = 21;
+        if (CurrentRoom?.Number == SaveRoom)
+        {
+            if (Version == 1)
+            {
+                foreach (int obj in new[] { ScriptEngine.SecurityDoorOutside, ScriptEngine.SecurityDoorInside })
+                {
+                    Engine.PutState(obj, Engine.GetState(obj) & ~ScriptEngine.StateIntrinsic);
+                }
+            }
+
+            // a game saved before it began starts again; then no script of the save is left to stop
+            Engine.StopScript(SaveMenuScript);
+            bool restarted = Version == 2 && Engine.Variables[VarGameStarted] == 0;
+            if (restarted)
+            {
+                Restart();
+            }
+
+            Engine.EndCutscene();
+            RedrawInterface();
+            EndCutscene();
+            if (!restarted && state.CurrentScript < ScummState.SlotCount && !Engine.Slots[state.CurrentScript].IsDead)
+            {
+                Engine.StopObjectCode(state.CurrentScript);
+            }
+        }
+        else if (Engine.Variables[VarSaveAllowed] == 1 && CursorShown)
+        {
+            Engine.BeginCutscene();
+            CutsceneBegun();
+            StartScene(SaveRoom);
+            Engine.EndCutscene();
+            RedrawInterface();
+            EndCutscene();
+        }
+
+        Engine.ContinueAfterLoad(-1, 0);
+        Verbs.Redraw(CursorShown ? Verbs.FindAt(Mouse.X, Mouse.Y) : 0);
+    }
+
+    /// <summary>
+    /// Starts the game again from the boot script, with the world as it was before the first boot.
+    /// Mirrors <c>ScummEngine::restart</c>: every script stops, sounds stop, the variables, owners and
+    /// states go back to the index's, and the boot script runs.
+    /// </summary>
+    private void Restart()
+    {
+        Engine.ContinueAfterLoad(-1, 0);
+        Restore(_initial);
+        Boot();
     }
 
     /// <summary>The world as a ScummVM save state. Mirrors the state <c>saveLoadWithSerializer</c> writes.</summary>

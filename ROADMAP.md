@@ -145,7 +145,18 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   `getClosestObjActor`, and dark rooms: black where the room lights are off (`clear8Col`), with
   the flashlight of `o2_lights` and `drawFlashlight`, its corners rounded by the version 1 and 2
   curves, lighting the room around the mouse. Rooms 5, 8, 9, 15, 22 and 23 start dark.
-- Next: playing the game beyond the front door, checking it against ScummVM, then Phase 5 (the C64).
+- Done: into the house, checked against ScummVM 2.7.0 by loading the same saves in both: the hall,
+  the kitchen, Edna catching a kid and locking him in the dungeon, the dungeon's brick and door, the
+  gargoyle that holds a door open while the kid who pulled it stands still, and the basement dark
+  and lit. Every opcode the game's scripts use has a handler. Two fixes came of it: a load from
+  outside the save screen now goes through the save room inside a cutscene and back, as ScummVM's
+  does after a launcher load (`ScummEngine_v3::scummLoop_handleSaveLoad`, with
+  `terminateSaveMenuScript` for a save made in the save room), which puts the camera on the kid;
+  and `o2_restart` starts the game over (`ScummEngine::restart`).
+- Where ScummVM 2.7.0 and the current ScummVM differ, Maniacal follows the current one: after a
+  user state change the sentence line is drawn again (`runInventoryScriptEx`), and only version 1
+  puts back the camera mode a cutscene began with (`o2_endCutscene`).
+- Next: Phase 5 (the C64).
 - `script.cpp`: script slots, `runScript`, `runObjectScript`, `runEntryScript`/`runExitScript`,
   cutscenes, `stopScript`, freeze and unfreeze, the bit variables.
 - `script_v2.cpp`: the V2 opcode table (also used by V1) and every handler.

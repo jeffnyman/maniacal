@@ -16,10 +16,13 @@ costumes are read, and every script decodes. `maniacal <folder>` opens the game 
 scripts run, change rooms, set the camera and object states, and put, walk and animate actors; the
 message line shows what is said, and the verbs, the sentence line and the inventory work with the
 mouse and the keys. Kids are picked by clicking, the intro plays, and the kids walk from room to
-room and pick things up; dark rooms are black but for the flashlight. The game beyond the front
-door is not checked yet. The music and sound effects play as the PCjr made them, or as the PC
-speaker did with `--speaker`. F5 opens the game's own save screen; saves are ScummVM's own files
-(`maniac.s01` for Game A, and so on), so they can be moved between Maniacal and ScummVM 2.7 or later.
+room and pick things up; dark rooms are black but for the flashlight. Inside the house the game
+plays as in ScummVM as far as it has been checked: the kitchen, Edna catching a kid and the
+dungeon, the gargoyle's door, and the basement with its lights. The music and sound effects play
+as the PCjr made them, or as the PC speaker did with `--speaker`. F5 opens the game's own save
+screen; saves are ScummVM's own files (`maniac.s01` for Game A, and so on), so they can be moved
+between Maniacal and ScummVM 2.7 or later. A save loaded with `--load` goes through the game's save
+room on the way in, as one loaded from ScummVM's launcher does.
 As in ScummVM, the copy protection is bypassed: the steel security door stays open, so its code
 from the manual is never needed; `--copy-protection` keeps it.
 

@@ -317,16 +317,17 @@ public sealed partial class GameWorld
 
             // o2_cutscene: the room and camera are kept for version 1, and the sentences go
             case "o2_cutscene":
-                _beforeCutscene = (CurrentRoom?.Number ?? 0, Camera.Mode);
-                RedrawInterface();
-                _sentences.Clear();
-                ResetSentence();
+                CutsceneBegun();
                 return true;
 
             // o2_endCutscene: the camera follows the kid again; version 1 puts back the camera it had, or the room
             case "o2_endCutscene":
                 RedrawInterface();
                 EndCutscene();
+                return true;
+
+            case "o2_restart":
+                Restart();
                 return true;
 
             // setOwnerOf: an object given to nobody leaves the inventory; either way the inventory redraws (runInventoryScript)
@@ -547,6 +548,15 @@ public sealed partial class GameWorld
             _inventory[index] = 0;
             _carried.Remove(obj);
         }
+    }
+
+    /// <summary>The world side of <c>o2_cutscene</c>: the room and camera mode are kept, and the sentences go.</summary>
+    private void CutsceneBegun()
+    {
+        _beforeCutscene = (CurrentRoom?.Number ?? 0, Camera.Mode);
+        RedrawInterface();
+        _sentences.Clear();
+        ResetSentence();
     }
 
     /// <summary>Mirrors <c>o2_endCutscene</c>'s camera: version 2 follows the kid, version 1 puts back the camera mode or room the cutscene began with.</summary>
