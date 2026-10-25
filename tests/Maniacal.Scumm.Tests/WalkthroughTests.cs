@@ -9,7 +9,8 @@ public class WalkthroughTests
     private const string C64 = "maniac_mansion_c64", V1 = "maniac_mansion_original_DOS.com", V2 = "maniac_mansion_enhanced_DOS.com";
 
     // the rooms on the way
-    private const int Driveway = 44, FrontOfTheHouse = 1, Hall = 10, Cellar = 8;
+    private const int Driveway = 44, FrontOfTheHouse = 1, Hall = 10, Cellar = 8, LivingRoom = 3, Library = 5,
+        Kitchen = 7, DiningRoom = 37, StorageRoom = 36, Pool = 6;
 
     /// <summary>The kids in the driveway, the game started: Dave, Syd and Razor on the C64, Syd, Dave and Bernard on DOS.</summary>
     private static Player? Start(string folder)
@@ -78,16 +79,76 @@ public class WalkthroughTests
     }
 
     /// <summary>
-    /// The first two sections, every instruction on the way handled; a timed cutscene (Dr. Fred and
-    /// Sandy in the lab, a minute in) breaks in on the way and is waited out. Saved at the end and
-    /// loaded in ScummVM 2.7.0, each release shows the same screen there, but for the cursor and the
-    /// DOS sentence line, which ScummVM 2.7.0 leaves blank after a load.
+    /// The living room and the library: Dave leaves the gargoyle for the far door of the hall, opens
+    /// the living room's cabinet on its cassette player, and in the dark library turns a lamp on,
+    /// opens the loose panel and takes the blank cassette tape from behind it.
+    /// </summary>
+    private static void TheLivingRoomAndTheLibrary(Player p)
+    {
+        p.NewKid("Dave");
+        p.Do("Open", "door[3]");
+        p.Go("door[3]");
+        Assert.Equal(LivingRoom, p.Room);
+        p.Do("Open", "cabinet door");
+        p.Do("Open", "door[2]");
+        p.Go("door[2]");
+        Assert.Equal(Library, p.Room);
+        p.Do("Turn on", "lamp");
+        p.Do("Open", "loose panel");
+        p.Do("Pick up", "cassette tape", until: () => p.Carries("cassette tape"));
+        p.Go("door");
+        Assert.Equal(LivingRoom, p.Room);
+    }
+
+    /// <summary>
+    /// The kitchen, the storage room and the pool: Syd waits in the living room until Nurse Edna
+    /// has left the kitchen (five minutes of her timer from the front door, which stands still
+    /// through cutscenes: between eight and ten minutes into the game here), then takes the
+    /// flashlight and, from the fridge,
+    /// the can of Pepsi; through the dining room to the storage room for the glass jar and the
+    /// fruit drinks; the silver key opens its other door on the pool, whose water fills the jar.
+    /// </summary>
+    private static void TheKitchenAndThePool(Player p)
+    {
+        p.NewKid(Second(p));
+        p.Go("door[3]");
+        Assert.Equal(LivingRoom, p.Room);
+        p.Wait(TimeSpan.FromMinutes(11));
+        p.Go("door[1]");
+        Assert.Equal(Hall, p.Room);
+        p.Do("Open", "door[1]");
+        p.Go("door[1]");
+        Assert.Equal(Kitchen, p.Room);
+        p.Do("Pick up", "flashlight", until: () => p.Carries("flashlight"));
+        p.Do("Open", "refrigerator");
+        p.Do("Pick up", "can of Pepsi", until: () => p.Carries("can of Pepsi"));
+        p.Do("Open", "door[2]");
+        p.Go("door[2]");
+        Assert.Equal(DiningRoom, p.Room);
+        p.Do("Open", "door[2]");
+        p.Go("door[2]");
+        Assert.Equal(StorageRoom, p.Room);
+        p.Do("Pick up", "glass jar", until: () => p.Carries("glass jar"));
+        p.Do("Pick up", "fruit drinks", until: () => p.Carries("fruit drinks"));
+        p.Do("Unlock", "door[2]", "silver key");
+        p.Do("Open", "door[2]");
+        p.Go("door[2]");
+        Assert.Equal(Pool, p.Room);
+        p.Do("Use", "glass jar", "swimming pool");
+    }
+
+    /// <summary>
+    /// The route so far, every instruction on the way handled, saved where each section ends. Timed
+    /// events break in on the way and are waited out: the cutscene of Dr. Fred and Sandy in the lab,
+    /// a minute in, and Nurse Edna's leaving the kitchen. Each save loaded in ScummVM 2.7.0 shows
+    /// the same screen there, but for the cursor and the DOS sentence line, which ScummVM 2.7.0
+    /// leaves blank after a load.
     /// </summary>
     [Theory]
     [InlineData(C64)]
     [InlineData(V1)]
     [InlineData(V2)]
-    public void Into_the_house_and_the_silver_key(string folder)
+    public void The_route_plays(string folder)
     {
         if (Start(folder) is not { } p)
         {
@@ -96,7 +157,11 @@ public class WalkthroughTests
 
         EnterTheHouse(p);
         GetTheSilverKey(p);
-        Assert.Empty(p.Unhandled);
         Checkpoint(p, folder, 31);
+        TheLivingRoomAndTheLibrary(p);
+        TheKitchenAndThePool(p);
+        Assert.True(p.Carries("jar of water"));
+        Checkpoint(p, folder, 32);
+        Assert.Empty(p.Unhandled);
     }
 }

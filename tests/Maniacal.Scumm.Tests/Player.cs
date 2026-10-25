@@ -53,6 +53,14 @@ internal sealed class Player(GameWorld world)
         return condition();
     }
 
+    /// <summary>Lets the game play on, the kid standing where he is, until it has run so long.</summary>
+    public void Wait(TimeSpan played)
+    {
+        Note($"wait until {played}");
+        Until(() => world.Time >= played, int.MaxValue);
+        Ready();
+    }
+
     /// <summary>Whether the kid can be played: the cursor shows and the room on screen is his, not a cutscene's.</summary>
     public bool Playable => world.CursorShown && Kid.Room == Room;
 
@@ -304,18 +312,21 @@ internal sealed class Player(GameWorld world)
         Steps(2);
     }
 
-    /// <summary>Walks the kid along his line towards where the object lies, to the floor short of the screen's edge where exits are.</summary>
+    /// <summary>Walks the kid along his line towards where the object lies, to floor short of the screen's edge where exits are.</summary>
     private void WalkTowards(Rooms.RoomObject target)
     {
         int x = world.PositionOf(target).X + target.Width / 2 - world.Camera.Left;
         int verb = ActiveVerb;
         Verb("Walk to");
 
-        // a spot of floor, not an object the kid would walk into
-        int y = KidLine;
-        int spot = Enumerable.Range(0, 120).Select(d => x < 160 ? 40 + d : 280 - d)
-            .FirstOrDefault(sx => world.FindObject(sx + world.Camera.Left, y - Layout.RoomTop) == 0, 160);
-        world.Click(spot, y);
+        // the farthest spot of floor, not an object the kid would walk into, on his line or near it
+        var spot = (from d in Enumerable.Range(0, 140)
+                    let sx = x < 160 ? 20 + d : 300 - d
+                    from dy in new[] { 0, 8, 16, 24, -8, -16, -24 }
+                    let y = Math.Clamp(KidLine + dy, Layout.RoomTop, Layout.RoomBottom - 1)
+                    where world.FindObject(sx + world.Camera.Left, y - Layout.RoomTop) == 0
+                    select (X: sx, Y: y)).FirstOrDefault((X: 160, Y: KidLine));
+        world.Click(spot.X, spot.Y);
         Steps(5);
         Until(() => !KidWalking, 300);
         if (verb != ActiveVerb)

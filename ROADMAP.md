@@ -376,8 +376,18 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   a sentence it interrupts is given again. Saved at the end (`MANIACAL_CHECKPOINTS` names a folder
   for the saves) and loaded in ScummVM 2.7.0, every release shows the same screen there but for the
   cursor and the DOS sentence line, which ScummVM 2.7.0 leaves blank after a load.
-- Next: the walkthrough on, a section a slice: the kitchen, the storage room and the pool, the
-  living room and library, upstairs; then the other kids' ways to win.
+- Done: the walkthrough on through the ground floor. Dave opens the living room's cabinet, turns
+  the dark library's lamp on and takes the cassette tape from behind the loose panel. Syd waits in
+  the living room until Nurse Edna has left the kitchen: her five minutes run from the front door
+  but stand still through cutscenes, so she goes between eight and ten minutes into the game here.
+  Syd then takes the flashlight and the can of Pepsi from the fridge, the glass jar and the fruit
+  drinks from the storage room, unlocks its far door with the silver key and fills the jar at the
+  pool. Saved there, the game shows the same screen in ScummVM 2.7.0 in every release, but for the
+  cursor and the DOS sentence line; Weird Ed's "hungry" cutscene, which follows, starts 4.3 s after
+  the load in both. The test player now looks for floor off the kid's line when walking towards
+  something, as in the kitchen, where the stove covers the line.
+- Next: upstairs: the painting room, the music room, the security door, then Green Tentacle; then
+  the other kids' ways to win.
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).

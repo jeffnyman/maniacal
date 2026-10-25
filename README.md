@@ -84,7 +84,8 @@ named by the `MANIACAL_GAMES` environment variable or in any folder above the te
 
 The walkthrough tests play the game's winning route, a section at a time, in every release. With
 `MANIACAL_CHECKPOINTS` naming a folder, they save there where each section ends, as ScummVM slot
-files (`maniac64.s31`, `maniac1.s31`, `maniac2.s31`), to load in ScummVM and compare.
+files for the release's target, from slot 31 on (`maniac64.s31`, `maniac1.s32`, ...), to load in
+ScummVM and compare.
 
 The C64 release's disk images are found by ScummVM's names, `maniac1.d64` and `maniac2.d64`, or by
 the bytes each disk starts with.
