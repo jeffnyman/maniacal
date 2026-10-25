@@ -366,8 +366,18 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   so and loaded in ScummVM shows the same screen, but for the cursor and the verb area's offsets:
   the pictures, objects in their states, the dark rooms (5, 8, 9, 15, 22, 23), and what entry
   scripts start (the green tentacle's "Oomph!" in room 12, whose two poses match frame for frame).
-- Next: further into the game by play (the rooms behind keys and the meteor's plot), and the
-  other kids' ways through it.
+- Done: the walkthrough's first sections, in all three releases. A test player plays by the names
+  on screen, as `docs/game/walkthrough.pdf` reads ("Pull door mat", "Unlock front door with key",
+  "New kid Syd"): it clicks the verb, the object in the room, the inventory or an actor, walking the
+  kid along while it is off screen, and waits out cutscenes. From the driveway, Dave takes the key
+  from under the door mat and opens the front door; Syd follows him in; Dave pushes the gargoyle
+  and Syd goes through the knobless door to the cellar, turns its light on and takes the silver key.
+  A cutscene a minute in (Dr. Fred and Sandy in the lab) breaks in on the way, as it does in play;
+  a sentence it interrupts is given again. Saved at the end (`MANIACAL_CHECKPOINTS` names a folder
+  for the saves) and loaded in ScummVM 2.7.0, every release shows the same screen there but for the
+  cursor and the DOS sentence line, which ScummVM 2.7.0 leaves blank after a load.
+- Next: the walkthrough on, a section a slice: the kitchen, the storage room and the pool, the
+  living room and library, upstairs; then the other kids' ways to win.
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).
