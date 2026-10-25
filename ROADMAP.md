@@ -352,7 +352,16 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   the frames (`GameWorld.Transition`), its length includes theirs, and the host shows them before
   the step's own screen. The transitions' state goes into saves. The windowed player also now sets
   the C64's palette rather than always the EGA's.
-- Next: playing on in the C64, comparing with ScummVM where play reaches new ground.
+- Done: playing on in the C64. Every verb each object of those rooms answers to, tried from a
+  save of its room (188 sentences, a second object from the inventory where the verb takes one),
+  runs without an unhandled instruction or an error: locked doors, the gate's "You can't pass until
+  you feed me!", the dark office's "It's too dark to read.", Edna's "I got you!" from anything in
+  the kitchen. The results checked against ScummVM 2.7.0 through saves, the screens the same but
+  for the cursor: a badge picked up in the dungeon, the office's desk lamp turned on, New kid to Syd
+  (who stands in the street with Razor), and five things carried, the inventory's arrow showing.
+  No new difference found. Tests play from the intro up to the office and into Edna's arms.
+- Next: further into the game (the rooms behind keys and the meteor's plot), and the other kids'
+  ways through it.
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).
