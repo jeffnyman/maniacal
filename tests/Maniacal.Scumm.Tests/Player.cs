@@ -86,8 +86,15 @@ internal sealed class Player(GameWorld world)
     /// <summary>Lets the game play on, the kid standing where he is, for a while.</summary>
     public void Wait(TimeSpan span) => WaitUntil(world.Time + span);
 
-    /// <summary>Lets the game play on, the kid standing where he is, until someone says something, as a cutscene shows it.</summary>
+    /// <summary>Lets the game play on, the kid standing where he is, until someone says something, as a cutscene shows it, then through the cutscene.</summary>
     public void WaitToHear(string words, TimeSpan within)
+    {
+        Hear(words, within);
+        Ready();
+    }
+
+    /// <summary>Lets the game play on until someone says something, and no further.</summary>
+    public void Hear(string words, TimeSpan within)
     {
         Note($"wait to hear \"{words}\"");
         var end = world.Time + within;
@@ -95,7 +102,14 @@ internal sealed class Player(GameWorld world)
         {
             throw new InvalidOperationException($"\"{words}\" never said, {Situation()}");
         }
+    }
 
+    /// <summary>Skips the cutscene on, with Escape, then plays on until the kid can be played.</summary>
+    public void Skip()
+    {
+        Note("skip the cutscene");
+        world.PressKey(GameWorld.KeyEscape);
+        Steps(2);
         Ready();
     }
 
@@ -124,11 +138,13 @@ internal sealed class Player(GameWorld world)
 
     private const int WalkToVerb = 13;
 
+    private bool Shows(string verb) => world.Verbs.Slots.Any(s => s.Id != 0 && s.Mode == 1 && Shown(s.Name).Equals(verb, StringComparison.OrdinalIgnoreCase));
+
     private int VerbId(string name) => Slot(name).Id;
 
     private VerbSlot Slot(string name) =>
         world.Verbs.Slots.FirstOrDefault(s => s.Id != 0 && s.Mode == 1 && Shown(s.Name).Equals(name, StringComparison.OrdinalIgnoreCase))
-            ?? throw new InvalidOperationException($"no verb \"{name}\" shows; there are {string.Join(", ", world.Verbs.Slots.Where(s => s.Id != 0 && s.Mode == 1).Select(s => Shown(s.Name)))}");
+            ?? throw new InvalidOperationException($"no verb \"{name}\" shows; there are {string.Join(", ", world.Verbs.Slots.Where(s => s.Id != 0 && s.Mode == 1).Select(s => Shown(s.Name)))}, {Situation()}");
 
     /// <summary>
     /// A sentence carried out, and played on until the kid has done it. With an outcome to look for,
@@ -274,7 +290,7 @@ internal sealed class Player(GameWorld world)
                 world.Click(new[] { 4, 13 * 8, 27 * 8 }[slot], world.Verbs.Top + 2);
                 Steps(3);
             }
-            else
+            else if (Shows(name))
             {
                 Verb(name);
             }

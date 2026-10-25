@@ -438,9 +438,26 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   C64) and takes the sealed envelope. Saved in the telescope's close-up and where the sections
   end, and loaded in ScummVM 2.7.0, every release shows the same close-up to the pixel, and the
   same screens elsewhere but for the cursor and the DOS sentence line.
-- Next: the envelope steamed open in the kitchen's microwave for its quarter; the glowing key from
-  the drained pool, the radio's batteries for the flashlight, and the tools from the car's trunk;
-  then the wires fixed with the power off, the arcade's high score and the secret lab.
+- Done: the quarter, the glowing key and the tools. Syd comes down from Edna's attic to be caught
+  and Dave, in the cellar, lets him out of the dungeon with the old rusty key. In the kitchen the
+  sealed envelope and a jar of tap water go into the microwave; opened before it is done, the oven
+  stops cooking (its script stopped), so the route waits for it, and the steamed envelope gives up
+  the quarter. Syd opens the grating outside, Dave goes under the house to the water valve and
+  drains the pool, and Syd climbs down for the glowing key and the radio, whose batteries go into
+  the flashlight; Dave lets the water back before the meltdown, two minutes after Dr. Fred's alarm.
+  A cutscene breaking in on a kid's walk leaves him standing with his walk's next point unchanged,
+  and a new walk whose first point is that one never starts (Actor_v0::walkActor, the same in
+  ScummVM 2.7.0, where the same save leaves Syd on the ladder after the alarm): on the pool's
+  ladder every way down begins at its foot, so Syd waits out the alarm, skipped with Escape as a
+  player may, and Purple Tentacle's look round the cellar before going down. Syd then goes round
+  by the pool's gate to the garage, lifts its door, and the yellow key opens the trunk on the tools.
+  Saved where each section ends and loaded in ScummVM 2.7.0, every release shows the same screen
+  but for the cursor (and the inventory name it lights) and the DOS sentence line. The test player
+  now skips cutscenes, hears without playing on, and makes New kid again when the kids' names do
+  not come up.
+- Next: the wires in the attic fixed with the power off at the circuit breakers, by flashlight;
+  then Dr. Fred's game of Meteor Mess in the arcade, its high score for the lab's inner door, and
+  the secret lab.
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).

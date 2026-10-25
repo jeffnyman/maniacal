@@ -12,7 +12,8 @@ public class WalkthroughTests
     private const int Driveway = 44, FrontOfTheHouse = 1, Hall = 10, Cellar = 8, LivingRoom = 3, Library = 5,
         Kitchen = 7, DiningRoom = 37, StorageRoom = 36, Pool = 6, Landing = 11, PaintingRoom = 14, MusicRoom = 17,
         Hallway = 13, TentacleLanding = 12, TopHallway = 38, FredsRoom = 21, TentaclesRoom = 20, TedsRoom = 25, PlantRoom = 27, TelescopeRoom = 28,
-        EdnasRoom = 19, EdnasAttic = 9, Dungeon = 4, EdsRoom = 26, EdnasAtticCloseUp = 34;
+        EdnasRoom = 19, EdnasAttic = 9, Dungeon = 4, EdsRoom = 26, EdnasAtticCloseUp = 34,
+        UnderTheHouse = 29, UnderThePool = 2, Garage = 16;
 
     /// <summary>The kids in the driveway, the game started: Dave, Syd and Razor on the C64, Syd, Dave and Bernard on DOS.</summary>
     private static Player? Start(string folder)
@@ -463,6 +464,125 @@ public class WalkthroughTests
         return string.Concat(Enumerable.Range(first, 4).Select(v => p.World.Engine.Variables[v]));
     }
 
+    /// <summary>
+    /// The quarter: Syd comes down from the attic into Edna's room and is caught, and Dave, in the
+    /// cellar, lets him out of the dungeon with the old rusty key. In the kitchen the sealed envelope
+    /// goes into the microwave with a jar of tap water, and steamed open it gives up a quarter
+    /// without being torn.
+    /// </summary>
+    private static void TheQuarter(Player p)
+    {
+        p.Go("hatch");
+        Assert.True(p.Until(() => p.Kid.Room == Dungeon && p.Playable), "Edna never took Syd to the dungeon");
+        p.NewKid("Dave");
+        Assert.Equal(Cellar, p.Room);
+        p.Do("Unlock", "door", "old rusty key");
+        p.Do("Open", "door");
+
+        p.NewKid(Second(p));
+        p.Go("door");
+        Assert.Equal(Cellar, p.Room);
+        p.Go("stairs");
+        Assert.Equal(Hall, p.Room);
+        p.Do("Open", "door[1]");
+        p.Go("door[1]");
+        Assert.Equal(Kitchen, p.Room);
+        p.Do("Open", "microwave oven");
+        p.Do("Use", "sealed envelope", "microwave oven", until: () => !p.Carries("sealed envelope"));
+        p.Do("Turn on", "faucet");
+        p.Do("Use", "glass jar", "faucet", until: () => p.Carries("jar of water"));
+        p.Do("Turn off", "faucet");
+        p.Do("Use", "jar of water", "microwave oven", until: () => !p.Carries("jar of water"));
+        p.Do("Close", "microwave oven");
+        p.Do("Turn on", "microwave oven");
+
+        // opened before it is done, the oven stops cooking
+        p.Wait(TimeSpan.FromSeconds(10));
+        p.Do("Open", "microwave oven");
+        p.Do("Pick up", "envelope", until: () => p.Carries("envelope"));
+        p.Do("Open", "envelope", until: () => p.Carries("quarter"));
+    }
+
+    /// <summary>
+    /// The glowing key: Syd, strong from the Hunk-O-Matic, takes the bushes away from the grating
+    /// outside and opens it, and goes round to the pool. Dave goes in under the house to the water
+    /// valve and drains the pool, its water cooling the reactor, so only for a while: Syd climbs down
+    /// for the glowing key and the radio and back up, and Dave lets the water back in. The radio
+    /// holds fresh batteries, which go into the flashlight.
+    /// </summary>
+    private static void TheGlowingKey(Player p)
+    {
+        p.Go("door[1]");
+        Assert.Equal(Hall, p.Room);
+        p.Go("front door");
+        Assert.Equal(FrontOfTheHouse, p.Room);
+        p.Do("Pick up", "bushes[1]");
+        p.Do("Open", "grating");
+
+        p.NewKid("Dave");
+        p.Go("stairs");
+        Assert.Equal(Hall, p.Room);
+        p.Go("front door");
+        Assert.Equal(FrontOfTheHouse, p.Room);
+        p.Go("grating");
+        Assert.Equal(UnderTheHouse, p.Room);
+
+        p.NewKid(Second(p));
+        p.Go("front door");
+        Assert.Equal(Hall, p.Room);
+        p.Go("door[1]");
+        Assert.Equal(Kitchen, p.Room);
+        p.Do("Open", "door[2]");
+        p.Go("door[2]");
+        Assert.Equal(DiningRoom, p.Room);
+        p.Do("Open", "door[2]");
+        p.Go("door[2]");
+        Assert.Equal(StorageRoom, p.Room);
+        p.Do("Open", "door[2]");
+        p.Go("door[2]");
+        Assert.Equal(Pool, p.Room);
+
+        // the pool drained, Dr. Fred finds his reactor overheating (the cutscene skipped) and sends
+        // Purple Tentacle down to the cellar; a kid on the ladder when a cutscene breaks in stops
+        // there and cannot walk on (the first point of every way down being the one he was already
+        // going to), so Syd goes down after both, with two minutes from the alarm to the meltdown
+        p.NewKid("Dave");
+        p.Do("Turn on", "water valve");
+        p.NewKid(Second(p));
+        p.Hear("meltdown", TimeSpan.FromMinutes(1));
+        p.Skip();
+        p.WaitToHear("no one here", TimeSpan.FromMinutes(1));
+        p.Hurried = true;
+        p.Go("ladder");
+        Assert.Equal(UnderThePool, p.Room);
+        p.Do("Pick up", "glowing key", until: () => p.Carries("glowing key"));
+        p.Do("Pick up", "radio", until: () => p.Carries("radio"));
+        p.Go("ladder");
+        Assert.Equal(Pool, p.Room);
+        p.NewKid("Dave");
+        p.Do("Turn off", "water valve");
+        p.Hurried = false;
+
+        p.NewKid(Second(p));
+        p.Do("Open", "radio", until: () => p.Carries("batteries"));
+        p.Do("Use", "batteries", "flashlight", until: () => !p.Carries("batteries"));
+    }
+
+    /// <summary>
+    /// The tools: Syd goes through the pool's gate round to the garage, strong enough now to lift
+    /// its door, and the yellow key opens the trunk of the car inside, where the tools are.
+    /// </summary>
+    private static void TheTools(Player p)
+    {
+        p.Do("Open", "gate");
+        p.Go("gate");
+        Assert.Equal(Garage, p.Room);
+        p.Do("Open", "garage door");
+        p.Do("Unlock", "trunk", "yellow key");
+        p.Do("Open", "trunk");
+        p.Do("Pick up", "tools", until: () => p.Carries("tools"));
+    }
+
     /// <summary>From the hall up the stairs, through the middle door and up twice more to the top hallway.</summary>
     private static void UpToTheTopHallway(Player p)
     {
@@ -520,6 +640,15 @@ public class WalkthroughTests
         TheSafe(p);
         Assert.True(p.Carries("sealed envelope", "Syd"));
         Checkpoint(p, folder, 38);
+        TheQuarter(p);
+        Assert.True(p.Carries("quarter", "Syd"));
+        Checkpoint(p, folder, 39);
+        TheGlowingKey(p);
+        Assert.True(p.Carries("glowing key", "Syd"));
+        Checkpoint(p, folder, 40);
+        TheTools(p);
+        Assert.True(p.Carries("tools", "Syd"));
+        Checkpoint(p, folder, 41);
         Assert.Empty(p.Unhandled);
     }
 }
