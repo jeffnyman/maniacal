@@ -13,7 +13,8 @@ public class WalkthroughTests
         Kitchen = 7, DiningRoom = 37, StorageRoom = 36, Pool = 6, Landing = 11, PaintingRoom = 14, MusicRoom = 17,
         Hallway = 13, TentacleLanding = 12, TopHallway = 38, FredsRoom = 21, TentaclesRoom = 20, TedsRoom = 25, PlantRoom = 27, TelescopeRoom = 28,
         EdnasRoom = 19, EdnasAttic = 9, Dungeon = 4, EdsRoom = 26, EdnasAtticCloseUp = 34,
-        UnderTheHouse = 29, UnderThePool = 2, Garage = 16;
+        UnderTheHouse = 29, UnderThePool = 2, Garage = 16,
+        WiresAttic = 15, Arcade = 18, HighScore = 39;
 
     /// <summary>The kids in the driveway, the game started: Dave, Syd and Razor on the C64, Syd, Dave and Bernard on DOS.</summary>
     private static Player? Start(string folder)
@@ -453,14 +454,14 @@ public class WalkthroughTests
     {
         p.NewKid(Second(p));
         Assert.Equal(EdnasAttic, p.Room);
-        p.Keypad("Open", "wall safe", Combination(p));
+        p.Keypad("Open", "wall safe", Code(p, dos: 55, c64: 36));
         p.Do("Pick up", "sealed envelope", until: () => p.Carries("sealed envelope"));
     }
 
-    // the safe's combination, chosen at the start: four digits from variable 55 (36 on the C64)
-    private static string Combination(Player p)
+    // a code the game chose, as the player read it: four digits from a variable on (another on the C64)
+    private static string Code(Player p, int dos, int c64)
     {
-        int first = p.World.Version == 0 ? 36 : 55;
+        int first = p.World.Version == 0 ? c64 : dos;
         return string.Concat(Enumerable.Range(first, 4).Select(v => p.World.Engine.Variables[v]));
     }
 
@@ -583,6 +584,126 @@ public class WalkthroughTests
         p.Do("Pick up", "tools", until: () => p.Carries("tools"));
     }
 
+    /// <summary>
+    /// The wires: Syd takes the tools up to the attic behind the plant room, whose wires are
+    /// broken. The third kid comes down to the hall to hold the knobless door open on the gargoyle
+    /// for Dave, who goes down to the cellar and turns the house's power off at the circuit
+    /// breakers; by the flashlight's light Syd fixes the wires, and Dave turns the power back on
+    /// and goes back up before Purple Tentacle comes to see why.
+    /// </summary>
+    private static void TheWires(Player p, string third)
+    {
+        p.Go("gate");
+        Assert.Equal(Pool, p.Room);
+        p.Go("door");
+        Assert.Equal(StorageRoom, p.Room);
+        p.Go("door[1]");
+        Assert.Equal(DiningRoom, p.Room);
+        p.Go("door[1]");
+        Assert.Equal(Kitchen, p.Room);
+        p.Go("door[1]");
+        Assert.Equal(Hall, p.Room);
+        UpToTheTopHallway(p);
+        p.Go("door[5]");
+        Assert.Equal(PlantRoom, p.Room);
+        p.Do("Open", "door[2]");
+        p.Go("door[2]");
+        Assert.Equal(WiresAttic, p.Room);
+
+        p.NewKid(third);
+        p.Go("hole");
+        Assert.Equal(PlantRoom, p.Room);
+        p.Go("door[1]");
+        Assert.Equal(TopHallway, p.Room);
+        DownToTheHall(p);
+        p.Do("Push", "gargoyle[2]");
+
+        p.NewKid("Dave");
+        p.Go("grate");
+        Assert.Equal(FrontOfTheHouse, p.Room);
+        p.Go("front door");
+        Assert.Equal(Hall, p.Room);
+        p.Go("door[2]");
+        Assert.Equal(Cellar, p.Room);
+        p.Do("Open", "fuse box");
+        p.Do("Turn off", "circuit breakers");
+
+        p.NewKid(Second(p));
+        p.Do("Turn on", "flashlight");
+        p.Do("Use", "tools", "wires[1]", until: () => p.Heard("that should do it"));
+
+        p.NewKid("Dave");
+        p.Hurried = true;
+        p.Do("Turn on", "circuit breakers");
+        p.Go("stairs");
+        Assert.Equal(Hall, p.Room);
+        p.Hurried = false;
+    }
+
+    /// <summary>
+    /// The arcade: its games working again, Dr. Fred comes to play Meteor Mess, three minutes on
+    /// and once nobody is in the arcade, the hallway before it, nor Edna's or Ed's room; his high
+    /// score is the code of the lab's inner door. Syd comes down to the arcade, where the quarter
+    /// in Meteor Mess will show the high score.
+    /// </summary>
+    private static void TheArcade(Player p)
+    {
+        p.NewKid(Second(p));
+        p.WaitToSee(Arcade, TimeSpan.FromMinutes(6));
+        p.Go("hatch");
+        Assert.Equal(PlantRoom, p.Room);
+        p.Go("door[1]");
+        Assert.Equal(TopHallway, p.Room);
+        p.Go("stairs");
+        Assert.Equal(TentacleLanding, p.Room);
+        p.Go("stairs[2]");
+        Assert.Equal(Hallway, p.Room);
+        p.Do("Open", ArcadeDoor(p));
+        p.Go(ArcadeDoor(p));
+        Assert.Equal(Arcade, p.Room);
+    }
+
+    // the arcade's door, the hallway's second but where the middle door's far side is a plain door
+    private static string ArcadeDoor(Player p) => p.World.Version == 2 ? "door[2]" : "door[3]";
+
+    /// <summary>
+    /// The lab's doors: Syd goes up from the arcade into Edna's room to be caught and taken to the
+    /// dungeon (walking in from the cellar, the door's script closes the door behind the kid by a
+    /// sentence that stops the script itself, before it takes him through: so in ScummVM too).
+    /// There he unlocks both padlocks with the glowing key, opens the outer door, and opens the
+    /// inner door on Dr. Fred's high score. Purple Tentacle guards the lab beyond.
+    /// </summary>
+    private static void TheLabDoors(Player p)
+    {
+        p.Ready();
+        p.Go("door");
+        Assert.Equal(Hallway, p.Room);
+        p.Go("stairs");
+        Assert.Equal(TentacleLanding, p.Room);
+        p.Go("stairs[1]");
+        Assert.Equal(TopHallway, p.Room);
+        p.Do("Open", "door[2]");
+        p.Go("door[2]");
+        Assert.True(p.Until(() => p.Kid.Room == Dungeon && p.Playable), "Edna never took Syd to the dungeon");
+        p.Do("Unlock", "top padlock", "glowing key");
+        p.Do("Unlock", "bottom padlock", "glowing key");
+        p.Do("Open", "outer door");
+        p.Keypad("Open", "inner door", Code(p, dos: 59, c64: 40));
+    }
+
+    /// <summary>From the top hallway down the stairs twice, through the middle door and down to the hall.</summary>
+    private static void DownToTheHall(Player p)
+    {
+        p.Go("stairs");
+        Assert.Equal(TentacleLanding, p.Room);
+        p.Go("stairs[2]");
+        Assert.Equal(Hallway, p.Room);
+        p.Go(p.World.Version == 2 ? "steel security door" : "door[1]");
+        Assert.Equal(Landing, p.Room);
+        p.Go("stairs");
+        Assert.Equal(Hall, p.Room);
+    }
+
     /// <summary>From the hall up the stairs, through the middle door and up twice more to the top hallway.</summary>
     private static void UpToTheTopHallway(Player p)
     {
@@ -649,6 +770,15 @@ public class WalkthroughTests
         TheTools(p);
         Assert.True(p.Carries("tools", "Syd"));
         Checkpoint(p, folder, 41);
+        TheWires(p, p.World.Version == 0 ? "Razor" : "Bernard");
+        Checkpoint(p, folder, 42);
+        TheArcade(p);
+        p.Begin("Use", "quarter", "Meteor Mess game");
+        Assert.True(p.Until(() => p.Room == HighScore), "Meteor Mess never showed its high score");
+        Checkpoint(p, folder, 43);
+        TheLabDoors(p);
+        Assert.True(p.IsOpen("inner door"), "the lab's inner door stays shut");
+        Checkpoint(p, folder, 44);
         Assert.Empty(p.Unhandled);
     }
 }

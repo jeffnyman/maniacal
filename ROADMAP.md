@@ -455,9 +455,25 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   but for the cursor (and the inventory name it lights) and the DOS sentence line. The test player
   now skips cutscenes, hears without playing on, and makes New kid again when the kids' names do
   not come up.
-- Next: the wires in the attic fixed with the power off at the circuit breakers, by flashlight;
-  then Dr. Fred's game of Meteor Mess in the arcade, its high score for the lab's inner door, and
-  the secret lab.
+- Done: the wires, the arcade and the lab's doors. Syd takes the tools up to the attic behind the
+  plant room; the third kid comes down to hold the knobless door open on the gargoyle, Dave turns
+  the power off at the circuit breakers, Syd fixes the wires by the lit flashlight, and Dave turns
+  the power back on. Three minutes on, with nobody in the arcade, the hallway before it, Edna's or
+  Ed's room, Dr. Fred comes to play Meteor Mess, and Syd's quarter in it shows his high score.
+  Syd has Edna catch him to get into the dungeon, unlocks both padlocks with the glowing key and
+  opens the outer door and the inner door on the score (read from variables 59 to 62 on DOS, 40
+  to 43 on the C64). Walking in from the cellar would not do on DOS: the door's script closes the
+  door by a sentence run at once, which takes the script's own slot (`o2_doSentence` reuses a
+  running script's slot for the same object), so the rest of it, which takes the kid through,
+  never runs; ScummVM 2.7.0 leaves the kid in the cellar the same way. The test player now brings
+  a sentence's second object on screen before choosing the verb (walking towards it after had
+  undone the first object), waits to see a room, and tells what was last said when it fails.
+  Saved in Meteor Mess's high score and where the sections end, and loaded in ScummVM 2.7.0, every
+  release shows the same high score to the pixel, and the same screens elsewhere but for the
+  cursor and the DOS sentence line.
+- Next: Syd's way to win: the package's stamps, Syd's tune taped on the piano for Green
+  Tentacle's demo tape, the envelope typed to Mark Eteer and mailed, the contract back for Green
+  Tentacle, who then keeps Purple Tentacle off; then the lab, Dr. Fred and Sandy.
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).

@@ -104,6 +104,19 @@ internal sealed class Player(GameWorld world)
         }
     }
 
+    /// <summary>Lets the game play on, the kid standing where he is, until the screen shows a room, as a cutscene shows it, then through the cutscene.</summary>
+    public void WaitToSee(int room, TimeSpan within)
+    {
+        Note($"wait to see room {room}");
+        var end = world.Time + within;
+        if (!Until(() => Room == room || world.Time >= end, int.MaxValue) || Room != room)
+        {
+            throw new InvalidOperationException($"room {room} never shown, {Situation()}");
+        }
+
+        Ready();
+    }
+
     /// <summary>Skips the cutscene on, with Escape, then plays on until the kid can be played.</summary>
     public void Skip()
     {
@@ -169,7 +182,7 @@ internal sealed class Player(GameWorld world)
     }
 
     /// <summary>A sentence given, not waited out, for what it shows on the way.</summary>
-    public void Begin(string verb, string thing) => Sentence(verb, thing, null, settle: false);
+    public void Begin(string verb, string thing, string? with = null) => Sentence(verb, thing, with, settle: false);
 
     /// <summary>
     /// A sentence that brings up a keypad, and the code entered on it: its keys laid out as a
@@ -201,6 +214,13 @@ internal sealed class Player(GameWorld world)
     {
         Ready();
         Note($"{verb} {thing}{(with is null ? string.Empty : " with " + with)}");
+
+        // walking towards the second object would undo the first, so the kid goes first
+        if (with is not null)
+        {
+            Click(with, second: true, click: false);
+        }
+
         Verb(verb);
         Click(thing, second: false);
         if (with is not null)
@@ -310,7 +330,7 @@ internal sealed class Player(GameWorld world)
     /// <summary>The room as a failure tells it: its objects (findable or not), the actors in it, and what was done.</summary>
     private string Situation() =>
         $"in room {Room}, camera at {world.Camera.Left}; objects {string.Join(", ", world.CurrentRoom?.Objects.Where(o => o.Number > 0).Select(o => $"{Shown(world.NameOf(o.Number))}#{o.Number}{(Points(o, anywhere: true).Any() ? string.Empty : " (not found)")}") ?? [])}; "
-        + $"actors {string.Join(", ", world.Actors.Skip(1).Where(a => a.InCurrentRoom && a.Visible).Select(a => $"{a.Name} at {a.X},{a.Y}"))}; after {string.Join("; ", Log)}";
+        + $"actors {string.Join(", ", world.Actors.Skip(1).Where(a => a.InCurrentRoom && a.Visible).Select(a => $"{a.Name} at {a.X},{a.Y}"))}; heard {string.Join(" / ", _heard.TakeLast(4))}; after {string.Join("; ", Log)}";
 
     private void Note(string action) => Log.Add($"{world.Time.ToString(@"hh\:mm\:ss", System.Globalization.CultureInfo.InvariantCulture)} {Kid.Name} in {Room} at {Kid.X},{Kid.Y}: {action}");
 
@@ -342,6 +362,10 @@ internal sealed class Player(GameWorld world)
     private int Carried(string name, int owner) =>
         world.Inventory.FirstOrDefault(obj => obj != 0 && world.Engine.GetOwner(obj) == owner && Shown(world.NameOf(obj)) == name);
 
+    /// <summary>Whether the room's thing of the name, a door say, stands open.</summary>
+    public bool IsOpen(string thing) =>
+        InRoom(thing).FirstOrDefault() is { } obj && (world.StateOf(obj.Number) & ScriptEngine.StateIntrinsic) != 0;
+
     /// <summary>The objects of the room by the name, left to right, that the mouse can find somewhere.</summary>
     private List<Rooms.RoomObject> InRoom(string name) =>
         world.CurrentRoom?.Objects
@@ -349,7 +373,8 @@ internal sealed class Player(GameWorld world)
             .OrderBy(o => world.PositionOf(o).X)
             .ToList() ?? [];
 
-    private void Click(string thing, bool second)
+    // a thing clicked, or with click false only brought on screen
+    private void Click(string thing, bool second, bool click = true)
     {
         Ready();
         string name = thing;
@@ -365,33 +390,41 @@ internal sealed class Player(GameWorld world)
         // something carried goes first, unless the room's is meant by number
         if (!numbered && Carried(name) is var carried and not 0)
         {
-            ClickCarried(carried);
+            if (click)
+            {
+                ClickCarried(carried);
+            }
+
             return;
         }
 
         if (Actor(name) is { } actor)
         {
-            ClickActor(actor);
+            ClickActor(actor, click);
             return;
         }
 
         var matches = InRoom(name);
-        if (matches.Count < nth || !ClickObject(matches[nth - 1]))
+        if (matches.Count < nth || !ClickObject(matches[nth - 1], click))
         {
             throw new InvalidOperationException($"no \"{thing}\"{(second ? " for the second object" : string.Empty)}, {Situation()}");
         }
     }
 
     /// <summary>Clicks an object of the room, walking the kid towards it first while it is off screen.</summary>
-    private bool ClickObject(Rooms.RoomObject target)
+    private bool ClickObject(Rooms.RoomObject target, bool click = true)
     {
         for (int tries = 0; tries < 20; tries++)
         {
             Ready();
             if (Points(target, anywhere: false).FirstOrDefault() is { X: > 0 } point)
             {
-                world.Click(point.X, point.Y);
-                Steps(2);
+                if (click)
+                {
+                    world.Click(point.X, point.Y);
+                    Steps(2);
+                }
+
                 return true;
             }
 
@@ -405,7 +438,7 @@ internal sealed class Player(GameWorld world)
         world.Actors.Skip(1).FirstOrDefault(a => a.InCurrentRoom && a.Visible && a != Kid && a.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Clicks an actor where the mouse finds him, walking the kid towards him first while he is off screen.</summary>
-    private void ClickActor(Actor actor)
+    private void ClickActor(Actor actor, bool click = true)
     {
         for (int tries = 0; tries < 20; tries++)
         {
@@ -413,8 +446,12 @@ internal sealed class Player(GameWorld world)
             int x = actor.X * 8 - world.Camera.Left, y = Layout.RoomTop + actor.Y * 2 - 20;
             if (x is >= 4 and < 316)
             {
-                world.Click(x, y);
-                Steps(2);
+                if (click)
+                {
+                    world.Click(x, y);
+                    Steps(2);
+                }
+
                 return;
             }
 
