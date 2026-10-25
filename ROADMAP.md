@@ -360,8 +360,14 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   for the cursor: a badge picked up in the dungeon, the office's desk lamp turned on, New kid to Syd
   (who stands in the street with Razor), and five things carried, the inventory's arrow showing.
   No new difference found. Tests play from the intro up to the office and into Edna's arms.
-- Next: further into the game (the rooms behind keys and the meteor's plot), and the other kids'
-  ways through it.
+- Done: every room of the C64 against ScummVM 2.7.0. The kid put into each of the 43 rooms with
+  walkboxes, as the scripts put actors (the cutscene rooms 34, 35, 39, 43, 47 and 49 have none),
+  from a save in the hall, plays its entry for 60 steps with every instruction handled; each saved
+  so and loaded in ScummVM shows the same screen, but for the cursor and the verb area's offsets:
+  the pictures, objects in their states, the dark rooms (5, 8, 9, 15, 22, 23), and what entry
+  scripts start (the green tentacle's "Oomph!" in room 12, whose two poses match frame for frame).
+- Next: further into the game by play (the rooms behind keys and the meteor's plot), and the
+  other kids' ways through it.
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).

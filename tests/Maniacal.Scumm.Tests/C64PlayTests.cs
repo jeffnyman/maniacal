@@ -107,6 +107,49 @@ public class C64PlayTests
         Assert.Empty(world.Unhandled);
     }
 
+    /// <summary>
+    /// The kid put into each room with walkboxes, as the scripts put actors (in its first box, the
+    /// camera following him there), from the hall: every room's entry plays on for 60 steps without
+    /// an unhandled instruction, in its own room. The same rooms, saved so and loaded in ScummVM
+    /// 2.7.0, show the same screens.
+    /// </summary>
+    [Fact]
+    public void The_kid_can_be_put_into_every_room()
+    {
+        if (InTheHall() is not { } hall || GameFolders.Find("maniac_mansion_c64") is not { } path)
+        {
+            return;
+        }
+
+        var save = hall.Save("hall", DateTime.Now);
+        var loader = Resources.ResourceLoader.Open(new Daventry.Core.Storage.DirectoryGameContainer(path));
+        var entered = new List<int>();
+        for (int room = 1; room < 55; room++)
+        {
+            // the kid's own room, the title and the save screen are left out
+            if (room is 10 or 45 or 50 || !loader.Index.Locate(Resources.ResourceType.Room, room).IsPresent
+                || loader.LoadRoom(room) is not { WalkBoxes.Count: > 0 } target)
+            {
+                continue;
+            }
+
+            var world = new GameWorld(Resources.ResourceLoader.Open(new Daventry.Core.Storage.DirectoryGameContainer(path)));
+            world.Load(save);
+            world.Step();
+            var box = target.WalkBoxes.Boxes[0];
+            var dave = world.Actors[3];
+            dave.Put((box.LowerLeftX + box.LowerRightX) / 2, box.LowerY, room);
+            world.FollowActor(dave);
+            Steps(world, 60);
+
+            Assert.True(world.CurrentRoom?.Number == room, $"room {room}: in room {world.CurrentRoom?.Number}");
+            Assert.True(world.Unhandled.Count == 0, $"room {room}: {string.Join(", ", world.Unhandled.Distinct())}");
+            entered.Add(room);
+        }
+
+        Assert.Equal(43, entered.Count);
+    }
+
     internal static void Steps(GameWorld world, int count)
     {
         for (int i = 0; i < count; i++)
