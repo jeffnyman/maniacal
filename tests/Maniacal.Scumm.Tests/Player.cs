@@ -38,16 +38,32 @@ internal sealed class Player(GameWorld world)
     {
         for (int i = 0; i < count; i++)
         {
-            world.Step();
+            Step();
         }
     }
+
+    private readonly List<string> _heard = [];
+
+    // a step, and what is said in it, as a player hears it
+    private void Step()
+    {
+        world.Step();
+        string said = world.Messages.Plain();
+        if (said.Trim().Length > 0 && (_heard.Count == 0 || _heard[^1] != said))
+        {
+            _heard.Add(said);
+        }
+    }
+
+    /// <summary>Whether someone has said the words, on screen, since the player began.</summary>
+    public bool Heard(string words) => _heard.Any(said => said.Contains(words, StringComparison.Ordinal));
 
     /// <summary>Plays on until a condition holds, at most some steps; whether it came to hold.</summary>
     public bool Until(Func<bool> condition, int steps = 3000)
     {
         for (int i = 0; i < steps && !condition(); i++)
         {
-            world.Step();
+            Step();
         }
 
         return condition();
@@ -69,7 +85,7 @@ internal sealed class Player(GameWorld world)
     {
         Note($"wait to hear \"{words}\"");
         var end = world.Time + within;
-        if (!Until(() => world.Messages.Plain().Contains(words, StringComparison.Ordinal) || world.Time >= end, int.MaxValue) || world.Time >= end)
+        if (!Until(() => Heard(words) || world.Time >= end, int.MaxValue) || !Heard(words))
         {
             throw new InvalidOperationException($"\"{words}\" never said, {Situation()}");
         }
@@ -203,25 +219,31 @@ internal sealed class Player(GameWorld world)
     /// </summary>
     public void NewKid(string name)
     {
-        Ready();
         Note($"New kid {name}");
-        Verb("New kid");
-        Steps(3);
-        if (world.Version == 0)
+
+        // a cutscene breaking in takes the click, so it is made again
+        for (int tries = 0; tries < 3 && Kid.Name != name; tries++)
         {
-            int slot = Enumerable.Range(0, 3).First(i => world.Actors[world.Engine.Variables[VarKids + i]].Name == name);
-            world.Click(new[] { 4, 13 * 8, 27 * 8 }[slot], world.Verbs.Top + 2);
+            Ready();
+            Verb("New kid");
             Steps(3);
-        }
-        else
-        {
-            Verb(name);
+            if (world.Version == 0)
+            {
+                int slot = Enumerable.Range(0, 3).First(i => world.Actors[world.Engine.Variables[VarKids + i]].Name == name);
+                world.Click(new[] { 4, 13 * 8, 27 * 8 }[slot], world.Verbs.Top + 2);
+                Steps(3);
+            }
+            else
+            {
+                Verb(name);
+            }
+
+            Steps(10);
         }
 
-        Steps(10);
         if (Kid.Name != name)
         {
-            throw new InvalidOperationException($"New kid {name} plays {Kid.Name}");
+            throw new InvalidOperationException($"New kid {name} plays {Kid.Name}, {Situation()}");
         }
     }
 
@@ -248,8 +270,13 @@ internal sealed class Player(GameWorld world)
     /// <summary>Whether the kid carries a thing of the name.</summary>
     public bool Carries(string name) => Carried(name) != 0;
 
-    private int Carried(string name) =>
-        world.Inventory.FirstOrDefault(obj => obj != 0 && world.Engine.GetOwner(obj) == Kid.Number && Shown(world.NameOf(obj)) == name);
+    /// <summary>Whether a kid, played or not, carries a thing of the name.</summary>
+    public bool Carries(string name, string kid) => Carried(name, world.Actors.First(a => a.Name == kid).Number) != 0;
+
+    private int Carried(string name) => Carried(name, Kid.Number);
+
+    private int Carried(string name, int owner) =>
+        world.Inventory.FirstOrDefault(obj => obj != 0 && world.Engine.GetOwner(obj) == owner && Shown(world.NameOf(obj)) == name);
 
     /// <summary>The objects of the room by the name, left to right, that the mouse can find somewhere.</summary>
     private List<Rooms.RoomObject> InRoom(string name) =>

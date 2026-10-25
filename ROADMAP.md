@@ -413,9 +413,20 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   only in version 2. Saved there and loaded in ScummVM 2.7.0, every release shows the same screen
   but for the cursor and the DOS sentence line, the plant's mouth moving at the same time after the
   load on the C64.
-- Next: Edna's room and her attic (the small key, the painting and the safe), Ed's room (the card
-  key and the dimes), then the telescope for the safe's combination; then the other kids' ways to
-  win.
+- Done: Ed's package, and Edna's room and attic. The doorbell's five minutes run from the first
+  climb to the top floor, standing still through cutscenes, and it rings once Weird Ed is in his
+  room and nobody looks on at the front of the house; Ed then comes down through the hallways,
+  taking any kid he meets to the dungeon. Rung at any moment of play, it caught a kid in every
+  release, so the route waits for it with the kids out of Ed's way: the third kid (Razor on the
+  C64, Bernard on DOS) at the mailbox picks the package up as Ed says "Oh, the doorbell!"; Ed finds
+  nothing, sends him off and locks the front door. Then Dave walks into Edna's room to be caught,
+  and while she takes him to the dungeon Syd slips in, takes the small key and goes up to her
+  attic, turns its light on and opens the painting on the wall safe; Dave lets himself out with
+  the old rusty key. Saved at the end and loaded in ScummVM 2.7.0, every release shows the same
+  screen but for the cursor and the DOS sentence line. The test player now tells what it has heard
+  said, and makes New kid again when a cutscene takes its click.
+- Next: Ed's room (the card key and the dimes, with Ed drawn away), then the telescope for the
+  safe's combination and the sealed envelope; then the other kids' ways to win.
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).

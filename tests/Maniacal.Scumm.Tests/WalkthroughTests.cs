@@ -11,7 +11,8 @@ public class WalkthroughTests
     // the rooms on the way
     private const int Driveway = 44, FrontOfTheHouse = 1, Hall = 10, Cellar = 8, LivingRoom = 3, Library = 5,
         Kitchen = 7, DiningRoom = 37, StorageRoom = 36, Pool = 6, Landing = 11, PaintingRoom = 14, MusicRoom = 17,
-        Hallway = 13, TentacleLanding = 12, TopHallway = 38, FredsRoom = 21, TentaclesRoom = 20, TedsRoom = 25, PlantRoom = 27, TelescopeRoom = 28;
+        Hallway = 13, TentacleLanding = 12, TopHallway = 38, FredsRoom = 21, TentaclesRoom = 20, TedsRoom = 25, PlantRoom = 27, TelescopeRoom = 28,
+        EdnasRoom = 19, EdnasAttic = 9, Dungeon = 4;
 
     /// <summary>The kids in the driveway, the game started: Dave, Syd and Razor on the C64, Syd, Dave and Bernard on DOS.</summary>
     private static Player? Start(string folder)
@@ -298,6 +299,75 @@ public class WalkthroughTests
     }
 
     /// <summary>
+    /// Ed's package: the doorbell's five minutes run from the first climb to the top floor, and it
+    /// rings once Weird Ed is in his room and nobody looks on at the front of the house. The third
+    /// kid, left in the driveway, goes round to the mailbox, while Syd waits in Green Tentacle's
+    /// room and Dave in the living room, off Ed's way down; when Ed hears the bell ("Oh, the
+    /// doorbell!") the third kid picks the package up, and Ed, finding nothing, sends him off and
+    /// goes back up, locking the front door behind him.
+    /// </summary>
+    private static void EdsPackage(Player p)
+    {
+        string third = p.World.Actors.Skip(1).First(a => a.Room == Driveway).Name;
+        p.NewKid(third);
+        p.Leave(left: true);
+        Assert.Equal(FrontOfTheHouse, p.Room);
+        p.Do("Walk to", "flag");
+        p.NewKid(Second(p));
+        Assert.Equal(TentaclesRoom, p.Room);
+        p.WaitToHear("Oh, the doorbell!", TimeSpan.FromMinutes(10));
+        p.NewKid(third);
+        p.Do("Pick up", "package", until: () => p.Carries("package"));
+        p.Wait(TimeSpan.FromMinutes(3));
+        p.NewKid(Second(p));
+    }
+
+    /// <summary>
+    /// Edna's room and her attic: Dave, who carries the old rusty key, walks into Edna's room to be
+    /// caught and taken to the dungeon; while she takes him, Syd comes out of the plant room into
+    /// hers, takes the small key from the night stand and goes up the ladder to the dark attic,
+    /// where he turns the light on and opens the painting on the wall safe. Dave lets himself out
+    /// of the dungeon with the old rusty key and goes up to the hall.
+    /// </summary>
+    private static void EdnasRoomAndAttic(Player p)
+    {
+        p.NewKid("Dave");
+        p.Go("door[1]");
+        Assert.Equal(Hall, p.Room);
+        p.Go("stairs");
+        Assert.Equal(Landing, p.Room);
+        p.Go(MiddleDoor(p));
+        Assert.Equal(Hallway, p.Room);
+        p.Go("stairs");
+        Assert.Equal(TentacleLanding, p.Room);
+        p.Go("stairs[1]");
+        Assert.Equal(TopHallway, p.Room);
+        Assert.Equal(EdnasRoom, p.World.Actors.First(a => a.Name == "Nurse Edna").Room);
+        p.Do("Open", "door[2]");
+        p.Go("door[2]");
+        Assert.True(p.Until(() => p.Kid.Room == Dungeon && p.Playable), "Edna never took Dave to the dungeon");
+
+        p.NewKid(Second(p));
+        p.Go("door[1]");
+        Assert.Equal(TopHallway, p.Room);
+        p.Go("door[2]");
+        Assert.Equal(EdnasRoom, p.Room);
+        p.Do("Pick up", "small key", until: () => p.Carries("small key"));
+        p.Go("ladder");
+        Assert.Equal(EdnasAttic, p.Room);
+        p.Do("Turn on", "light");
+        p.Do("Open", "painting");
+
+        p.NewKid("Dave");
+        p.Do("Unlock", "door", "old rusty key");
+        p.Do("Open", "door");
+        p.Go("door");
+        Assert.Equal(Cellar, p.Room);
+        p.Go("stairs");
+        Assert.Equal(Hall, p.Room);
+    }
+
+    /// <summary>
     /// The route so far, every instruction on the way handled, saved where each section ends. Timed
     /// events break in on the way and are waited out: the cutscene of Dr. Fred and Sandy in the lab,
     /// a minute in, and Nurse Edna's leaving the kitchen. Each save loaded in ScummVM 2.7.0 shows
@@ -324,9 +394,13 @@ public class WalkthroughTests
         Checkpoint(p, folder, 32);
         Upstairs(p);
         Checkpoint(p, folder, 33);
+        EdsPackage(p);
         TheOldRustyKey(p);
         TedsRoomAndThePlant(p);
         Checkpoint(p, folder, 34);
+        EdnasRoomAndAttic(p);
+        Assert.True(p.Carries("package", p.World.Version == 0 ? "Razor" : "Bernard"), "nobody took Ed's package");
+        Checkpoint(p, folder, 35);
         Assert.Empty(p.Unhandled);
     }
 }
