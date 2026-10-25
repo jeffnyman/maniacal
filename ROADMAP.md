@@ -403,8 +403,19 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   walk. The test player now walks towards actors off screen as it does towards objects, walks up
   to objects only to be looked at (no script for Walk to) when no floor lies farther on, waits for
   a game time or to hear words, and says on failure what the room holds.
-- Next: the old rusty key (the tentacle mating calls taped and played in the living room), Ted's
-  room and the Hunk-O-Matic, then the man-eating plant; then the other kids' ways to win.
+- Done: the walkthrough on to the man-eating plant. Syd brings the record down to the music room,
+  Dave the blank tape up; the tape in the cassette recorder and the record on the Victrola, the
+  tentacle mating calls are taped, and in the living room they bring the chandelier down with the
+  old rusty key. Syd pumps iron on Ted's Hunk-O-Matic, grows the man-eating plant with the pool's
+  radioactive water, settles it with the Pepsi, takes the paint off the hidden door, and climbs the
+  plant to the telescope room and back (the C64 by the plant itself, DOS by the hatch it reaches).
+  The doors differ by release: the far side of the steel security door is "steel security door"
+  only in version 2. Saved there and loaded in ScummVM 2.7.0, every release shows the same screen
+  but for the cursor and the DOS sentence line, the plant's mouth moving at the same time after the
+  load on the C64.
+- Next: Edna's room and her attic (the small key, the painting and the safe), Ed's room (the card
+  key and the dimes), then the telescope for the safe's combination; then the other kids' ways to
+  win.
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).

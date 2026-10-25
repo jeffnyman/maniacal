@@ -11,7 +11,7 @@ public class WalkthroughTests
     // the rooms on the way
     private const int Driveway = 44, FrontOfTheHouse = 1, Hall = 10, Cellar = 8, LivingRoom = 3, Library = 5,
         Kitchen = 7, DiningRoom = 37, StorageRoom = 36, Pool = 6, Landing = 11, PaintingRoom = 14, MusicRoom = 17,
-        Hallway = 13, TentacleLanding = 12, TopHallway = 38, FredsRoom = 21, TentaclesRoom = 20;
+        Hallway = 13, TentacleLanding = 12, TopHallway = 38, FredsRoom = 21, TentaclesRoom = 20, TedsRoom = 25, PlantRoom = 27, TelescopeRoom = 28;
 
     /// <summary>The kids in the driveway, the game started: Dave, Syd and Razor on the C64, Syd, Dave and Bernard on DOS.</summary>
     private static Player? Start(string folder)
@@ -172,23 +172,20 @@ public class WalkthroughTests
         p.Do("Pick up", "paint remover", until: () => p.Carries("paint remover"));
         p.Go("door");
         Assert.Equal(Landing, p.Room);
-        // the C64's landing has a plain door in the middle; on DOS it is the steel security door,
-        // which without the copy protection is always open (Open would ask for its code)
-        bool c64 = p.World.Version == 0;
-        string middleDoor = c64 ? "door[2]" : "steel security door";
-        p.Do("Open", c64 ? "door[3]" : "door[2]");
-        p.Go(c64 ? "door[3]" : "door[2]");
+        p.Do("Open", MusicRoomDoor(p));
+        p.Go(MusicRoomDoor(p));
         Assert.Equal(MusicRoom, p.Room);
         p.Do("Turn on", "TV");
         p.Go("door");
         Assert.Equal(Landing, p.Room);
 
-        if (c64)
+        // the steel security door is open already, and Open would ask for its code
+        if (p.World.Version == 0)
         {
-            p.Do("Open", middleDoor);
+            p.Do("Open", MiddleDoor(p));
         }
 
-        p.Go(middleDoor);
+        p.Go(MiddleDoor(p));
         Assert.Equal(Hallway, p.Room);
         p.Go("stairs");
         Assert.Equal(TentacleLanding, p.Room);
@@ -205,6 +202,99 @@ public class WalkthroughTests
         Assert.Equal(TentaclesRoom, p.Room);
         p.Do("Pick up", "record", until: () => p.Carries("record"));
         p.Do("Pick up", "yellow key", until: () => p.Carries("yellow key"));
+    }
+
+    // the landing's middle door, and the music room's (the C64's landing has three plain doors; on
+    // DOS the middle one is the steel security door, which without the copy protection is always
+    // open, and whose far side only version 2 names so)
+    private static string MiddleDoor(Player p) => p.World.Version == 0 ? "door[2]" : "steel security door";
+
+    private static string MusicRoomDoor(Player p) => p.World.Version == 0 ? "door[3]" : "door[2]";
+
+    /// <summary>
+    /// The old rusty key: Syd brings the record down to the music room and Dave the blank tape up;
+    /// the tape in the cassette recorder and the record on the Victrola, the recorder takes the
+    /// tentacle mating calls down. In the living room the tape played breaks the windows and brings
+    /// the chandelier down, and the old rusty key hung on it can be picked up.
+    /// </summary>
+    private static void TheOldRustyKey(Player p)
+    {
+        p.Go("hatch");
+        Assert.Equal(FredsRoom, p.Room);
+        p.Go("door");
+        Assert.Equal(TopHallway, p.Room);
+        p.Go("stairs");
+        Assert.Equal(TentacleLanding, p.Room);
+        p.Go("stairs[2]");
+        Assert.Equal(Hallway, p.Room);
+        p.Go(p.World.Version == 2 ? "steel security door" : "door[1]");
+        Assert.Equal(Landing, p.Room);
+        p.Go(MusicRoomDoor(p));
+        Assert.Equal(MusicRoom, p.Room);
+        p.Do("Use", "record", "Victrola", until: () => !p.Carries("record"));
+
+        p.NewKid("Dave");
+        p.Go("door[1]");
+        Assert.Equal(Hall, p.Room);
+        p.Go("stairs");
+        Assert.Equal(Landing, p.Room);
+        p.Go(MusicRoomDoor(p));
+        Assert.Equal(MusicRoom, p.Room);
+        p.Do("Use", "cassette tape", "cassette recorder", until: () => !p.Carries("cassette tape"));
+        p.Do("Turn on", "cassette recorder");
+        p.Do("Turn on", "Victrola");
+        p.Wait(TimeSpan.FromSeconds(10));
+        p.Do("Turn off", "cassette recorder");
+        p.Do("Pick up", "cassette tape", until: () => p.Carries("cassette tape"));
+
+        p.Go("door");
+        Assert.Equal(Landing, p.Room);
+        p.Go("stairs");
+        Assert.Equal(Hall, p.Room);
+        p.Go("door[3]");
+        Assert.Equal(LivingRoom, p.Room);
+        p.Do("Use", "cassette tape", "cassette player", until: () => !p.Carries("cassette tape"));
+        p.Do("Turn on", "cassette player");
+        p.Wait(TimeSpan.FromSeconds(10));
+        p.Do("Pick up", "old rusty key", until: () => p.Carries("old rusty key"));
+    }
+
+    /// <summary>
+    /// Ted's room and the plant: Syd pumps iron on the Hunk-O-Matic, strong enough now for the
+    /// grating and the garage door; next door, the jar of radioactive pool water makes the
+    /// man-eating plant grow to the hatch, the Pepsi settles its stomach, and the paint remover
+    /// shows the door under the paint blotch. Up the plant is the telescope room.
+    /// </summary>
+    private static void TedsRoomAndThePlant(Player p)
+    {
+        p.NewKid(Second(p));
+        p.Go("door");
+        Assert.Equal(Landing, p.Room);
+        p.Go(MiddleDoor(p));
+        Assert.Equal(Hallway, p.Room);
+        p.Go("stairs");
+        Assert.Equal(TentacleLanding, p.Room);
+        p.Go("stairs[1]");
+        Assert.Equal(TopHallway, p.Room);
+        p.Do("Open", "door[4]");
+        p.Go("door[4]");
+        Assert.Equal(TedsRoom, p.Room);
+        p.Do("Use", "Hunk-O-Matic Machine (TM)");
+        p.Go("door[1]");
+        Assert.Equal(TopHallway, p.Room);
+        p.Do("Open", "door[5]");
+        p.Go("door[5]");
+        Assert.Equal(PlantRoom, p.Room);
+        p.Do("Use", "jar of water", "Man-eating plant", until: () => !p.Carries("jar of water"));
+        p.Do("Use", "can of Pepsi", "Man-eating plant", until: () => !p.Carries("can of Pepsi"));
+        p.Do("Use", "paint remover", "paint blotch", until: () => !p.Carries("paint remover"));
+
+        // the plant, grown and fed, can be climbed to the telescope room: on the C64 the plant's
+        // stem leads up, on DOS the hatch it reaches
+        p.Go(p.World.Version == 0 ? "Man-eating plant" : "Hatch");
+        Assert.Equal(TelescopeRoom, p.Room);
+        p.Go("hole");
+        Assert.Equal(PlantRoom, p.Room);
     }
 
     /// <summary>
@@ -234,6 +324,9 @@ public class WalkthroughTests
         Checkpoint(p, folder, 32);
         Upstairs(p);
         Checkpoint(p, folder, 33);
+        TheOldRustyKey(p);
+        TedsRoomAndThePlant(p);
+        Checkpoint(p, folder, 34);
         Assert.Empty(p.Unhandled);
     }
 }
