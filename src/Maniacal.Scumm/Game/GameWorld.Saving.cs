@@ -157,11 +157,12 @@ public sealed partial class GameWorld
         s.CursorAnimateIndex = _cursorFrame & 0xFF;
         (s.MouseX, s.MouseY) = Mouse;
 
-        // what resetScumm and the room's entry leave for these versions on DOS
-        s.SwitchRoomEffect = 5;
-        s.SwitchRoomEffect2 = 1;
-        s.NewEffect = 129;
-        s.ScreenEffectFlag = 1;
+        // the room effects of resetScumm, and where the transitions stand
+        s.SwitchRoomEffect = EnterEffect;
+        s.SwitchRoomEffect2 = LeaveEffect;
+        s.NewEffect = _newEffect;
+        s.DoEffect = _doEffect ? 1 : 0;
+        s.ScreenEffectFlag = _screenEffectFlag ? 1 : 0;
         s.ScreenB = layout.RoomTop;
         s.ScreenH = layout.RoomBottom;
 
@@ -317,6 +318,9 @@ public sealed partial class GameWorld
         int talking = Version >= 2 ? s.Variables[VarTalkActor] : s.HaveMessage != 0 ? s.ActorToPrintStrFor : MessageLine.NoActor;
         Messages.LoadFrom(s, talking);
         _flashlight = (s.FlashlightStrips, s.FlashlightRows);
+        (_newEffect, _doEffect, _screenEffectFlag) = (s.NewEffect, s.DoEffect != 0, s.ScreenEffectFlag != 0);
+        _transition.Clear();
+        _display = null;
         _cursorFrame = s.CursorAnimateIndex;
         MoveMouse(s.MouseX, s.MouseY);
 

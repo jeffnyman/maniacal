@@ -318,7 +318,10 @@ public sealed partial class GameWorld
         (s.Strings[2].Charset, s.Strings[2].Color, s.Strings[2].X, s.Strings[2].Y, s.Strings[2].Right) = (1, 16, 1, Verbs.Top + 1, 320);
     }
 
-    /// <summary>Takes version 0's own fields from a save; the mode is set without the redraw <c>setMode</c> does.</summary>
+    /// <summary>
+    /// Takes version 0's own fields from a save; the mode is set without the redraw <c>setMode</c>
+    /// does. Whether the sentence line is to be drawn is not saved, and stays as it was.
+    /// </summary>
     private void RestoreV0(Saves.ScummState s)
     {
         _beforeV0Cutscene = (s.CutSceneData[0], s.CutSceneData[2]);
@@ -329,7 +332,6 @@ public sealed partial class GameWorld
         (Engine.CommandVerb, Engine.CommandObject, Engine.CommandObject2) = (s.CmdVerb, s.CmdObject, s.CmdObject2);
         (_walkToObject, _walkToObjectState) = (s.WalkToObject, s.WalkToObjectState);
         _sentenceNestedCount = 0;
-        _redrawSentenceLine = false;
     }
 
     /// <summary>

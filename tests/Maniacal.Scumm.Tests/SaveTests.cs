@@ -219,6 +219,28 @@ public class SaveGameTests
     }
 
     /// <summary>
+    /// A C64 game loaded into a fresh one shows its sentence at once: whether the sentence line is
+    /// to be drawn is not saved, and a fresh engine has it so from <c>resetScummVars</c>'s
+    /// <c>resetSentence</c>, as a ScummVM started to load a game does.
+    /// </summary>
+    [Fact]
+    public void A_c64_load_draws_the_sentence_line()
+    {
+        if (GameFolders.Find(C64Folder) is not { } path || GameWorldTests.AfterTheC64Intro() is not { } world)
+        {
+            return;
+        }
+
+        var file = world.Save("in the street", DateTime.Now);
+        var loaded = Fresh(path);
+        loaded.Load(file);
+        loaded.Step();
+
+        var pixels = loaded.Verbs.Pixels;
+        Assert.Contains(Enumerable.Range(1, 8), y => pixels.Row(y).Contains((byte)16));
+    }
+
+    /// <summary>
     /// A C64 game saved in the intro, while the camera follows the meteor, loads with the room's
     /// own camera limits (the C64 has no variables for them), so the camera waits, as in the game
     /// played on, until the meteor passes its trigger column, then follows it.

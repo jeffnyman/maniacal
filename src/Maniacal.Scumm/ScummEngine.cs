@@ -18,6 +18,10 @@ public sealed class ScummEngine : Engine
 {
     private GameWorld? _world;
 
+    // the frames of a room transition still to show, and the screen of the step that made them
+    private readonly Queue<TransitionFrame> _transition = new();
+    private Daventry.Core.Graphics.Surface8? _stepScreen;
+
     public ScummEngine(IHost host, IGameContainer game, DetectedGame detected)
         : base(host, game, detected)
     {
@@ -42,7 +46,7 @@ public sealed class ScummEngine : Engine
         _world.Engine.CopyProtection = CopyProtection;
         Host.Graphics.SetMode(ScreenLayout.Width, ScreenLayout.Height);
         Host.Graphics.SetTitle($"Maniacal - {Detected.Title}");
-        Host.Graphics.SetPalette(Palettes.Ega);
+        Host.Graphics.SetPalette(Palettes.ForVersion(_world.Version));
         StartAudio(_world);
         _world.Boot();
     }
@@ -68,12 +72,44 @@ public sealed class ScummEngine : Engine
             }
         }
 
+        // a room transition's frames show first, each for its quarter-frames, the game standing
+        // still; then the step's own screen, for the step's ticks
+        if (_transition.Count > 0)
+        {
+            var frame = _transition.Dequeue();
+            Present(world, frame.Screen);
+            return TickResult.After(TimeSpan.FromSeconds(frame.QuarterFrames / world.TimerFrequency));
+        }
+
+        if (_stepScreen is { } stepScreen)
+        {
+            _stepScreen = null;
+            Present(world, stepScreen);
+            return TickResult.After(TimeSpan.FromSeconds(world.StepTicks * 4 / world.TimerFrequency));
+        }
+
         world.Step();
-        var screen = world.Screen();
+        foreach (var frame in world.Transition)
+        {
+            _transition.Enqueue(frame);
+        }
+
+        if (_transition.Count > 0)
+        {
+            _stepScreen = world.Screen();
+            var first = _transition.Dequeue();
+            Present(world, first.Screen);
+            return TickResult.After(TimeSpan.FromSeconds(first.QuarterFrames / world.TimerFrequency));
+        }
+
+        Present(world, world.Screen());
+        return TickResult.After(TimeSpan.FromSeconds(world.StepTicks * 4 / world.TimerFrequency));
+    }
+
+    private void Present(GameWorld world, Daventry.Core.Graphics.Surface8 screen)
+    {
         world.DrawCursor(screen);
         Host.Graphics.Present(screen);
-
-        return TickResult.After(world.StepLength);
     }
 
     public override void Dispose()

@@ -97,10 +97,11 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         Verbs = new VerbArea(font, ScreenLayout.ForVersion(Version).RoomBottom, () => Engine.Interface, c64: Version == 0);
 
         // ScummEngine_v0::resetScumm: the C64's engine makes its verbs itself, and resetScummVars
-        // starts it with Dave as the kid
+        // resets the sentence and starts it with Dave as the kid
         if (Version == 0)
         {
             ResetVerbsV0();
+            ResetSentenceV0();
             Engine.Variables[ScriptEngine.VarEgo] = V0FirstKid;
         }
         _initial = Capture();
@@ -147,8 +148,11 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         }
     }
 
-    /// <summary>How long the next step lasts: four quarter-frames a tick. Mirrors <c>waitForTimer(delta * 4)</c>.</summary>
-    public TimeSpan StepLength => TimeSpan.FromSeconds(StepTicks * 4 / TimerFrequency);
+    /// <summary>
+    /// How long the next step lasts: four quarter-frames a tick (<c>waitForTimer(delta * 4)</c>),
+    /// and before it the last step's room transitions (<see cref="Transition"/>).
+    /// </summary>
+    public TimeSpan StepLength => TimeSpan.FromSeconds((StepTicks * 4 + TransitionQuarterFrames) / TimerFrequency);
 
     /// <summary>The game time the steps so far have taken.</summary>
     public TimeSpan Time { get; private set; }
@@ -250,6 +254,8 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         // scummLoop: the step's ticks, at most 15, count the script delays and the message down;
         // then the message moves on (displayDialog, which versions up to 3 run before input)
         Time += StepLength;
+        _transition.Clear();
+        _display = null;
         int ticks = Math.Min(StepTicks, 15);
         Engine.DecreaseScriptDelay(ticks);
         Messages.CountDown(ticks);
@@ -312,6 +318,13 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             {
                 actor.AnimateCostume();
             }
+        }
+
+        // scummLoop_handleEffects: a room just entered shows with its effect
+        if (_doEffect)
+        {
+            _doEffect = false;
+            FadeIn(_newEffect, Screen());
         }
 
         HandleMouseOver(oldEgo != Engine.Variables[ScriptEngine.VarEgo]);
@@ -642,6 +655,8 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     public void StartScene(int number)
     {
         Messages.Stop();
+        FadeOut(LeaveEffect);
+        _newEffect = EnterEffect;
         Engine.LeaveRoomScript();
         if (CurrentRoom is { } old)
         {
@@ -688,6 +703,8 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         {
             Engine.RunScript(AfterEntryScript);
         }
+
+        _doEffect = true;
     }
 
     /// <summary>

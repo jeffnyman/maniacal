@@ -52,7 +52,7 @@ file.png` the game headless, with clicks and keys given at chosen steps (`--clic
 | `src/Maniacal.Scumm` | The interpreter: detection, resources, script VM, rooms, actors, walkboxes, costumes, verbs, text, sound, saves. |
 | `src/Maniacal.Player` | The `maniacal` command line player on the SDL host. |
 | `tests/Maniacal.Scumm.Tests` | Unit tests, and tests that run against the real game data when it is present. |
-| `tools` | Generators that port tables from the ScummVM source (`port_md5_table.py`, `port_fonts.py`, `port_opcodes.py`, `port_sound_tables.py`, `port_disk_tables.py`, `port_palettes.py`, `port_v0_verbs.py`, `port_v0_actors.py`, `port_sid_tables.py`). |
+| `tools` | Generators that port tables from the ScummVM source (`port_md5_table.py`, `port_fonts.py`, `port_opcodes.py`, `port_sound_tables.py`, `port_disk_tables.py`, `port_palettes.py`, `port_v0_verbs.py`, `port_v0_actors.py`, `port_sid_tables.py`, `port_transitions.py`). |
 | `docs` | How Maniac Mansion works and how an interpreter for it is built: the commented C64 engine, the game's scripts, the boot loader, the NES data, and the game itself. Start at [docs/README.md](docs/README.md). |
 
 The host contract (`Daventry.Core`), the audio mixer (`Daventry.Audio`) and the SDL host

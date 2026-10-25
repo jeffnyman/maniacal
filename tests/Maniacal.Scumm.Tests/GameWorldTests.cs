@@ -71,9 +71,10 @@ public class GameWorldTests
 
         // the C64 has no variables for the mouse in the room: 30 and 31 are the scripts' own
         Assert.Equal((0, 0), (world.Engine.Variables[30], world.Engine.Variables[31]));
-        // 4 ticks a step, of 4 quarter-frames at 240 a second: 60 steps are 4 seconds, and 4 ticks
-        // more for the C64's drawing of the title room (3.6, rounded; DelayCalculateDelta)
-        Assert.Equal((60 * 4 + 4) * 4 / 240.0, world.Time.TotalSeconds, 3);
+        // 4 ticks a step, of 4 quarter-frames at 240 a second: 60 steps are 4 seconds, 4 ticks more
+        // for the C64's drawing of the title room (3.6, rounded; DelayCalculateDelta), and the
+        // title's inverse iris, 9 iterations of 6 quarter-frames (fadeIn, transitionEffect)
+        Assert.Equal(((60 * 4 + 4) * 4 + 9 * 6) / 240.0, world.Time.TotalSeconds, 3);
     }
 
     /// <summary>
