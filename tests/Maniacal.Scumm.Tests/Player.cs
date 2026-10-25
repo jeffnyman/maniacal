@@ -54,10 +54,26 @@ internal sealed class Player(GameWorld world)
     }
 
     /// <summary>Lets the game play on, the kid standing where he is, until it has run so long.</summary>
-    public void Wait(TimeSpan played)
+    public void WaitUntil(TimeSpan played)
     {
         Note($"wait until {played}");
         Until(() => world.Time >= played, int.MaxValue);
+        Ready();
+    }
+
+    /// <summary>Lets the game play on, the kid standing where he is, for a while.</summary>
+    public void Wait(TimeSpan span) => WaitUntil(world.Time + span);
+
+    /// <summary>Lets the game play on, the kid standing where he is, until someone says something, as a cutscene shows it.</summary>
+    public void WaitToHear(string words, TimeSpan within)
+    {
+        Note($"wait to hear \"{words}\"");
+        var end = world.Time + within;
+        if (!Until(() => world.Messages.Plain().Contains(words, StringComparison.Ordinal) || world.Time >= end, int.MaxValue) || world.Time >= end)
+        {
+            throw new InvalidOperationException($"\"{words}\" never said, {Situation()}");
+        }
+
         Ready();
     }
 
@@ -69,7 +85,7 @@ internal sealed class Player(GameWorld world)
     {
         if (!Until(() => Playable, 20000))
         {
-            throw new InvalidOperationException($"{Kid.Name} cannot be played, in room {Room}, after {string.Join("; ", Log)}");
+            throw new InvalidOperationException($"{Kid.Name} cannot be played, {Situation()}");
         }
     }
 
@@ -106,7 +122,7 @@ internal sealed class Player(GameWorld world)
 
             if (tries == 3)
             {
-                throw new InvalidOperationException($"{verb} {thing} did nothing, after {string.Join("; ", Log)}");
+                throw new InvalidOperationException($"{verb} {thing} did nothing, {Situation()}");
             }
         }
     }
@@ -172,7 +188,7 @@ internal sealed class Player(GameWorld world)
 
         if (Room == room)
         {
-            throw new InvalidOperationException($"{Kid.Name} could not leave room {room} by the {(left ? "left" : "right")}");
+            throw new InvalidOperationException($"{Kid.Name} could not leave by the {(left ? "left" : "right")}, {Situation()}");
         }
 
         Settle();
@@ -211,6 +227,11 @@ internal sealed class Player(GameWorld world)
 
     /// <summary>What was done so far, with the room each began in, for failures to tell.</summary>
     public List<string> Log { get; } = [];
+
+    /// <summary>The room as a failure tells it: its objects (findable or not), the actors in it, and what was done.</summary>
+    private string Situation() =>
+        $"in room {Room}, camera at {world.Camera.Left}; objects {string.Join(", ", world.CurrentRoom?.Objects.Where(o => o.Number > 0).Select(o => $"{Shown(world.NameOf(o.Number))}#{o.Number}{(Points(o, anywhere: true).Any() ? string.Empty : " (not found)")}") ?? [])}; "
+        + $"actors {string.Join(", ", world.Actors.Skip(1).Where(a => a.InCurrentRoom && a.Visible).Select(a => $"{a.Name} at {a.X},{a.Y}"))}; after {string.Join("; ", Log)}";
 
     private void Note(string action) => Log.Add($"{Kid.Name} in {Room} at {Kid.X},{Kid.Y}: {action}");
 
@@ -264,7 +285,7 @@ internal sealed class Player(GameWorld world)
         var matches = InRoom(name);
         if (matches.Count < nth || !ClickObject(matches[nth - 1]))
         {
-            throw new InvalidOperationException($"no \"{thing}\" in room {Room}{(second ? " for the second object" : string.Empty)}, after {string.Join("; ", Log)}");
+            throw new InvalidOperationException($"no \"{thing}\"{(second ? " for the second object" : string.Empty)}, {Situation()}");
         }
     }
 
@@ -281,7 +302,7 @@ internal sealed class Player(GameWorld world)
                 return true;
             }
 
-            WalkTowards(target);
+            WalkTowards(world.PositionOf(target).X + target.Width / 2);
         }
 
         return false;
@@ -290,10 +311,24 @@ internal sealed class Player(GameWorld world)
     private Actor? Actor(string name) =>
         world.Actors.Skip(1).FirstOrDefault(a => a.InCurrentRoom && a.Visible && a != Kid && a.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>Clicks an actor where the mouse finds him, walking the kid towards him first while he is off screen.</summary>
     private void ClickActor(Actor actor)
     {
-        world.Click(Math.Clamp(actor.X * 8 - world.Camera.Left, 4, 315), Layout.RoomTop + actor.Y * 2 - 20);
-        Steps(2);
+        for (int tries = 0; tries < 20; tries++)
+        {
+            Ready();
+            int x = actor.X * 8 - world.Camera.Left, y = Layout.RoomTop + actor.Y * 2 - 20;
+            if (x is >= 4 and < 316)
+            {
+                world.Click(x, y);
+                Steps(2);
+                return;
+            }
+
+            WalkTowards(actor.X * 8);
+        }
+
+        throw new InvalidOperationException($"{actor.Name} stays off screen, {Situation()}");
     }
 
     private void ClickCarried(int obj)
@@ -312,19 +347,20 @@ internal sealed class Player(GameWorld world)
         Steps(2);
     }
 
-    /// <summary>Walks the kid along his line towards where the object lies, to floor short of the screen's edge where exits are.</summary>
-    private void WalkTowards(Rooms.RoomObject target)
+    /// <summary>Walks the kid along his line towards a point of the room, to floor short of the screen's edge where exits are.</summary>
+    private void WalkTowards(int roomX)
     {
-        int x = world.PositionOf(target).X + target.Width / 2 - world.Camera.Left;
+        int x = roomX - world.Camera.Left;
         int verb = ActiveVerb;
         Verb("Walk to");
 
-        // the farthest spot of floor, not an object the kid would walk into, on his line or near it
+        // the farthest spot on his line or near it of floor, or of an object only to look at, which
+        // he walks up to; not one he would walk into, through a door or out of the room
         var spot = (from d in Enumerable.Range(0, 140)
                     let sx = x < 160 ? 20 + d : 300 - d
                     from dy in new[] { 0, 8, 16, 24, -8, -16, -24 }
                     let y = Math.Clamp(KidLine + dy, Layout.RoomTop, Layout.RoomBottom - 1)
-                    where world.FindObject(sx + world.Camera.Left, y - Layout.RoomTop) == 0
+                    where Harmless(world.FindObject(sx + world.Camera.Left, y - Layout.RoomTop))
                     select (X: sx, Y: y)).FirstOrDefault((X: 160, Y: KidLine));
         world.Click(spot.X, spot.Y);
         Steps(5);
@@ -336,6 +372,11 @@ internal sealed class Player(GameWorld world)
             Steps(2);
         }
     }
+
+    /// <summary>Whether walking to a thing clicked runs nothing: no object, or a named one with no script for Walk to, nor one for every verb.</summary>
+    private bool Harmless(int obj) =>
+        obj == 0 || (world.CurrentRoom?.FindObject(obj) is { } o && Shown(world.NameOf(obj)).Length > 0
+            && o.Verbs.All(v => v.Verb is not (WalkToVerb or Rooms.RoomObject.FallbackVerb or Rooms.RoomObject.FallbackVerbV0)));
 
     /// <summary>The screen points where the mouse finds the object, nearest its middle first: on screen now, or anywhere the camera could show.</summary>
     private IEnumerable<(int X, int Y)> Points(Rooms.RoomObject target, bool anywhere)

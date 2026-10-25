@@ -386,8 +386,25 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   cursor and the DOS sentence line; Weird Ed's "hungry" cutscene, which follows, starts 4.3 s after
   the load in both. The test player now looks for floor off the kid's line when walking towards
   something, as in the kitchen, where the stove covers the line.
-- Next: upstairs: the painting room, the music room, the security door, then Green Tentacle; then
-  the other kids' ways to win.
+- Done: the walkthrough upstairs. Syd waits at the pool while Weird Ed, hungry, comes down
+  through the house to the fridge and goes back up (he takes any kid he meets to the dungeon; the
+  test waits to hear him find the cheese, and a minute more), then crosses the house again, the
+  kitchen doors Ed shut opened again. On the landing he takes the bowl of wax fruit and the paint
+  remover from the painting room and watches the ad on the music room's TV; through the middle
+  door (the C64's plain door; on DOS the steel security door, which without the copy protection is
+  always open, so it is walked through: Open would ask for its code), up to Green Tentacle, who
+  takes the wax fruit and the fruit drinks and lets him by; on the top floor, the dime from Dr.
+  Fred's floor and, up the ladder, the record and the yellow key from Green Tentacle's room. Saved
+  there and loaded in ScummVM 2.7.0, the C64 and version 2 show the same screens but for the
+  cursor and the DOS sentence line. In version 1 Green Tentacle, walking up to Syd, stops one
+  column further right in ScummVM 2.7.0: both compute the same walk target, and ScummVM rewrote
+  the versions 1 and 2 walk after 2.7.0 (8d88e7b4d5b, "match v1/2 walk code more to the original
+  behavior"), which the port follows; taken as that difference, not proven by replaying 2.7.0's
+  walk. The test player now walks towards actors off screen as it does towards objects, walks up
+  to objects only to be looked at (no script for Walk to) when no floor lies farther on, waits for
+  a game time or to hear words, and says on failure what the room holds.
+- Next: the old rusty key (the tentacle mating calls taped and played in the living room), Ted's
+  room and the Hunk-O-Matic, then the man-eating plant; then the other kids' ways to win.
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).

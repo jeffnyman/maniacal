@@ -10,7 +10,8 @@ public class WalkthroughTests
 
     // the rooms on the way
     private const int Driveway = 44, FrontOfTheHouse = 1, Hall = 10, Cellar = 8, LivingRoom = 3, Library = 5,
-        Kitchen = 7, DiningRoom = 37, StorageRoom = 36, Pool = 6;
+        Kitchen = 7, DiningRoom = 37, StorageRoom = 36, Pool = 6, Landing = 11, PaintingRoom = 14, MusicRoom = 17,
+        Hallway = 13, TentacleLanding = 12, TopHallway = 38, FredsRoom = 21, TentaclesRoom = 20;
 
     /// <summary>The kids in the driveway, the game started: Dave, Syd and Razor on the C64, Syd, Dave and Bernard on DOS.</summary>
     private static Player? Start(string folder)
@@ -113,7 +114,7 @@ public class WalkthroughTests
         p.NewKid(Second(p));
         p.Go("door[3]");
         Assert.Equal(LivingRoom, p.Room);
-        p.Wait(TimeSpan.FromMinutes(11));
+        p.WaitUntil(TimeSpan.FromMinutes(11));
         p.Go("door[1]");
         Assert.Equal(Hall, p.Room);
         p.Do("Open", "door[1]");
@@ -135,6 +136,75 @@ public class WalkthroughTests
         p.Go("door[2]");
         Assert.Equal(Pool, p.Room);
         p.Do("Use", "glass jar", "swimming pool");
+    }
+
+    /// <summary>
+    /// Upstairs: Syd waits at the pool while Weird Ed, hungry, comes down through the house to the
+    /// kitchen's fridge and goes back up (he would take a kid he met to the dungeon), then goes back
+    /// through the house to the hall and up the stairs; takes the bowl of
+    /// wax fruit and the paint remover from the painting room, watches the ad on the music room's TV,
+    /// and goes through the middle door (DOS's steel security door) and up to Green Tentacle, who lets him by for the
+    /// wax fruit and the fruit drinks. On the top floor he takes the dime from Dr. Fred's floor and,
+    /// up the ladder in Green Tentacle's room, the record and the yellow key.
+    /// </summary>
+    private static void Upstairs(Player p)
+    {
+        p.WaitToHear("heese", TimeSpan.FromMinutes(5));
+        p.Wait(TimeSpan.FromMinutes(1));
+        p.Go("door");
+        Assert.Equal(StorageRoom, p.Room);
+        p.Go("door[1]");
+        Assert.Equal(DiningRoom, p.Room);
+        p.Go("door[1]");
+        Assert.Equal(Kitchen, p.Room);
+
+        // Ed shut the kitchen's doors behind him
+        p.Do("Open", "door[1]");
+        p.Go("door[1]");
+        Assert.Equal(Hall, p.Room);
+        p.Go("stairs");
+        Assert.Equal(Landing, p.Room);
+
+        p.Do("Open", "door[1]");
+        p.Go("door[1]");
+        Assert.Equal(PaintingRoom, p.Room);
+        p.Do("Pick up", "bowl of wax fruit", until: () => p.Carries("bowl of wax fruit"));
+        p.Do("Pick up", "paint remover", until: () => p.Carries("paint remover"));
+        p.Go("door");
+        Assert.Equal(Landing, p.Room);
+        // the C64's landing has a plain door in the middle; on DOS it is the steel security door,
+        // which without the copy protection is always open (Open would ask for its code)
+        bool c64 = p.World.Version == 0;
+        string middleDoor = c64 ? "door[2]" : "steel security door";
+        p.Do("Open", c64 ? "door[3]" : "door[2]");
+        p.Go(c64 ? "door[3]" : "door[2]");
+        Assert.Equal(MusicRoom, p.Room);
+        p.Do("Turn on", "TV");
+        p.Go("door");
+        Assert.Equal(Landing, p.Room);
+
+        if (c64)
+        {
+            p.Do("Open", middleDoor);
+        }
+
+        p.Go(middleDoor);
+        Assert.Equal(Hallway, p.Room);
+        p.Go("stairs");
+        Assert.Equal(TentacleLanding, p.Room);
+        p.Do("Give", "bowl of wax fruit", "Green Tentacle", until: () => !p.Carries("bowl of wax fruit"));
+        p.Do("Give", "fruit drinks", "Green Tentacle", until: () => !p.Carries("fruit drinks"));
+        p.Go("stairs[1]");
+        Assert.Equal(TopHallway, p.Room);
+
+        p.Do("Open", "door[1]");
+        p.Go("door[1]");
+        Assert.Equal(FredsRoom, p.Room);
+        p.Do("Pick up", "dime", until: () => p.Carries("dime"));
+        p.Go("ladder");
+        Assert.Equal(TentaclesRoom, p.Room);
+        p.Do("Pick up", "record", until: () => p.Carries("record"));
+        p.Do("Pick up", "yellow key", until: () => p.Carries("yellow key"));
     }
 
     /// <summary>
@@ -162,6 +232,8 @@ public class WalkthroughTests
         TheKitchenAndThePool(p);
         Assert.True(p.Carries("jar of water"));
         Checkpoint(p, folder, 32);
+        Upstairs(p);
+        Checkpoint(p, folder, 33);
         Assert.Empty(p.Unhandled);
     }
 }
