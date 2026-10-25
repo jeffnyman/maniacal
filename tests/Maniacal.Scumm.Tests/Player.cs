@@ -44,10 +44,13 @@ internal sealed class Player(GameWorld world)
 
     private readonly List<string> _heard = [];
 
-    // a step, and what is said in it, as a player hears it
+    private readonly HashSet<int> _seen = [];
+
+    // a step, and what is said and shown in it, as a player hears and sees it
     private void Step()
     {
         world.Step();
+        _seen.Add(Room);
         string said = world.Messages.Plain();
         if (said.Trim().Length > 0 && (_heard.Count == 0 || _heard[^1] != said))
         {
@@ -57,6 +60,9 @@ internal sealed class Player(GameWorld world)
 
     /// <summary>Whether someone has said the words, on screen, since the player began.</summary>
     public bool Heard(string words) => _heard.Any(said => said.Contains(words, StringComparison.Ordinal));
+
+    /// <summary>Whether the screen has shown the room, since the player began.</summary>
+    public bool Saw(int room) => _seen.Contains(room);
 
     /// <summary>Plays on until a condition holds, at most some steps; whether it came to hold.</summary>
     public bool Until(Func<bool> condition, int steps = 3000)
@@ -92,6 +98,9 @@ internal sealed class Player(GameWorld world)
 
         Ready();
     }
+
+    /// <summary>Plays on until nobody speaks, as a player lets a line end.</summary>
+    public void Quiet() => Until(() => world.Messages.HaveMessage == 0, 600);
 
     /// <summary>Whether the kid can be played: the cursor shows and the room on screen is his, not a cutscene's.</summary>
     public bool Playable => world.CursorShown && Kid.Room == Room;
@@ -143,7 +152,36 @@ internal sealed class Player(GameWorld world)
         }
     }
 
-    private void Sentence(string verb, string thing, string? with)
+    /// <summary>A sentence given, not waited out, for what it shows on the way.</summary>
+    public void Begin(string verb, string thing) => Sentence(verb, thing, null, settle: false);
+
+    /// <summary>
+    /// A sentence that brings up a keypad, and the code entered on it: its keys laid out as a
+    /// telephone's, 1 to 9 in rows and 0 under the 8.
+    /// </summary>
+    public void Keypad(string verb, string thing, string code)
+    {
+        Sentence(verb, thing, null, settle: false);
+        if (!Until(() => Room != Kid.Room && world.CursorShown))
+        {
+            throw new InvalidOperationException($"{verb} {thing} shows no keypad, {Situation()}");
+        }
+
+        Note($"enter {code}");
+        foreach (char digit in code)
+        {
+            int key = digit == '0' ? 10 : digit - '1';
+            world.Click(KeypadLeft + 24 * (key % 3) + 8 - world.Camera.Left, Layout.RoomTop + KeypadTop + 16 * (key / 3) + 8);
+            Steps(10);
+        }
+
+        Settle();
+    }
+
+    // the keypad's top left key, in its room
+    private const int KeypadLeft = 128, KeypadTop = 48;
+
+    private void Sentence(string verb, string thing, string? with, bool settle = true)
     {
         Ready();
         Note($"{verb} {thing}{(with is null ? string.Empty : " with " + with)}");
@@ -162,7 +200,10 @@ internal sealed class Player(GameWorld world)
             Click(with ?? thing, second: with is not null);
         }
 
-        Settle();
+        if (settle)
+        {
+            Settle();
+        }
     }
 
     /// <summary>Walks the kid through a door, or up stairs, into the room it leads to.</summary>
@@ -255,13 +296,16 @@ internal sealed class Player(GameWorld world)
         $"in room {Room}, camera at {world.Camera.Left}; objects {string.Join(", ", world.CurrentRoom?.Objects.Where(o => o.Number > 0).Select(o => $"{Shown(world.NameOf(o.Number))}#{o.Number}{(Points(o, anywhere: true).Any() ? string.Empty : " (not found)")}") ?? [])}; "
         + $"actors {string.Join(", ", world.Actors.Skip(1).Where(a => a.InCurrentRoom && a.Visible).Select(a => $"{a.Name} at {a.X},{a.Y}"))}; after {string.Join("; ", Log)}";
 
-    private void Note(string action) => Log.Add($"{Kid.Name} in {Room} at {Kid.X},{Kid.Y}: {action}");
+    private void Note(string action) => Log.Add($"{world.Time.ToString(@"hh\:mm\:ss", System.Globalization.CultureInfo.InvariantCulture)} {Kid.Name} in {Room} at {Kid.X},{Kid.Y}: {action}");
 
-    /// <summary>Plays on until no sentence waits and the kid stands, then a little more for what follows to show.</summary>
+    /// <summary>Whether the player acts at once, not looking on after each action, as where someone will soon be back.</summary>
+    public bool Hurried { get; set; }
+
+    /// <summary>Plays on until no sentence waits and the kid stands, then, unless hurried, a little more for what follows to show.</summary>
     public void Settle()
     {
         Until(() => world.Sentences.Count == 0 && !KidWalking && !world.Engine.IsScriptRunning(SentenceScript), 1500);
-        Steps(20);
+        Steps(Hurried ? 2 : 20);
         Ready();
     }
 
@@ -272,6 +316,10 @@ internal sealed class Player(GameWorld world)
 
     /// <summary>Whether a kid, played or not, carries a thing of the name.</summary>
     public bool Carries(string name, string kid) => Carried(name, world.Actors.First(a => a.Name == kid).Number) != 0;
+
+    /// <summary>How many things of the name the kid carries.</summary>
+    public int CarriedCount(string name) =>
+        world.Inventory.Count(obj => obj != 0 && world.Engine.GetOwner(obj) == Kid.Number && Shown(world.NameOf(obj)) == name);
 
     private int Carried(string name) => Carried(name, Kid.Number);
 
@@ -290,14 +338,16 @@ internal sealed class Player(GameWorld world)
         Ready();
         string name = thing;
         int nth = 1;
-        if (thing.EndsWith(']') && thing.LastIndexOf('[') is var open and > 0)
+        bool numbered = thing.EndsWith(']') && thing.LastIndexOf('[') > 0;
+        if (numbered)
         {
+            int open = thing.LastIndexOf('[');
             name = thing[..open];
             nth = int.Parse(thing[(open + 1)..^1], System.Globalization.CultureInfo.InvariantCulture);
         }
 
         // something carried goes first, unless the room's is meant by number
-        if (nth == 1 && Carried(name) is var carried and not 0)
+        if (!numbered && Carried(name) is var carried and not 0)
         {
             ClickCarried(carried);
             return;

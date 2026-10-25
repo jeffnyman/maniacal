@@ -12,7 +12,7 @@ public class WalkthroughTests
     private const int Driveway = 44, FrontOfTheHouse = 1, Hall = 10, Cellar = 8, LivingRoom = 3, Library = 5,
         Kitchen = 7, DiningRoom = 37, StorageRoom = 36, Pool = 6, Landing = 11, PaintingRoom = 14, MusicRoom = 17,
         Hallway = 13, TentacleLanding = 12, TopHallway = 38, FredsRoom = 21, TentaclesRoom = 20, TedsRoom = 25, PlantRoom = 27, TelescopeRoom = 28,
-        EdnasRoom = 19, EdnasAttic = 9, Dungeon = 4;
+        EdnasRoom = 19, EdnasAttic = 9, Dungeon = 4, EdsRoom = 26, EdnasAtticCloseUp = 34;
 
     /// <summary>The kids in the driveway, the game started: Dave, Syd and Razor on the C64, Syd, Dave and Bernard on DOS.</summary>
     private static Player? Start(string folder)
@@ -368,6 +368,115 @@ public class WalkthroughTests
     }
 
     /// <summary>
+    /// Ed's room: Ed, his package not come, no longer answers the doorbell, so a kid walks in to be
+    /// caught. Dave lets the third kid in by the front door, who goes up to hide in Ted's room;
+    /// Dave walks into Ed's room and is taken to the dungeon, and while Ed takes him the third kid
+    /// comes out, takes the hamster and the card key under it, breaks the piggy bank open for two of
+    /// its dimes, and hides again before Ed is back. Dave lets himself out again.
+    /// </summary>
+    private static void TheCardKeyAndTheDimes(Player p, string third)
+    {
+        p.NewKid("Dave");
+        p.Do("Open", "front door");
+        p.NewKid(third);
+        p.Go("front door");
+        Assert.Equal(Hall, p.Room);
+        UpToTheTopHallway(p);
+        p.Go("door[4]");
+        Assert.Equal(TedsRoom, p.Room);
+
+        p.NewKid("Dave");
+        UpToTheTopHallway(p);
+        p.Do("Open", "door[3]");
+        p.Go("door[3]");
+        Assert.True(p.Until(() => p.Kid.Room == Dungeon && p.Playable), "Ed never took Dave to the dungeon");
+
+        p.NewKid(third);
+        p.Hurried = true;
+        p.Go("door[1]");
+        Assert.Equal(TopHallway, p.Room);
+        p.Go("door[3]");
+        Assert.Equal(EdsRoom, p.Room);
+        p.Do("Pick up", "hamster", until: () => p.Carries("hamster"));
+        p.Do("Pick up", "card key", until: () => p.Carries("card key"));
+
+        // the dimes are picked up by the script that breaks the bank, once it has said so
+        p.Do("Open", "piggy bank");
+        p.Quiet();
+        for (int dime = 0; dime < 2; dime++)
+        {
+            p.Do("Pick up", "dime[1]", until: () => p.CarriedCount("dime") > dime);
+        }
+
+        p.Go("door");
+        Assert.Equal(TopHallway, p.Room);
+        p.Go("door[4]");
+        Assert.Equal(TedsRoom, p.Room);
+        p.Hurried = false;
+
+        // Ed locked the dungeon behind him
+        p.NewKid("Dave");
+        p.Do("Unlock", "door", "old rusty key");
+        p.Do("Open", "door");
+        p.Go("door");
+        Assert.Equal(Cellar, p.Room);
+    }
+
+    /// <summary>
+    /// The telescope: the third kid climbs the plant to the telescope room, and with a dime in the
+    /// coin slot each time turns the telescope right twice, onto Edna's attic, whose light and open
+    /// painting will show the number scrawled under the safe: its combination, close up.
+    /// </summary>
+    private static void TheTelescope(Player p, string third)
+    {
+        p.NewKid(third);
+        p.Go("door[1]");
+        Assert.Equal(TopHallway, p.Room);
+        p.Go("door[5]");
+        Assert.Equal(PlantRoom, p.Room);
+        p.Go(p.World.Version == 0 ? "Man-eating plant" : "Hatch");
+        Assert.Equal(TelescopeRoom, p.Room);
+        for (int turn = 0; turn < 2; turn++)
+        {
+            int dimes = p.CarriedCount("dime");
+            p.Do("Use", "dime", "coin slot", until: () => p.CarriedCount("dime") < dimes);
+            p.Do("Push", "right button");
+        }
+    }
+
+    /// <summary>
+    /// The safe: Syd, still in Edna's attic, opens the wall safe on the combination the telescope
+    /// showed, and takes the sealed envelope from it.
+    /// </summary>
+    private static void TheSafe(Player p)
+    {
+        p.NewKid(Second(p));
+        Assert.Equal(EdnasAttic, p.Room);
+        p.Keypad("Open", "wall safe", Combination(p));
+        p.Do("Pick up", "sealed envelope", until: () => p.Carries("sealed envelope"));
+    }
+
+    // the safe's combination, chosen at the start: four digits from variable 55 (36 on the C64)
+    private static string Combination(Player p)
+    {
+        int first = p.World.Version == 0 ? 36 : 55;
+        return string.Concat(Enumerable.Range(first, 4).Select(v => p.World.Engine.Variables[v]));
+    }
+
+    /// <summary>From the hall up the stairs, through the middle door and up twice more to the top hallway.</summary>
+    private static void UpToTheTopHallway(Player p)
+    {
+        p.Go("stairs");
+        Assert.Equal(Landing, p.Room);
+        p.Go(MiddleDoor(p));
+        Assert.Equal(Hallway, p.Room);
+        p.Go("stairs");
+        Assert.Equal(TentacleLanding, p.Room);
+        p.Go("stairs[1]");
+        Assert.Equal(TopHallway, p.Room);
+    }
+
+    /// <summary>
     /// The route so far, every instruction on the way handled, saved where each section ends. Timed
     /// events break in on the way and are waited out: the cutscene of Dr. Fred and Sandy in the lab,
     /// a minute in, and Nurse Edna's leaving the kitchen. Each save loaded in ScummVM 2.7.0 shows
@@ -401,6 +510,16 @@ public class WalkthroughTests
         EdnasRoomAndAttic(p);
         Assert.True(p.Carries("package", p.World.Version == 0 ? "Razor" : "Bernard"), "nobody took Ed's package");
         Checkpoint(p, folder, 35);
+        TheCardKeyAndTheDimes(p, p.World.Version == 0 ? "Razor" : "Bernard");
+        Assert.True(p.Carries("card key", p.World.Version == 0 ? "Razor" : "Bernard"));
+        Checkpoint(p, folder, 36);
+        TheTelescope(p, p.World.Version == 0 ? "Razor" : "Bernard");
+        p.Begin("Use", "really powerful telescope");
+        Assert.True(p.Until(() => p.Room == EdnasAtticCloseUp), "the telescope never showed the safe");
+        Checkpoint(p, folder, 37);
+        TheSafe(p);
+        Assert.True(p.Carries("sealed envelope", "Syd"));
+        Checkpoint(p, folder, 38);
         Assert.Empty(p.Unhandled);
     }
 }

@@ -425,8 +425,22 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   the old rusty key. Saved at the end and loaded in ScummVM 2.7.0, every release shows the same
   screen but for the cursor and the DOS sentence line. The test player now tells what it has heard
   said, and makes New kid again when a cutscene takes its click.
-- Next: Ed's room (the card key and the dimes, with Ed drawn away), then the telescope for the
-  safe's combination and the sealed envelope; then the other kids' ways to win.
+- Done: Ed's room, the telescope and the safe. Ed, his package never come, no longer answers the
+  doorbell, so Dave walks into Ed's room to be caught, the third kid hiding in Ted's room; while Ed
+  takes Dave to the dungeon the third kid takes the hamster, the card key under it, and two dimes
+  from the piggy bank, and hides again before Ed is back. The test player hurries there, not looking
+  on after each action, and lets the bank's "Damn! I broke it!" end first: the dimes are picked up
+  by the same script, and started again while it waits on the line it does nothing (so in ScummVM
+  too). Dave unlocks the dungeon again, which Ed locked. The third kid climbs the plant and, a dime
+  in the coin slot each time, turns the telescope right twice onto the number under Edna's safe;
+  Syd, in the attic, enters it on the safe's keypad (its keys laid out as a telephone's; the
+  combination read from the variables the game chose it into, 55 to 58 on DOS and 36 to 39 on the
+  C64) and takes the sealed envelope. Saved in the telescope's close-up and where the sections
+  end, and loaded in ScummVM 2.7.0, every release shows the same close-up to the pixel, and the
+  same screens elsewhere but for the cursor and the DOS sentence line.
+- Next: the envelope steamed open in the kitchen's microwave for its quarter; the glowing key from
+  the drained pool, the radio's batteries for the flashlight, and the tools from the car's trunk;
+  then the wires fixed with the power off, the arcade's high score and the secret lab.
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).
