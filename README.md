@@ -1,5 +1,8 @@
 # Maniacal
 
+[![Build](https://github.com/jeffnyman/maniacal/actions/workflows/build.yml/badge.svg)](https://github.com/jeffnyman/maniacal/actions/workflows/build.yml)
+[![NuGet](https://img.shields.io/nuget/vpre/Maniacal.svg)](https://www.nuget.org/packages/Maniacal)
+
 Maniacal is a C# implementation of the SCUMM interpreter for Maniac Mansion. It is a port of the
 parts of ScummVM's `engines/scumm` that Maniac Mansion uses (SCUMM versions 0, 1 and 2),
 restructured as a .NET library on a small host contract of its own, so the same engine runs
@@ -81,6 +84,8 @@ file.png` the game headless, with clicks and keys given at chosen steps (`--clic
 | `tools` | Generators that port tables from the ScummVM source (`port_md5_table.py`, `port_fonts.py`, `port_opcodes.py`, `port_sound_tables.py`, `port_disk_tables.py`, `port_palettes.py`, `port_v0_verbs.py`, `port_v0_actors.py`, `port_sid_tables.py`, `port_transitions.py`). |
 | `docs` | How Maniac Mansion works and how an interpreter for it is built: the commented C64 engine, the game's scripts, the boot loader, the NES data, and the game itself. Start at [docs/README.md](docs/README.md). |
 | `assets/screenshots` | The screenshots above. |
+| `tools/PackageSmoke` | The packages' consumer check (see Installing). |
+| `.github/workflows` | The build workflow (every push) and the publish workflow (a version tag). |
 
 The host contract is part of `Maniacal.Scumm`: the engine base class, the graphics, input and
 audio drivers it is given and a headless host (`Hosting`, `Input`), screen surfaces and PNG
@@ -89,6 +94,45 @@ The SDL host is part of `Maniacal.Player` (`Sdl`). These come from
 [Daventry](https://github.com/jeffnyman/daventry), the AGI and SCI interpreter, whose 0.1.0-alpha
 host layer they were taken from and adapted. Beyond the .NET SDK, the only dependency is SDL3
 (`ppy.SDL3-CS`), for the player.
+
+## Installing
+
+The player is a dotnet tool, and the interpreter a library, on nuget.org (both need .NET 10):
+
+```
+dotnet tool install -g Maniacal --prerelease
+maniacal <game folder>
+```
+
+```
+dotnet add package Maniacal.Scumm --prerelease
+```
+
+`maniacal` plays in a window (SDL3); `--run` plays headless, for screenshots and recordings. The
+library plays headless from a game folder:
+
+```csharp
+using Maniacal.Scumm.Game;
+using Maniacal.Scumm.Graphics;
+using Maniacal.Scumm.Resources;
+using Maniacal.Scumm.Storage;
+
+var world = new GameWorld(ResourceLoader.Open(new DirectoryGameContainer(folder)));
+world.Boot();
+for (int i = 0; i < 600; i++)
+{
+    world.Step();
+}
+
+using var file = File.Create("screen.png");
+PngWriter.Write(file, world.Screen(), Palettes.ForVersion(world.Version));
+```
+
+`tools/PackageSmoke/run.ps1 -Game <folder> [-MoreGames <folder>,...]` packs the repository into
+`artifacts/packages` and checks the packages as a consumer would: a console app restores
+`Maniacal.Scumm` from that feed and plays each game headless, and the tool, installed from it,
+lists the game and takes a screenshot. The build workflow builds, tests and packs every push; the
+publish workflow pushes the packages to nuget.org for a tag such as `v0.1.0-alpha`.
 
 ## Building and running
 

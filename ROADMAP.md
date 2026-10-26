@@ -540,9 +540,20 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   depends on SDL3 (`ppy.SDL3-CS`) directly. `Maniacal.Scumm` is optimized in Debug builds too: the
   packages had come optimized, and the per-pixel drawing compiled without optimization made the
   tests take seven times as long; with it the suite takes under a minute.
-- Next: NuGet packages, `Maniacal.Scumm` as a library and the player as the `maniacal` dotnet tool,
-  with their metadata, a build and a publish workflow, and a check that the packages restore and
-  play from a local feed.
+- Done: NuGet packages. `dotnet pack -c Release -o artifacts/packages` builds `Maniacal.Scumm`, the
+  library (with a `.snupkg` symbol package), and `Maniacal`, the player as the `maniacal` dotnet
+  tool (SDL3's Android and iOS natives left out, 13 MB). The shared metadata (version, tags,
+  release notes, licence, README) is in `Directory.Build.props`; Source Link, symbols and package
+  validation, which depend on `IsPackable`, in `Directory.Build.targets`. The build workflow builds,
+  tests and packs every push to `main`; the publish workflow, on a tag such as `v0.1.0-alpha`,
+  tests, packs and pushes to nuget.org with Trusted Publishing. Without game data the suite passes
+  (each real-data test returns early), as on the CI runner. `tools/PackageSmoke/run.ps1` is the
+  consumer check: from a local feed, with its own package cache, a console app plays V2, V1 and the
+  C64 headless (title screen, 40,676, 43,203 and 42,752 of 64,000 pixels lit after 600 steps,
+  nothing unhandled), and the tool, installed from the feed, lists V2 and takes a screenshot.
+- Next: the first release, `v0.1.0-alpha` (the one-time Trusted Publishing setup is in
+  `.github/workflows/publish.yml`). Before a 1.0: Linux and macOS in CI, and a pass over the public
+  API, making the engine's internals `internal`.
 
 ## Later, perhaps
 

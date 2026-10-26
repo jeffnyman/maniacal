@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <IsPackable>true</IsPackable>
     <Description>The SCUMM interpreter for Maniac Mansion (V0, V1 and V2), ported from ScummVM.</Description>
     <!-- optimized in Debug too: unoptimized, the per-pixel drawing makes the tests take seven times as long -->
     <Optimize>true</Optimize>
