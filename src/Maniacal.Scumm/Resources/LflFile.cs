@@ -1,4 +1,4 @@
-using Daventry.Core.Storage;
+using Maniacal.Scumm.Storage;
 
 namespace Maniacal.Scumm.Resources;
 

@@ -17,7 +17,7 @@
   <PropertyGroup>
     <Product>Maniacal</Product>
     <Authors>Maniacal contributors</Authors>
-    <Copyright>Copyright (c) Maniacal contributors. Portions derived from ScummVM, copyright the ScummVM Team.</Copyright>
+    <Copyright>Copyright (c) Maniacal contributors. Portions derived from ScummVM, copyright the ScummVM Team, and from Daventry, copyright the Daventry contributors.</Copyright>
     <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
     <VersionPrefix>0.1.0</VersionPrefix>
     <VersionSuffix>alpha</VersionSuffix>

@@ -1,13 +1,13 @@
-using Daventry.Core.Storage;
 using Maniacal.Scumm;
 using Maniacal.Scumm.Detection;
+using Maniacal.Scumm.Storage;
 
 namespace Maniacal.Scumm.Tests;
 
 /// <summary>
 /// Identifies the game data folders next to the repository. A test passes without checking when its
-/// folder is absent, as Daventry's real-game tests do. The folders are found from the MANIACAL_GAMES
-/// environment variable, or by walking up from the test binary to the directory that holds them.
+/// folder is absent. The folders are found from the MANIACAL_GAMES environment variable, or by
+/// walking up from the test binary to the directory that holds them.
 /// </summary>
 public class DetectionTests
 {

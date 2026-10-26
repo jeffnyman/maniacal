@@ -1,10 +1,9 @@
-using Daventry.Core.Graphics;
-using Daventry.Core.Hosting;
-using Daventry.Core.Input;
-using Daventry.Core.Storage;
 using Maniacal.Scumm.Game;
 using Maniacal.Scumm.Graphics;
+using Maniacal.Scumm.Hosting;
+using Maniacal.Scumm.Input;
 using Maniacal.Scumm.Resources;
+using Maniacal.Scumm.Storage;
 using Maniacal.Scumm.View;
 
 namespace Maniacal.Scumm;
@@ -20,7 +19,7 @@ public sealed class ScummEngine : Engine
 
     // the frames of a room transition still to show, and the screen of the step that made them
     private readonly Queue<TransitionFrame> _transition = new();
-    private Daventry.Core.Graphics.Surface8? _stepScreen;
+    private Maniacal.Scumm.Graphics.Surface8? _stepScreen;
 
     public ScummEngine(IHost host, IGameContainer game, DetectedGame detected)
         : base(host, game, detected)
@@ -106,7 +105,7 @@ public sealed class ScummEngine : Engine
         return TickResult.After(TimeSpan.FromSeconds(world.StepTicks * 4 / world.TimerFrequency));
     }
 
-    private void Present(GameWorld world, Daventry.Core.Graphics.Surface8 screen)
+    private void Present(GameWorld world, Maniacal.Scumm.Graphics.Surface8 screen)
     {
         world.DrawCursor(screen);
         Host.Graphics.Present(screen);

@@ -1,8 +1,8 @@
-using Daventry.Core.Hosting;
-using Daventry.Core.Storage;
 using Maniacal.Scumm.Game;
+using Maniacal.Scumm.Hosting;
 using Maniacal.Scumm.Resources;
 using Maniacal.Scumm.Sound;
+using Maniacal.Scumm.Storage;
 
 namespace Maniacal.Scumm.Tests;
 

@@ -1,4 +1,4 @@
-using Daventry.Core.Graphics;
+using Maniacal.Scumm.Graphics;
 
 namespace Maniacal.Scumm.View;
 

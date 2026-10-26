@@ -1,5 +1,4 @@
 using System.Text;
-using Daventry.Core.Graphics;
 using Maniacal.Scumm.Graphics;
 using Maniacal.Scumm.Rooms;
 using Maniacal.Scumm.Scripts;

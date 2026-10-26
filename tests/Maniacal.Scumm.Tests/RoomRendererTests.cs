@@ -1,6 +1,6 @@
-using Daventry.Core.Storage;
 using Maniacal.Scumm.Graphics;
 using Maniacal.Scumm.Resources;
+using Maniacal.Scumm.Storage;
 
 namespace Maniacal.Scumm.Tests;
 

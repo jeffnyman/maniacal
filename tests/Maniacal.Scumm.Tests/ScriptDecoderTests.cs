@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
-using Daventry.Core.Storage;
 using Maniacal.Scumm.Resources;
 using Maniacal.Scumm.Rooms;
 using Maniacal.Scumm.Scripts;
+using Maniacal.Scumm.Storage;
 
 namespace Maniacal.Scumm.Tests;
 

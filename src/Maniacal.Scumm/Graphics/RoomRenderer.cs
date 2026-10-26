@@ -1,4 +1,3 @@
-using Daventry.Core.Graphics;
 using Maniacal.Scumm.Rooms;
 
 namespace Maniacal.Scumm.Graphics;

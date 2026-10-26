@@ -1,6 +1,6 @@
 using System.Buffers.Binary;
-using Daventry.Core.Storage;
 using Maniacal.Scumm.Resources;
+using Maniacal.Scumm.Storage;
 
 namespace Maniacal.Scumm.Tests;
 

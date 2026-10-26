@@ -172,8 +172,8 @@ versions 0 to 2, ScummVM's `ScummEngine::scummLoop` does this, in order, each fr
 
 The loop then waits the number of ticks the game asked for (`VAR_TIMER_NEXT`). The original C64
 engine splits the same work between a main loop ([c64-engine/system/main.asm](c64-engine/system/main.asm))
-and a chain of raster interrupts. An interpreter does it all in one place, and a host such as
-Daventry's calls it once per tick.
+and a chain of raster interrupts. An interpreter does it all in one place, and its host calls it
+once per tick.
 
 Timing matters more than it looks. ScummVM notes two cases: the C64 could not always keep 60 ticks
 per second, and some scenes (the intro's music against the "A Lucasfilm Games Production" title)

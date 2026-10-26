@@ -30,7 +30,7 @@ public sealed partial class GameWorld
     public const int SaveRoom = 50;
 
     /// <summary>Where the game's own save screen keeps its saves; with none, saving fails and no save exists.</summary>
-    public Daventry.Core.Storage.ISaveStore? SaveStore { get; set; }
+    public Maniacal.Scumm.Storage.ISaveStore? SaveStore { get; set; }
 
     /// <summary>The name save files start with, as ScummVM names them after the game's target (<c>maniac.s01</c>).</summary>
     public string SaveTarget { get; set; } = "maniac";
@@ -644,7 +644,7 @@ public sealed partial class GameWorld
     private void DrawCursorImage(byte[] image)
     {
         Array.Fill(image, (byte)0xFF);
-        var surface = new Daventry.Core.Graphics.Surface8(CursorWidth, CursorHeight);
+        var surface = new Maniacal.Scumm.Graphics.Surface8(CursorWidth, CursorHeight);
         surface.Fill(0xFF);
         var mouse = Mouse;
         bool shown = Engine.CursorOn;

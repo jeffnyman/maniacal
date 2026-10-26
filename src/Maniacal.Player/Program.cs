@@ -1,12 +1,11 @@
-using Daventry.Core.Graphics;
-using Daventry.Core.Hosting;
-using Daventry.Core.Storage;
-using Daventry.Host.Sdl;
+using Maniacal.Player.Sdl;
 using Maniacal.Scumm;
 using Maniacal.Scumm.Costumes;
 using Maniacal.Scumm.Graphics;
+using Maniacal.Scumm.Hosting;
 using Maniacal.Scumm.Resources;
 using Maniacal.Scumm.Scripts;
+using Maniacal.Scumm.Storage;
 using Maniacal.Scumm.View;
 
 namespace Maniacal.Player;
@@ -490,7 +489,7 @@ internal static class Program
 
         if (wav is not null)
         {
-            File.WriteAllBytes(wav, Daventry.Audio.WavWriter.Encode(audio.ToArray(), Maniacal.Scumm.Game.GameWorld.DefaultSampleRate, 1));
+            File.WriteAllBytes(wav, Maniacal.Scumm.Sound.WavWriter.Encode(audio.ToArray(), Maniacal.Scumm.Game.GameWorld.DefaultSampleRate, 1));
             Console.WriteLine($"Sound written to {wav}: {audio.Count / (double)Maniacal.Scumm.Game.GameWorld.DefaultSampleRate:F1} seconds, peak {audio.DefaultIfEmpty().Max(s => Math.Abs((int)s))}");
         }
 

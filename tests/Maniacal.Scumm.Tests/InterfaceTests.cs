@@ -1,11 +1,11 @@
 using System.Text;
-using Daventry.Core.Hosting;
-using Daventry.Core.Input;
-using Daventry.Core.Storage;
 using Maniacal.Scumm.Game;
 using Maniacal.Scumm.Graphics;
+using Maniacal.Scumm.Hosting;
+using Maniacal.Scumm.Input;
 using Maniacal.Scumm.Resources;
 using Maniacal.Scumm.Scripts;
+using Maniacal.Scumm.Storage;
 
 namespace Maniacal.Scumm.Tests;
 

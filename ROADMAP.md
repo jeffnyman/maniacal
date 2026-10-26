@@ -520,7 +520,7 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   2.7.0, every release shows the same screen but for the cursor (and the inventory name it lights),
   the DOS sentence line, and in DOS where Wendy stops by the mailbox, a column apart (the walk
   ScummVM rewrote after 2.7.0).
-- Next: every kid who can win has won (Razor's way is Syd's; Dave and Jeff cannot win).
+- Every kid who can win has won (Razor's way is Syd's; Dave and Jeff cannot win).
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).
@@ -530,9 +530,23 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   `walkboxes/`, `ui/sentence_action.asm`, `sound/sid_voice_controller.asm`.
 - Check: the C64 release plays from its own disk images, checked against the commented engine.
 
+## Phase 6: a release of its own
+
+- Done: Maniacal stands alone. The host contract, screen surfaces, PNG and WAV writing, game
+  folders, save stores, the audio sources and the SDL host came from Daventry's packages
+  (0.1.0-alpha); they are now Maniacal's own, as `Maniacal.Scumm`'s `Hosting`, `Input`,
+  `Graphics`, `Storage` and `Sound` and `Maniacal.Player`'s `Sdl`, only the types Maniacal uses
+  (the frame scheduler, the palette type and the mixer it never used are left out). The player
+  depends on SDL3 (`ppy.SDL3-CS`) directly. `Maniacal.Scumm` is optimized in Debug builds too: the
+  packages had come optimized, and the per-pixel drawing compiled without optimization made the
+  tests take seven times as long; with it the suite takes under a minute.
+- Next: NuGet packages, `Maniacal.Scumm` as a library and the player as the `maniacal` dotnet tool,
+  with their metadata, a build and a publish workflow, and a check that the packages restore and
+  play from a local feed.
+
 ## Later, perhaps
 
-- Browser player on `Daventry.Host.Browser`, a Blazor page like Daventry's.
+- A browser player: a host for the browser (WebAssembly), as the SDL host is for the desktop.
 - NES: `file_nes.cpp`, `gfx_nes.cpp`, `NESCostumeRenderer` and the NES charset. It needs a ROM,
   and `docs/nes` documents the data.
 - The demo releases (V1 demo `00.MAN`, V2 demo, C64 demo) come with the main ones, but there is no

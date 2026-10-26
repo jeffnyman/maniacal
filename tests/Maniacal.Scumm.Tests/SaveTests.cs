@@ -1,7 +1,7 @@
-using Daventry.Core.Storage;
 using Maniacal.Scumm.Game;
 using Maniacal.Scumm.Resources;
 using Maniacal.Scumm.Saves;
+using Maniacal.Scumm.Storage;
 
 namespace Maniacal.Scumm.Tests;
 
@@ -162,7 +162,7 @@ public class SaveGameTests
             return;
         }
 
-        var store = new Daventry.Core.Storage.MemorySaveStore();
+        var store = new Maniacal.Scumm.Storage.MemorySaveStore();
         world.SaveStore = store;
         world.Click(160, 120);
         Steps(world, 60);
@@ -304,7 +304,7 @@ public class SaveGameTests
             return;
         }
 
-        var store = new Daventry.Core.Storage.MemorySaveStore();
+        var store = new Maniacal.Scumm.Storage.MemorySaveStore();
         world.SaveStore = store;
         world.Click(60, 130);
         Steps(world, 60);
@@ -358,7 +358,7 @@ public class SaveGameTests
         }
     }
 
-    private static byte[] ReadAll(Daventry.Core.Storage.ISaveStore store, string name)
+    private static byte[] ReadAll(Maniacal.Scumm.Storage.ISaveStore store, string name)
     {
         using var stream = store.OpenRead(name)!;
         using var copy = new MemoryStream();

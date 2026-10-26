@@ -1,6 +1,6 @@
-using Daventry.Core.Hosting;
-using Daventry.Core.Storage;
 using Maniacal.Scumm.Detection;
+using Maniacal.Scumm.Hosting;
+using Maniacal.Scumm.Storage;
 
 namespace Maniacal.Scumm;
 

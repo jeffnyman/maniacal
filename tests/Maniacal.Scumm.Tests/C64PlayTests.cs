@@ -122,7 +122,7 @@ public class C64PlayTests
         }
 
         var save = hall.Save("hall", DateTime.Now);
-        var loader = Resources.ResourceLoader.Open(new Daventry.Core.Storage.DirectoryGameContainer(path));
+        var loader = Resources.ResourceLoader.Open(new Maniacal.Scumm.Storage.DirectoryGameContainer(path));
         var entered = new List<int>();
         for (int room = 1; room < 55; room++)
         {
@@ -133,7 +133,7 @@ public class C64PlayTests
                 continue;
             }
 
-            var world = new GameWorld(Resources.ResourceLoader.Open(new Daventry.Core.Storage.DirectoryGameContainer(path)));
+            var world = new GameWorld(Resources.ResourceLoader.Open(new Maniacal.Scumm.Storage.DirectoryGameContainer(path)));
             world.Load(save);
             world.Step();
             var box = target.WalkBoxes.Boxes[0];

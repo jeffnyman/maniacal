@@ -2,8 +2,8 @@
 
 Maniacal is a C# implementation of the SCUMM interpreter for Maniac Mansion. It is a port of the
 parts of ScummVM's `engines/scumm` that Maniac Mansion uses (SCUMM versions 0, 1 and 2),
-restructured as a .NET library on the host contract of [Daventry](https://github.com/jeffnyman/daventry),
-so the same engine runs on the desktop (SDL) and, later, in the browser.
+restructured as a .NET library on a small host contract of its own, so the same engine runs
+headless (as the tests run it) and on the desktop (SDL).
 
 Maniacal is not a ScummVM fork and does not aim to run any other SCUMM game. Zak McKracken uses
 the same engine generations and would come nearly for free, but it is not a goal.
@@ -55,9 +55,13 @@ file.png` the game headless, with clicks and keys given at chosen steps (`--clic
 | `tools` | Generators that port tables from the ScummVM source (`port_md5_table.py`, `port_fonts.py`, `port_opcodes.py`, `port_sound_tables.py`, `port_disk_tables.py`, `port_palettes.py`, `port_v0_verbs.py`, `port_v0_actors.py`, `port_sid_tables.py`, `port_transitions.py`). |
 | `docs` | How Maniac Mansion works and how an interpreter for it is built: the commented C64 engine, the game's scripts, the boot loader, the NES data, and the game itself. Start at [docs/README.md](docs/README.md). |
 
-The host contract (`Daventry.Core`), the audio mixer (`Daventry.Audio`) and the SDL host
-(`Daventry.Host.Sdl`) are not copied: they come from NuGet, so a fix made in Daventry reaches
-both projects. A browser player would use `Daventry.Host.Browser` in the same way.
+The host contract is part of `Maniacal.Scumm`: the engine base class, the graphics, input and
+audio drivers it is given and a headless host (`Hosting`, `Input`), screen surfaces and PNG
+writing (`Graphics`), game folders and save stores (`Storage`), and the audio sources (`Sound`).
+The SDL host is part of `Maniacal.Player` (`Sdl`). These come from
+[Daventry](https://github.com/jeffnyman/daventry), the AGI and SCI interpreter, whose 0.1.0-alpha
+host layer they were taken from and adapted. Beyond the .NET SDK, the only dependency is SDL3
+(`ppy.SDL3-CS`), for the player.
 
 ## Building and running
 
@@ -103,5 +107,6 @@ ported from. The ScummVM checkout lives next to this repository and is not part 
 
 ## Licence
 
-GPL-3.0-or-later, as ScummVM is. See [LICENSE](LICENSE). The command line tools in `docs/nes/tools`
+GPL-3.0-or-later, as ScummVM and Daventry are. See [LICENSE](LICENSE). The host layer is derived
+from Daventry's, copyright the Daventry contributors. The command line tools in `docs/nes/tools`
 carry their own licences next to them.
