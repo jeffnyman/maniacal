@@ -83,9 +83,10 @@ named by the `MANIACAL_GAMES` environment variable or in any folder above the te
 `.gitignore` keeps game files out of the repository.
 
 The walkthrough tests play the game's winning route, a section at a time, in every release, to
-"You won the game!" with Syd. With `MANIACAL_CHECKPOINTS` naming a folder, they save there where
-each section ends (and in the telescope's and Meteor Mess's close-ups), as ScummVM slot files
-for the release's target, from slot 31 on (`maniac64.s31`, `maniac1.s32`, ...), to load in
+"You won the game!" with Syd, and again with Bernard by his own way, the Meteor Police. With
+`MANIACAL_CHECKPOINTS` naming a folder, they save there where each section ends (and in the
+telescope's and Meteor Mess's close-ups), as ScummVM slot files for the release's target, from
+slot 31 on (`maniac64.s31`, `maniac1.s32`, ...; Bernard's own sections from slot 49), to load in
 ScummVM and compare.
 
 The C64 release's disk images are found by ScummVM's names, `maniac1.d64` and `maniac2.d64`, or by

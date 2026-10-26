@@ -121,8 +121,11 @@ public class GameWorldTests
         Assert.Empty(world.Unhandled);
     }
 
-    /// <summary>Boots the C64, picks Syd and Razor with Dave, and plays the intro until the kids stand in front of the mansion.</summary>
-    internal static GameWorld? AfterTheC64Intro()
+    /// <summary>
+    /// Boots the C64, picks Syd and Razor with Dave (or for Razor the kid whose portrait is the
+    /// given one, Bernard's the fifth), and plays the intro until the kids stand in front of the mansion.
+    /// </summary>
+    internal static GameWorld? AfterTheC64Intro(int third = 6)
     {
         if (Open(C64Folder) is not { } world)
         {
@@ -138,7 +141,7 @@ public class GameWorldTests
                     world.Click(76, 121);
                     break;
                 case 150:
-                    world.Click(236, 121);
+                    world.Click(36 + 40 * (third - 1), 121);
                     break;
                 case 200:
                     world.Click(290, 69);

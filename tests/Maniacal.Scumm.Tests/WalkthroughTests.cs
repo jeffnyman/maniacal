@@ -6,10 +6,10 @@ namespace Maniacal.Scumm.Tests;
 /// </summary>
 public class WalkthroughTests
 {
-    private const string C64 = "maniac_mansion_c64", V1 = "maniac_mansion_original_DOS.com", V2 = "maniac_mansion_enhanced_DOS.com";
+    internal const string C64 = "maniac_mansion_c64", V1 = "maniac_mansion_original_DOS.com", V2 = "maniac_mansion_enhanced_DOS.com";
 
     // the rooms on the way
-    private const int Driveway = 44, FrontOfTheHouse = 1, Hall = 10, Cellar = 8, LivingRoom = 3, Library = 5,
+    internal const int Driveway = 44, FrontOfTheHouse = 1, Hall = 10, Cellar = 8, LivingRoom = 3, Library = 5,
         Kitchen = 7, DiningRoom = 37, StorageRoom = 36, Pool = 6, Landing = 11, PaintingRoom = 14, MusicRoom = 17,
         Hallway = 13, TentacleLanding = 12, TopHallway = 38, FredsRoom = 21, TentaclesRoom = 20, TedsRoom = 25, PlantRoom = 27, TelescopeRoom = 28,
         EdnasRoom = 19, EdnasAttic = 9, Dungeon = 4, EdsRoom = 26, EdnasAtticCloseUp = 34,
@@ -20,10 +20,13 @@ public class WalkthroughTests
     // the doorbell's ring, the same sound in every release
     private const int Doorbell = 39;
 
-    /// <summary>The kids in the driveway, the game started: Dave, Syd and Razor on the C64, Syd, Dave and Bernard on DOS.</summary>
-    private static Player? Start(string folder)
+    /// <summary>
+    /// The kids in the driveway, the game started: Dave, Syd and Razor on the C64 (or for Razor
+    /// Bernard), Syd, Dave and Bernard on DOS.
+    /// </summary>
+    internal static Player? Start(string folder, bool bernard = false)
     {
-        var world = folder == C64 ? GameWorldTests.AfterTheC64Intro() : PlayingTests.SelectedKids(folder);
+        var world = folder == C64 ? GameWorldTests.AfterTheC64Intro(bernard ? 5 : 6) : PlayingTests.SelectedKids(folder);
         return world is null ? null : new Player(world);
     }
 
@@ -32,7 +35,7 @@ public class WalkthroughTests
     /// any, as ScummVM's slot file for the release's target (<c>maniac64</c>, <c>maniac1</c>,
     /// <c>maniac2</c>), for loading in ScummVM to compare.
     /// </summary>
-    private static void Checkpoint(Player p, string folder, int slot)
+    internal static void Checkpoint(Player p, string folder, int slot)
     {
         if (Environment.GetEnvironmentVariable("MANIACAL_CHECKPOINTS") is not { Length: > 0 } checkpoints)
         {
@@ -463,7 +466,7 @@ public class WalkthroughTests
     }
 
     // a code the game chose, as the player read it: four digits from a variable on (another on the C64)
-    private static string Code(Player p, int dos, int c64)
+    internal static string Code(Player p, int dos, int c64)
     {
         int first = p.World.Version == 0 ? c64 : dos;
         return string.Concat(Enumerable.Range(first, 4).Select(v => p.World.Engine.Variables[v]));
@@ -855,7 +858,7 @@ public class WalkthroughTests
     }
 
     /// <summary>From the top hallway down the stairs twice, through the middle door and down to the hall.</summary>
-    private static void DownToTheHall(Player p)
+    internal static void DownToTheHall(Player p)
     {
         p.Go("stairs");
         Assert.Equal(TentacleLanding, p.Room);
@@ -868,7 +871,7 @@ public class WalkthroughTests
     }
 
     /// <summary>From the hall up the stairs, through the middle door and up twice more to the top hallway.</summary>
-    private static void UpToTheTopHallway(Player p)
+    internal static void UpToTheTopHallway(Player p)
     {
         p.Go("stairs");
         Assert.Equal(Landing, p.Room);
@@ -878,6 +881,66 @@ public class WalkthroughTests
         Assert.Equal(TentacleLanding, p.Room);
         p.Go("stairs[1]");
         Assert.Equal(TopHallway, p.Room);
+    }
+
+    /// <summary>
+    /// The route as far as the lab's doors opened, which every kid's way to win takes, the third
+    /// kid's part played by the one given; saved where each section ends, if so.
+    /// </summary>
+    internal static void ToTheLabDoors(Player p, string folder, string third, bool saved)
+    {
+        void Save(int slot)
+        {
+            if (saved)
+            {
+                Checkpoint(p, folder, slot);
+            }
+        }
+
+        EnterTheHouse(p);
+        GetTheSilverKey(p);
+        Save(31);
+        TheLivingRoomAndTheLibrary(p);
+        TheKitchenAndThePool(p);
+        Assert.True(p.Carries("jar of water"));
+        Save(32);
+        Upstairs(p);
+        Save(33);
+        EdsPackage(p);
+        TheOldRustyKey(p);
+        TedsRoomAndThePlant(p);
+        Save(34);
+        EdnasRoomAndAttic(p);
+        Assert.True(p.Carries("package", third), "nobody took Ed's package");
+        Save(35);
+        TheCardKeyAndTheDimes(p, third);
+        Assert.True(p.Carries("card key", third));
+        Save(36);
+        TheTelescope(p, third);
+        p.Begin("Use", "really powerful telescope");
+        Assert.True(p.Until(() => p.Room == EdnasAtticCloseUp), "the telescope never showed the safe");
+        Save(37);
+        TheSafe(p);
+        Assert.True(p.Carries("sealed envelope", "Syd"));
+        Save(38);
+        TheQuarter(p);
+        Assert.True(p.Carries("quarter", "Syd"));
+        Save(39);
+        TheGlowingKey(p);
+        Assert.True(p.Carries("glowing key", "Syd"));
+        Save(40);
+        TheTools(p);
+        Assert.True(p.Carries("tools", "Syd"));
+        Save(41);
+        TheWires(p, third);
+        Save(42);
+        TheArcade(p);
+        p.Begin("Use", "quarter", "Meteor Mess game");
+        Assert.True(p.Until(() => p.Room == HighScore), "Meteor Mess never showed its high score");
+        Save(43);
+        TheLabDoors(p);
+        Assert.True(p.IsOpen("inner door"), "the lab's inner door stays shut");
+        Save(44);
     }
 
     /// <summary>
@@ -899,51 +962,9 @@ public class WalkthroughTests
             return;
         }
 
-        EnterTheHouse(p);
-        GetTheSilverKey(p);
-        Checkpoint(p, folder, 31);
-        TheLivingRoomAndTheLibrary(p);
-        TheKitchenAndThePool(p);
-        Assert.True(p.Carries("jar of water"));
-        Checkpoint(p, folder, 32);
-        Upstairs(p);
-        Checkpoint(p, folder, 33);
-        EdsPackage(p);
-        TheOldRustyKey(p);
-        TedsRoomAndThePlant(p);
-        Checkpoint(p, folder, 34);
-        EdnasRoomAndAttic(p);
-        Assert.True(p.Carries("package", p.World.Version == 0 ? "Razor" : "Bernard"), "nobody took Ed's package");
-        Checkpoint(p, folder, 35);
-        TheCardKeyAndTheDimes(p, p.World.Version == 0 ? "Razor" : "Bernard");
-        Assert.True(p.Carries("card key", p.World.Version == 0 ? "Razor" : "Bernard"));
-        Checkpoint(p, folder, 36);
-        TheTelescope(p, p.World.Version == 0 ? "Razor" : "Bernard");
-        p.Begin("Use", "really powerful telescope");
-        Assert.True(p.Until(() => p.Room == EdnasAtticCloseUp), "the telescope never showed the safe");
-        Checkpoint(p, folder, 37);
-        TheSafe(p);
-        Assert.True(p.Carries("sealed envelope", "Syd"));
-        Checkpoint(p, folder, 38);
-        TheQuarter(p);
-        Assert.True(p.Carries("quarter", "Syd"));
-        Checkpoint(p, folder, 39);
-        TheGlowingKey(p);
-        Assert.True(p.Carries("glowing key", "Syd"));
-        Checkpoint(p, folder, 40);
-        TheTools(p);
-        Assert.True(p.Carries("tools", "Syd"));
-        Checkpoint(p, folder, 41);
-        TheWires(p, p.World.Version == 0 ? "Razor" : "Bernard");
-        Checkpoint(p, folder, 42);
-        TheArcade(p);
-        p.Begin("Use", "quarter", "Meteor Mess game");
-        Assert.True(p.Until(() => p.Room == HighScore), "Meteor Mess never showed its high score");
-        Checkpoint(p, folder, 43);
-        TheLabDoors(p);
-        Assert.True(p.IsOpen("inner door"), "the lab's inner door stays shut");
-        Checkpoint(p, folder, 44);
-        TheStamps(p, p.World.Version == 0 ? "Razor" : "Bernard");
+        string third = p.World.Version == 0 ? "Razor" : "Bernard";
+        ToTheLabDoors(p, folder, third, saved: true);
+        TheStamps(p, third);
         Checkpoint(p, folder, 45);
         TheDemoTape(p);
         Checkpoint(p, folder, 46);

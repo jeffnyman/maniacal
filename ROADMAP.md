@@ -495,8 +495,18 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   ScummVM 2.7.0 cannot load a save ("Room 0: data not found"), so the last save is in the garage
   before the car starts; loaded in ScummVM 2.7.0, every release shows the same screen there but
   for the cursor and the DOS sentence line. The test player now tells whether a door stands open.
-- Next: the other kids' ways to win: Bernard's call to the Meteor Police, Michael's photographs
-  for Ed, Wendy's edited manuscript (Razor's way is Syd's; Dave and Jeff cannot win).
+- Done: Bernard's way to win, in every release (on the C64 Bernard is picked in Razor's place).
+  The route is shared as far as the lab's doors opened; then Bernard takes the tube from the
+  living room's old radio, fixes Dr. Fred's radio with it, reads the Meteor Police's number on the
+  wanted poster and calls them on the radio's keypad. Five minutes on they come down to the
+  dungeon, go into the open lab and take the Meteor away, dropping a badge. Edna catches Bernard
+  for the dungeon, he picks the badge up, and in the lab Purple Tentacle, given it, runs off; Ed's
+  card key opens the far door and the switch turned off wins the game. Saved from slot 49 on and
+  loaded in ScummVM 2.7.0, every release shows the same screen but for the cursor and the DOS
+  sentence line.
+- Next: the other kids' ways to win: Michael's photographs for Ed, Wendy's edited manuscript
+  (Razor's way is Syd's; Dave and Jeff cannot win). Neither kid is on the teams so far, so a
+  team of Dave, Michael and Wendy plays a route of its own.
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).
