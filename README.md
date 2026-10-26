@@ -8,6 +8,32 @@ headless (as the tests run it) and on the desktop (SDL).
 Maniacal is not a ScummVM fork and does not aim to run any other SCUMM game. Zak McKracken uses
 the same engine generations and would come nearly for free, but it is not a goal.
 
+## Screenshots
+
+Taken by the headless player from the games' own data, at their native 320×200, from saves the
+walkthrough tests make along their routes: the same three scenes in each release.
+
+<table>
+<tr><th colspan="3">Commodore 64 (V0)</th></tr>
+<tr>
+<td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/c64-front-porch.png" width="280" alt="The front of the mansion"><br>The front of the mansion</td>
+<td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/c64-green-tentacle.png" width="280" alt="Green Tentacle's room"><br>Green Tentacle's room</td>
+<td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/c64-weird-ed.png" width="280" alt="Weird Ed's room"><br>Weird Ed's room</td>
+</tr>
+<tr><th colspan="3">DOS, 1987 (V1)</th></tr>
+<tr>
+<td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/v1-front-porch.png" width="280" alt="The front of the mansion"><br>The front of the mansion</td>
+<td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/v1-green-tentacle.png" width="280" alt="Green Tentacle's room"><br>Green Tentacle's room</td>
+<td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/v1-weird-ed.png" width="280" alt="Weird Ed's room"><br>Weird Ed's room</td>
+</tr>
+<tr><th colspan="3">DOS, 1988, the enhanced release (V2)</th></tr>
+<tr>
+<td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/v2-front-porch.png" width="280" alt="The front of the mansion"><br>The front of the mansion</td>
+<td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/v2-green-tentacle.png" width="280" alt="Green Tentacle's room"><br>Green Tentacle's room</td>
+<td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/v2-weird-ed.png" width="280" alt="Weird Ed's room"><br>Weird Ed's room</td>
+</tr>
+</table>
+
 ## Status
 
 Early, but the DOS releases can be played. Releases are identified by ScummVM's MD5 table. For
@@ -54,6 +80,7 @@ file.png` the game headless, with clicks and keys given at chosen steps (`--clic
 | `tests/Maniacal.Scumm.Tests` | Unit tests, and tests that run against the real game data when it is present. |
 | `tools` | Generators that port tables from the ScummVM source (`port_md5_table.py`, `port_fonts.py`, `port_opcodes.py`, `port_sound_tables.py`, `port_disk_tables.py`, `port_palettes.py`, `port_v0_verbs.py`, `port_v0_actors.py`, `port_sid_tables.py`, `port_transitions.py`). |
 | `docs` | How Maniac Mansion works and how an interpreter for it is built: the commented C64 engine, the game's scripts, the boot loader, the NES data, and the game itself. Start at [docs/README.md](docs/README.md). |
+| `assets/screenshots` | The screenshots above. |
 
 The host contract is part of `Maniacal.Scumm`: the engine base class, the graphics, input and
 audio drivers it is given and a headless host (`Hosting`, `Input`), screen surfaces and PNG
