@@ -485,8 +485,18 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   it fails. Saved where the sections end and loaded in ScummVM 2.7.0, every release shows the
   same screen but for the cursor and the DOS sentence line, and in DOS where Syd stops by the
   third kid, a column apart (the versions 1 and 2 walk ScummVM rewrote after 2.7.0).
-- Next: the lab with Green Tentacle at Syd's side: the radiation suit, the card key in the slot,
-  the switch, the Meteor into the car's trunk and the car away.
+- Done: the lab, and the game won, in every release. Edna catches Syd once more for the dungeon;
+  in the lab Purple Tentacle stops him and Green Tentacle sees Purple Tentacle off ("That'll take
+  care of him!"), the far door stuck until then. Dr. Fred starts the self-destruct; Syd takes the
+  radiation suit (the kid becomes the suited actor 8, the inventory his), opens the far door with
+  the card key, turns the Meteor's switch off, takes the Meteor to the garage and into the trunk,
+  shuts it, and the yellow key sends the car off: "You won the game!". The ending's script has an
+  `o2_dummy`, now handled (as ScummVM does, by doing nothing). The ending plays in room 0, where
+  ScummVM 2.7.0 cannot load a save ("Room 0: data not found"), so the last save is in the garage
+  before the car starts; loaded in ScummVM 2.7.0, every release shows the same screen there but
+  for the cursor and the DOS sentence line. The test player now tells whether a door stands open.
+- Next: the other kids' ways to win: Bernard's call to the Meteor Police, Michael's photographs
+  for Ed, Wendy's edited manuscript (Razor's way is Syd's; Dave and Jeff cannot win).
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).

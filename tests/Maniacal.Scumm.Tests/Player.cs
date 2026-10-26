@@ -386,8 +386,23 @@ internal sealed class Player(GameWorld world)
         world.Inventory.FirstOrDefault(obj => obj != 0 && world.Engine.GetOwner(obj) == owner && Shown(world.NameOf(obj)) == name);
 
     /// <summary>Whether the room's thing of the name, a door say, stands open.</summary>
-    public bool IsOpen(string thing) =>
-        InRoom(thing).FirstOrDefault() is { } obj && (world.StateOf(obj.Number) & ScriptEngine.StateIntrinsic) != 0;
+    public bool IsOpen(string thing)
+    {
+        var (name, nth, _) = Named(thing);
+        return InRoom(name).ElementAtOrDefault(nth - 1) is { } obj && (world.StateOf(obj.Number) & ScriptEngine.StateIntrinsic) != 0;
+    }
+
+    // a thing's name, and which of the room's things of the name: "door[2]" is the second door
+    private static (string Name, int Nth, bool Numbered) Named(string thing)
+    {
+        if (!thing.EndsWith(']') || thing.LastIndexOf('[') <= 0)
+        {
+            return (thing, 1, false);
+        }
+
+        int open = thing.LastIndexOf('[');
+        return (thing[..open], int.Parse(thing[(open + 1)..^1], System.Globalization.CultureInfo.InvariantCulture), true);
+    }
 
     /// <summary>The objects of the room by the name, left to right, that the mouse can find somewhere.</summary>
     private List<Rooms.RoomObject> InRoom(string name) =>
@@ -400,15 +415,7 @@ internal sealed class Player(GameWorld world)
     private void Click(string thing, bool second, bool click = true)
     {
         Ready();
-        string name = thing;
-        int nth = 1;
-        bool numbered = thing.EndsWith(']') && thing.LastIndexOf('[') > 0;
-        if (numbered)
-        {
-            int open = thing.LastIndexOf('[');
-            name = thing[..open];
-            nth = int.Parse(thing[(open + 1)..^1], System.Globalization.CultureInfo.InvariantCulture);
-        }
+        var (name, nth, numbered) = Named(thing);
 
         // something carried goes first, unless the room's is meant by number
         if (!numbered && Carried(name) is var carried and not 0)

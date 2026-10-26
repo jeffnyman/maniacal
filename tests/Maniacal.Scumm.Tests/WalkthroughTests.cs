@@ -14,7 +14,8 @@ public class WalkthroughTests
         Hallway = 13, TentacleLanding = 12, TopHallway = 38, FredsRoom = 21, TentaclesRoom = 20, TedsRoom = 25, PlantRoom = 27, TelescopeRoom = 28,
         EdnasRoom = 19, EdnasAttic = 9, Dungeon = 4, EdsRoom = 26, EdnasAtticCloseUp = 34,
         UnderTheHouse = 29, UnderThePool = 2, Garage = 16,
-        WiresAttic = 15, Arcade = 18, HighScore = 39, MarkEteersOffice = 41;
+        WiresAttic = 15, Arcade = 18, HighScore = 39, MarkEteersOffice = 41,
+        LabEntrance = 31, Lab = 30, MeteorsRoom = 51;
 
     // the doorbell's ring, the same sound in every release
     private const int Doorbell = 39;
@@ -808,6 +809,51 @@ public class WalkthroughTests
         p.WaitToHear("This is GREAT!", TimeSpan.FromSeconds(30));
     }
 
+    /// <summary>
+    /// The lab, and the game won: Syd lets Edna catch him once more for the dungeon, whose lab doors
+    /// stand open, and goes in; Purple Tentacle would stop him, but Green Tentacle sees him off.
+    /// Beyond, Dr. Fred, the Meteor's slave, starts the house's self-destruct: two minutes. Syd
+    /// takes the radiation suit from the locker, opens the far door with Ed's card key, turns the
+    /// Meteor's switch off and takes the Meteor out to the garage, into the car's trunk, and shuts
+    /// the trunk.
+    /// </summary>
+
+    private static void TheLab(Player p)
+    {
+        p.Go("hatch");
+        Assert.Equal(FredsRoom, p.Room);
+        p.Go("door");
+        Assert.Equal(TopHallway, p.Room);
+        p.Do("Open", "door[2]");
+        p.Go("door[2]");
+        Assert.True(p.Until(() => p.Kid.Room == Dungeon && p.Playable), "Edna never took Syd to the dungeon");
+        p.Go("inner door");
+        Assert.Equal(LabEntrance, p.Room);
+
+        // Purple Tentacle stops Syd on his way in, keeping the far door shut, until Green Tentacle
+        // comes to see him off
+        p.Begin("Walk to", "door[2]");
+        p.WaitToHear("That'll take care of him!", TimeSpan.FromMinutes(1));
+        p.Do("Open", "door[2]");
+        p.Go("door[2]");
+        Assert.Equal(Lab, p.Room);
+
+        p.Hurried = true;
+        p.Do("Open", "locker");
+        p.Do("Pick up", "radiation suit");
+        p.Do("Use", "card key", "card slot");
+        p.Do("Open", "door[2]", until: () => p.IsOpen("door[2]"));
+        p.Go("door[2]");
+        Assert.Equal(MeteorsRoom, p.Room);
+        p.Do("Turn off", "switch");
+        p.Do("Pick up", "meteor", until: () => p.Carries("meteor"));
+        p.Do("Open", "door[2]", until: () => p.IsOpen("door[2]"));
+        p.Go("door[2]");
+        Assert.Equal(Garage, p.Room);
+        p.Do("Use", "meteor", "trunk", until: () => !p.Carries("meteor"));
+        p.Do("Close", "trunk");
+    }
+
     /// <summary>From the top hallway down the stairs twice, through the middle door and down to the hall.</summary>
     private static void DownToTheHall(Player p)
     {
@@ -835,11 +881,12 @@ public class WalkthroughTests
     }
 
     /// <summary>
-    /// The route so far, every instruction on the way handled, saved where each section ends. Timed
-    /// events break in on the way and are waited out: the cutscene of Dr. Fred and Sandy in the lab,
-    /// a minute in, and Nurse Edna's leaving the kitchen. Each save loaded in ScummVM 2.7.0 shows
-    /// the same screen there, but for the cursor and the DOS sentence line, which ScummVM 2.7.0
-    /// leaves blank after a load.
+    /// The route to the game won, with Syd, every instruction on the way handled, saved where each
+    /// section ends. Timed events break in on the way and are waited out, or waited for: the
+    /// cutscene of Dr. Fred and Sandy in the lab a minute in, Nurse Edna's leaving the kitchen, the
+    /// doorbell, Dr. Fred's alarm and his game in the arcade, the mail. Each save loaded in ScummVM
+    /// 2.7.0 shows the same screen there, but for the cursor and the DOS sentence line, which
+    /// ScummVM 2.7.0 leaves blank after a load.
     /// </summary>
     [Theory]
     [InlineData(C64)]
@@ -902,6 +949,14 @@ public class WalkthroughTests
         Checkpoint(p, folder, 46);
         TheContract(p);
         Checkpoint(p, folder, 47);
+        TheLab(p);
+        Checkpoint(p, folder, 48);
+
+        // the yellow key starts the car, which takes the Meteor away, and the game is won (the
+        // ending plays in room 0, where ScummVM 2.7.0 cannot load a save, so none is made there)
+        p.Hurried = false;
+        p.Begin("Use", "yellow key", "weird edsel");
+        p.Hear("You won the game!", TimeSpan.FromMinutes(5));
         Assert.Empty(p.Unhandled);
     }
 }

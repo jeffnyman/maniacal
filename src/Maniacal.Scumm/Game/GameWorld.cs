@@ -639,6 +639,10 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
                     return actor.InCurrentRoom ? actor.Walkbox : 0xFF;
                 }
 
+            // an opcode that does nothing, as in the ending's script (o2_dummy)
+            case "o2_dummy":
+                return 0;
+
             default:
                 return ExecuteInterface(engine, instruction, arguments, out int result)
                     ? result
