@@ -551,9 +551,11 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   consumer check: from a local feed, with its own package cache, a console app plays V2, V1 and the
   C64 headless (title screen, 40,676, 43,203 and 42,752 of 64,000 pixels lit after 600 steps,
   nothing unhandled), and the tool, installed from the feed, lists V2 and takes a screenshot.
-- Next: the first release, `v0.1.0-alpha` (the one-time Trusted Publishing setup is in
-  `.github/workflows/publish.yml`). Before a 1.0: Linux and macOS in CI, and a pass over the public
-  API, making the engine's internals `internal`.
+- Done: the first release. `Maniacal` and `Maniacal.Scumm` 0.1.0-alpha are on nuget.org,
+  published by the publish workflow from the tag `v0.1.0-alpha` through Trusted Publishing (one
+  policy covers both package IDs: the tool's has no dot, so a `Maniacal.*` pattern alone misses it).
+- Next, before a 1.0: Linux and macOS in CI, and a pass over the public API, making the engine's
+  internals `internal`.
 
 ## Later, perhaps
 
