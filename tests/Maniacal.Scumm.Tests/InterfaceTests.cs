@@ -159,8 +159,8 @@ public class PlayingTests
     private const string V1Folder = "maniac_mansion_original_DOS.com";
     private const string V2Folder = "maniac_mansion_enhanced_DOS.com";
 
-    // the second kid's portrait, the fifth kid's, and START, on the kid selection screen
-    private static readonly (int X, int Y)[] Selection = [(82, 118), (200, 118), (290, 75)];
+    // the kids' portraits, 40 pixels apart, and START, on the kid selection screen
+    private const int PortraitsLeft = 42, PortraitsY = 118, StartX = 290, StartY = 75;
 
     private static void Steps(GameWorld world, int count)
     {
@@ -224,7 +224,7 @@ public class PlayingTests
     }
 
     /// <summary>Boots a release and picks Syd and Bernard by clicking, then plays on to the driveway.</summary>
-    internal static GameWorld? SelectedKids(string folder)
+    internal static GameWorld? SelectedKids(string folder, int second = 2, int third = 5)
     {
         if (GameFolders.Find(folder) is not { } path)
         {
@@ -234,7 +234,7 @@ public class PlayingTests
         var world = new GameWorld(ResourceLoader.Open(new DirectoryGameContainer(path)));
         world.Boot();
         Steps(world, 300);
-        foreach (var (x, y) in Selection)
+        foreach (var (x, y) in new[] { (PortraitsLeft + 40 * (second - 1), PortraitsY), (PortraitsLeft + 40 * (third - 1), PortraitsY), (StartX, StartY) })
         {
             world.Click(x, y);
             Steps(world, 100);

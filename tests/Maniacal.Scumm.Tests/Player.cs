@@ -21,6 +21,9 @@ internal sealed class Player(GameWorld world)
 
     public int Room => world.CurrentRoom?.Number ?? 0;
 
+    /// <summary>The team, Dave first and the other two as they were picked, for a route to name them by their parts.</summary>
+    public IReadOnlyList<string> Kids { get; init; } = [];
+
     /// <summary>The instructions left undone on the way, but for DOS's resource routines, which only manage memory.</summary>
     public IEnumerable<string> Unhandled => world.Unhandled.Where(u => !u.Contains("resourceRoutines", StringComparison.Ordinal)).Distinct();
 

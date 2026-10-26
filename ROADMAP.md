@@ -504,9 +504,23 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   card key opens the far door and the switch turned off wins the game. Saved from slot 49 on and
   loaded in ScummVM 2.7.0, every release shows the same screen but for the cursor and the DOS
   sentence line.
-- Next: the other kids' ways to win: Michael's photographs for Ed, Wendy's edited manuscript
-  (Razor's way is Syd's; Dave and Jeff cannot win). Neither kid is on the teams so far, so a
-  team of Dave, Michael and Wendy plays a route of its own.
+- Done: Wendy's and Michael's ways to win, in every release, with Wendy and Michael picked: the
+  tests pick any two kids now, and the shared route names the kids by their parts, Wendy playing
+  Syd's and Michael the third kid's. Wendy, out of the dungeon with the stamps, takes the Meteor's
+  memoirs from the medical lab's desk, rewrites them on the typewriter (only she can), and mails
+  them in the steamed envelope to Mark Eteer, as Syd mails his tape; the contract that comes back
+  gets her past Purple Tentacle, and given to the Meteor, his switch off, it ends his life of crime.
+  Michael breaks the bottle of developer, takes the sponge from Ted's bathroom, gives Ed his
+  package as Ed comes for him, picks up the film that then lies by the bushes, soaks the sponge in
+  the developer under the house and develops the film in the darkroom (only he can) into prints of
+  Ed's plans; given them, Ed comes to the lab and chases Purple Tentacle off, and Michael sends the
+  Meteor off in the car as Syd does. Dr. Fred's second visit to Sandy, 45 minutes after his first,
+  breaks in wherever the kid is, and on the C64 a kid it stops on stairs stays stuck there (as at
+  the pool), so Michael waits for it in the darkroom. Saved from slot 52 on and loaded in ScummVM
+  2.7.0, every release shows the same screen but for the cursor (and the inventory name it lights),
+  the DOS sentence line, and in DOS where Wendy stops by the mailbox, a column apart (the walk
+  ScummVM rewrote after 2.7.0).
+- Next: every kid who can win has won (Razor's way is Syd's; Dave and Jeff cannot win).
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).

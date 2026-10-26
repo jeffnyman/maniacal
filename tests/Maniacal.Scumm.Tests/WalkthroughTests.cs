@@ -21,14 +21,20 @@ public class WalkthroughTests
     private const int Doorbell = 39;
 
     /// <summary>
-    /// The kids in the driveway, the game started: Dave, Syd and Razor on the C64 (or for Razor
-    /// Bernard), Syd, Dave and Bernard on DOS.
+    /// The kids in the driveway, the game started: Dave with Syd and Razor on the C64, Syd and
+    /// Bernard on DOS, or the two given.
     /// </summary>
-    internal static Player? Start(string folder, bool bernard = false)
+    internal static Player? Start(string folder, string second = "Syd", string? third = null)
     {
-        var world = folder == C64 ? GameWorldTests.AfterTheC64Intro(bernard ? 5 : 6) : PlayingTests.SelectedKids(folder);
-        return world is null ? null : new Player(world);
+        third ??= folder == C64 ? "Razor" : "Bernard";
+        var world = folder == C64
+            ? GameWorldTests.AfterTheC64Intro(Portrait(second), Portrait(third))
+            : PlayingTests.SelectedKids(folder, Portrait(second), Portrait(third));
+        return world is null ? null : new Player(world) { Kids = ["Dave", second, third] };
     }
+
+    // a kid's portrait on the selection screen, counted from the left
+    private static int Portrait(string kid) => Array.IndexOf(["Dave", "Syd", "Michael", "Wendy", "Bernard", "Razor", "Jeff"], kid) + 1;
 
     /// <summary>
     /// Where a section ends, the game is saved into the folder <c>MANIACAL_CHECKPOINTS</c> names, if
@@ -46,8 +52,11 @@ public class WalkthroughTests
         File.WriteAllBytes(Path.Combine(checkpoints, $"{target}.s{slot:D2}"), p.World.Save($"Walkthrough {slot}", DateTime.Now));
     }
 
-    /// <summary>The kid that is not Dave and comes first: Syd, in every release.</summary>
-    private static string Second(Player p) => p.World.Actors[1].Name;
+    /// <summary>The kid picked first, who plays the most of the route: Syd, unless another was picked.</summary>
+    internal static string Second(Player p) => p.Kids[1];
+
+    /// <summary>The kid picked second, whose part is smaller: Razor on the C64 and Bernard on DOS, unless another was picked.</summary>
+    internal static string Third(Player p) => p.Kids[2];
 
     /// <summary>
     /// Entering the house: the key from under the door mat unlocks the front door, and Dave goes in;
@@ -217,7 +226,7 @@ public class WalkthroughTests
     // the landing's middle door, and the music room's (the C64's landing has three plain doors; on
     // DOS the middle one is the steel security door, which without the copy protection is always
     // open, and whose far side only version 2 names so)
-    private static string MiddleDoor(Player p) => p.World.Version == 0 ? "door[2]" : "steel security door";
+    internal static string MiddleDoor(Player p) => p.World.Version == 0 ? "door[2]" : "steel security door";
 
     private static string MusicRoomDoor(Player p) => p.World.Version == 0 ? "door[3]" : "door[2]";
 
@@ -703,8 +712,9 @@ public class WalkthroughTests
     /// out and up to the hall, where the third kid gives him Ed's package and the card key; the
     /// package's uncancelled stamps come off as he opens it.
     /// </summary>
-    private static void TheStamps(Player p, string third)
+    internal static void TheStamps(Player p)
     {
+        string third = Third(p);
         p.NewKid("Dave");
         p.Go("door[2]");
         Assert.Equal(Cellar, p.Room);
@@ -763,11 +773,8 @@ public class WalkthroughTests
     }
 
     /// <summary>
-    /// The contract: the demo tape and the stamps go in the envelope, which the typewriter in the
-    /// plant room addresses to Mark Eteer, whose ad Syd watched. Into the mailbox with it, the
-    /// mailbox closed and its flag up; with nobody looking on at the front of the house the mailman
-    /// takes it, Mark Eteer hears it (as a cutscene shows) and some minutes on a contract comes
-    /// back, with a ring of the doorbell. Green Tentacle, given the contract, will look after Syd.
+    /// The contract: the demo tape and the stamps go in the envelope, which is mailed to Mark Eteer,
+    /// and a contract comes back. Green Tentacle, given it, will look after Syd.
     /// </summary>
     private static void TheContract(Player p)
     {
@@ -780,26 +787,7 @@ public class WalkthroughTests
         Assert.Equal(TopHallway, p.Room);
         p.Go("door[5]");
         Assert.Equal(PlantRoom, p.Room);
-        p.Do("Use", "tape in stamped envelope", "typewriter", until: () => p.Heard("publisher's address"));
-
-        p.Go("door[1]");
-        Assert.Equal(TopHallway, p.Room);
-        DownToTheHall(p);
-        p.Go("front door");
-        Assert.Equal(FrontOfTheHouse, p.Room);
-        p.Do("Open", "mailbox[1]");
-        p.Do("Use", "tape in stamped envelope", "mailbox[1]", until: () => !p.Carries("tape in stamped envelope"));
-        p.Do("Close", "mailbox[1]");
-        p.Do("Pull", "flag");
-        p.Go("front door");
-        Assert.Equal(Hall, p.Room);
-
-        p.WaitToSee(MarkEteersOffice, TimeSpan.FromMinutes(8));
-        p.WaitToHearSound(Doorbell, TimeSpan.FromMinutes(8));
-        p.Go("front door");
-        Assert.Equal(FrontOfTheHouse, p.Room);
-        p.Do("Open", "mailbox[1]");
-        p.Do("Pick up", "contract", until: () => p.Carries("contract"));
+        MailToMarkEteer(p, "tape in stamped envelope");
 
         p.Go("front door");
         Assert.Equal(Hall, p.Room);
@@ -857,6 +845,36 @@ public class WalkthroughTests
         p.Do("Close", "trunk");
     }
 
+    /// <summary>
+    /// The mail: in the plant room the typewriter addresses the stamped envelope to Mark Eteer, whose
+    /// ad the kid watched. Into the mailbox with it, the mailbox closed and its flag up; with nobody
+    /// looking on at the front of the house the mailman takes it, Mark Eteer reads it (as a cutscene
+    /// shows) and some minutes on a contract comes back, with a ring of the doorbell, and is taken
+    /// from the mailbox.
+    /// </summary>
+    internal static void MailToMarkEteer(Player p, string envelope)
+    {
+        p.Do("Use", envelope, "typewriter", until: () => p.Heard("publisher's address"));
+        p.Go("door[1]");
+        Assert.Equal(TopHallway, p.Room);
+        DownToTheHall(p);
+        p.Go("front door");
+        Assert.Equal(FrontOfTheHouse, p.Room);
+        p.Do("Open", "mailbox[1]");
+        p.Do("Use", envelope, "mailbox[1]", until: () => !p.Carries(envelope));
+        p.Do("Close", "mailbox[1]");
+        p.Do("Pull", "flag");
+        p.Go("front door");
+        Assert.Equal(Hall, p.Room);
+
+        p.WaitToSee(MarkEteersOffice, TimeSpan.FromMinutes(8));
+        p.WaitToHearSound(Doorbell, TimeSpan.FromMinutes(8));
+        p.Go("front door");
+        Assert.Equal(FrontOfTheHouse, p.Room);
+        p.Do("Open", "mailbox[1]");
+        p.Do("Pick up", "contract", until: () => p.Carries("contract"));
+    }
+
     /// <summary>From the top hallway down the stairs twice, through the middle door and down to the hall.</summary>
     internal static void DownToTheHall(Player p)
     {
@@ -884,11 +902,13 @@ public class WalkthroughTests
     }
 
     /// <summary>
-    /// The route as far as the lab's doors opened, which every kid's way to win takes, the third
-    /// kid's part played by the one given; saved where each section ends, if so.
+    /// The route as far as the lab's doors opened, which every kid's way to win takes, with the
+    /// team picked; saved where each section ends, if so.
     /// </summary>
-    internal static void ToTheLabDoors(Player p, string folder, string third, bool saved)
+    internal static void ToTheLabDoors(Player p, string folder, bool saved)
     {
+        string third = Third(p);
+
         void Save(int slot)
         {
             if (saved)
@@ -921,16 +941,16 @@ public class WalkthroughTests
         Assert.True(p.Until(() => p.Room == EdnasAtticCloseUp), "the telescope never showed the safe");
         Save(37);
         TheSafe(p);
-        Assert.True(p.Carries("sealed envelope", "Syd"));
+        Assert.True(p.Carries("sealed envelope", Second(p)));
         Save(38);
         TheQuarter(p);
-        Assert.True(p.Carries("quarter", "Syd"));
+        Assert.True(p.Carries("quarter", Second(p)));
         Save(39);
         TheGlowingKey(p);
-        Assert.True(p.Carries("glowing key", "Syd"));
+        Assert.True(p.Carries("glowing key", Second(p)));
         Save(40);
         TheTools(p);
-        Assert.True(p.Carries("tools", "Syd"));
+        Assert.True(p.Carries("tools", Second(p)));
         Save(41);
         TheWires(p, third);
         Save(42);
@@ -962,9 +982,8 @@ public class WalkthroughTests
             return;
         }
 
-        string third = p.World.Version == 0 ? "Razor" : "Bernard";
-        ToTheLabDoors(p, folder, third, saved: true);
-        TheStamps(p, third);
+        ToTheLabDoors(p, folder, saved: true);
+        TheStamps(p);
         Checkpoint(p, folder, 45);
         TheDemoTape(p);
         Checkpoint(p, folder, 46);

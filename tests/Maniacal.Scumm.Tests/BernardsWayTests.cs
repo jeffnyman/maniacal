@@ -82,12 +82,12 @@ public class BernardsWayTests
     [InlineData(V2)]
     public void Bernard_calls_the_Meteor_Police(string folder)
     {
-        if (Start(folder, bernard: true) is not { } p)
+        if (Start(folder, third: "Bernard") is not { } p)
         {
             return;
         }
 
-        ToTheLabDoors(p, folder, "Bernard", saved: false);
+        ToTheLabDoors(p, folder, saved: false);
         TheMeteorPolice(p);
         Checkpoint(p, folder, 49);
         TheBadge(p);
