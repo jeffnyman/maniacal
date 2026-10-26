@@ -14,7 +14,10 @@ public class WalkthroughTests
         Hallway = 13, TentacleLanding = 12, TopHallway = 38, FredsRoom = 21, TentaclesRoom = 20, TedsRoom = 25, PlantRoom = 27, TelescopeRoom = 28,
         EdnasRoom = 19, EdnasAttic = 9, Dungeon = 4, EdsRoom = 26, EdnasAtticCloseUp = 34,
         UnderTheHouse = 29, UnderThePool = 2, Garage = 16,
-        WiresAttic = 15, Arcade = 18, HighScore = 39;
+        WiresAttic = 15, Arcade = 18, HighScore = 39, MarkEteersOffice = 41;
+
+    // the doorbell's ring, the same sound in every release
+    private const int Doorbell = 39;
 
     /// <summary>The kids in the driveway, the game started: Dave, Syd and Razor on the C64, Syd, Dave and Bernard on DOS.</summary>
     private static Player? Start(string folder)
@@ -691,6 +694,120 @@ public class WalkthroughTests
         p.Keypad("Open", "inner door", Code(p, dos: 59, c64: 40));
     }
 
+    /// <summary>
+    /// The stamps: Dave unlocks the dungeon from the cellar with the old rusty key and Syd comes
+    /// out and up to the hall, where the third kid gives him Ed's package and the card key; the
+    /// package's uncancelled stamps come off as he opens it.
+    /// </summary>
+    private static void TheStamps(Player p, string third)
+    {
+        p.NewKid("Dave");
+        p.Go("door[2]");
+        Assert.Equal(Cellar, p.Room);
+        p.Do("Unlock", "door", "old rusty key");
+
+        p.NewKid(Second(p));
+        p.Go("door");
+        Assert.Equal(Cellar, p.Room);
+        p.Go("stairs");
+        Assert.Equal(Hall, p.Room);
+
+        p.NewKid(third);
+        p.Do("Give", "package", Second(p), until: () => p.Carries("package", Second(p)));
+        p.Do("Give", "card key", Second(p), until: () => p.Carries("card key", Second(p)));
+
+        p.NewKid(Second(p));
+        p.Do("Open", "package", until: () => p.Carries("stamps"));
+    }
+
+    /// <summary>
+    /// The demo tape: Syd takes the blank tape back from the living room's cassette player, puts
+    /// it in the music room's cassette recorder and records himself on the piano, then takes it
+    /// up to Green Tentacle, who likes the tune and gives up his own demo tape.
+    /// </summary>
+    private static void TheDemoTape(Player p)
+    {
+        p.Go("door[3]");
+        Assert.Equal(LivingRoom, p.Room);
+        p.Do("Pick up", "cassette tape", until: () => p.Carries("cassette tape"));
+        p.Go("door[1]");
+        Assert.Equal(Hall, p.Room);
+        p.Go("stairs");
+        Assert.Equal(Landing, p.Room);
+        p.Go(MusicRoomDoor(p));
+        Assert.Equal(MusicRoom, p.Room);
+        p.Do("Use", "cassette tape", "cassette recorder", until: () => !p.Carries("cassette tape"));
+        p.Do("Turn on", "cassette recorder");
+        p.Do("Use", "piano");
+        p.Do("Turn off", "cassette recorder");
+        p.Do("Pick up", "cassette tape", until: () => p.Carries("cassette tape"));
+
+        p.Go("door");
+        Assert.Equal(Landing, p.Room);
+        p.Go(MiddleDoor(p));
+        Assert.Equal(Hallway, p.Room);
+        p.Go("stairs");
+        Assert.Equal(TentacleLanding, p.Room);
+        p.Go("stairs[1]");
+        Assert.Equal(TopHallway, p.Room);
+        p.Go("door[1]");
+        Assert.Equal(FredsRoom, p.Room);
+        p.Go("ladder");
+        Assert.Equal(TentaclesRoom, p.Room);
+        p.Do("Give", "cassette tape", "Green Tentacle", until: () => !p.Carries("cassette tape"));
+        p.Do("Pick up", "demo tape", until: () => p.Carries("demo tape"));
+    }
+
+    /// <summary>
+    /// The contract: the demo tape and the stamps go in the envelope, which the typewriter in the
+    /// plant room addresses to Mark Eteer, whose ad Syd watched. Into the mailbox with it, the
+    /// mailbox closed and its flag up; with nobody looking on at the front of the house the mailman
+    /// takes it, Mark Eteer hears it (as a cutscene shows) and some minutes on a contract comes
+    /// back, with a ring of the doorbell. Green Tentacle, given the contract, will look after Syd.
+    /// </summary>
+    private static void TheContract(Player p)
+    {
+        // the envelope is named for what it holds
+        p.Do("Use", "demo tape", "envelope", until: () => !p.Carries("demo tape"));
+        p.Do("Use", "stamps", "tape in envelope", until: () => !p.Carries("stamps"));
+        p.Go("hatch");
+        Assert.Equal(FredsRoom, p.Room);
+        p.Go("door");
+        Assert.Equal(TopHallway, p.Room);
+        p.Go("door[5]");
+        Assert.Equal(PlantRoom, p.Room);
+        p.Do("Use", "tape in stamped envelope", "typewriter", until: () => p.Heard("publisher's address"));
+
+        p.Go("door[1]");
+        Assert.Equal(TopHallway, p.Room);
+        DownToTheHall(p);
+        p.Go("front door");
+        Assert.Equal(FrontOfTheHouse, p.Room);
+        p.Do("Open", "mailbox[1]");
+        p.Do("Use", "tape in stamped envelope", "mailbox[1]", until: () => !p.Carries("tape in stamped envelope"));
+        p.Do("Close", "mailbox[1]");
+        p.Do("Pull", "flag");
+        p.Go("front door");
+        Assert.Equal(Hall, p.Room);
+
+        p.WaitToSee(MarkEteersOffice, TimeSpan.FromMinutes(8));
+        p.WaitToHearSound(Doorbell, TimeSpan.FromMinutes(8));
+        p.Go("front door");
+        Assert.Equal(FrontOfTheHouse, p.Room);
+        p.Do("Open", "mailbox[1]");
+        p.Do("Pick up", "contract", until: () => p.Carries("contract"));
+
+        p.Go("front door");
+        Assert.Equal(Hall, p.Room);
+        UpToTheTopHallway(p);
+        p.Go("door[1]");
+        Assert.Equal(FredsRoom, p.Room);
+        p.Go("ladder");
+        Assert.Equal(TentaclesRoom, p.Room);
+        p.Do("Give", "contract", "Green Tentacle", until: () => !p.Carries("contract"));
+        p.WaitToHear("This is GREAT!", TimeSpan.FromSeconds(30));
+    }
+
     /// <summary>From the top hallway down the stairs twice, through the middle door and down to the hall.</summary>
     private static void DownToTheHall(Player p)
     {
@@ -779,6 +896,12 @@ public class WalkthroughTests
         TheLabDoors(p);
         Assert.True(p.IsOpen("inner door"), "the lab's inner door stays shut");
         Checkpoint(p, folder, 44);
+        TheStamps(p, p.World.Version == 0 ? "Razor" : "Bernard");
+        Checkpoint(p, folder, 45);
+        TheDemoTape(p);
+        Checkpoint(p, folder, 46);
+        TheContract(p);
+        Checkpoint(p, folder, 47);
         Assert.Empty(p.Unhandled);
     }
 }

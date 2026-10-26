@@ -471,9 +471,22 @@ Both DOS releases, in `Maniacal.Scumm.Resources`, `Rooms`, `Graphics` and `Costu
   Saved in Meteor Mess's high score and where the sections end, and loaded in ScummVM 2.7.0, every
   release shows the same high score to the pixel, and the same screens elsewhere but for the
   cursor and the DOS sentence line.
-- Next: Syd's way to win: the package's stamps, Syd's tune taped on the piano for Green
-  Tentacle's demo tape, the envelope typed to Mark Eteer and mailed, the contract back for Green
-  Tentacle, who then keeps Purple Tentacle off; then the lab, Dr. Fred and Sandy.
+- Done: Syd's recording contract. Dave unlocks the dungeon from the cellar to let Syd out, and the
+  third kid gives him Ed's package, whose stamps come off, and the card key. Syd takes the blank
+  tape back from the living room, records himself on the piano with the music room's cassette
+  recorder, and gives the tape to Green Tentacle, who likes it and gives up his demo tape. The
+  envelope, named for what it holds ("tape in envelope", "tape in stamped envelope"), takes the
+  demo tape and the stamps, is addressed to Mark Eteer on the plant room's typewriter, and goes
+  in the closed mailbox with its flag up. With nobody at the front of the house the mailman takes
+  it, Mark Eteer hears the tape (a cutscene) and minutes later the contract comes back with a
+  ring of the doorbell; given it, Green Tentacle says "This is GREAT!" and will look after Syd.
+  The test player now waits to hear a sound start (V1's speaker rings too briefly for "playing"
+  to catch it, so the player notes each sound as it starts) and tells what the kid carries when
+  it fails. Saved where the sections end and loaded in ScummVM 2.7.0, every release shows the
+  same screen but for the cursor and the DOS sentence line, and in DOS where Syd stops by the
+  third kid, a column apart (the versions 1 and 2 walk ScummVM rewrote after 2.7.0).
+- Next: the lab with Green Tentacle at Syd's side: the radiation suit, the card key in the slot,
+  the switch, the Meteor into the car's trunk and the car away.
 - `script_v0.cpp`, `scumm_v0.h`: the V0 opcode table, sentence queue and verb handling.
 - `verbs.cpp` / `input.cpp` / `object.cpp`: the `ScummEngine_v0` overrides.
 - `actor.cpp`: `Actor_v0`, which walks differently (walkbox traversal and path DDA).

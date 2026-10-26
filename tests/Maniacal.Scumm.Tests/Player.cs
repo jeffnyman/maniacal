@@ -46,11 +46,19 @@ internal sealed class Player(GameWorld world)
 
     private readonly HashSet<int> _seen = [];
 
+    // the sounds started, as they changed from step to step
+    private readonly List<int> _sounds = [];
+
     // a step, and what is said and shown in it, as a player hears and sees it
     private void Step()
     {
         world.Step();
         _seen.Add(Room);
+        if (world.Sound.LastSound is var sound and not 0 && (_sounds.Count == 0 || _sounds[^1] != sound))
+        {
+            _sounds.Add(sound);
+        }
+
         string said = world.Messages.Plain();
         if (said.Trim().Length > 0 && (_heard.Count == 0 || _heard[^1] != said))
         {
@@ -102,6 +110,21 @@ internal sealed class Player(GameWorld world)
         {
             throw new InvalidOperationException($"\"{words}\" never said, {Situation()}");
         }
+    }
+
+    /// <summary>Lets the game play on, the kid standing where he is, until a sound plays, a ring of the doorbell say.</summary>
+    public void WaitToHearSound(int sound, TimeSpan within)
+    {
+        Note($"wait to hear sound {sound}");
+        var end = world.Time + within;
+        int before = _sounds.Count;
+        bool Started() => _sounds.Skip(before).Contains(sound);
+        if (!Until(() => Started() || world.Time >= end, int.MaxValue) || !Started())
+        {
+            throw new InvalidOperationException($"sound {sound} never heard, {Situation()}");
+        }
+
+        Ready();
     }
 
     /// <summary>Lets the game play on, the kid standing where he is, until the screen shows a room, as a cutscene shows it, then through the cutscene.</summary>
@@ -330,7 +353,7 @@ internal sealed class Player(GameWorld world)
     /// <summary>The room as a failure tells it: its objects (findable or not), the actors in it, and what was done.</summary>
     private string Situation() =>
         $"in room {Room}, camera at {world.Camera.Left}; objects {string.Join(", ", world.CurrentRoom?.Objects.Where(o => o.Number > 0).Select(o => $"{Shown(world.NameOf(o.Number))}#{o.Number}{(Points(o, anywhere: true).Any() ? string.Empty : " (not found)")}") ?? [])}; "
-        + $"actors {string.Join(", ", world.Actors.Skip(1).Where(a => a.InCurrentRoom && a.Visible).Select(a => $"{a.Name} at {a.X},{a.Y}"))}; heard {string.Join(" / ", _heard.TakeLast(4))}; after {string.Join("; ", Log)}";
+        + $"actors {string.Join(", ", world.Actors.Skip(1).Where(a => a.InCurrentRoom && a.Visible).Select(a => $"{a.Name} at {a.X},{a.Y}"))}; carried {string.Join(", ", world.Inventory.Where(o => o != 0 && world.Engine.GetOwner(o) == Kid.Number).Select(o => Shown(world.NameOf(o))))}; heard {string.Join(" / ", _heard.TakeLast(4))}; after {string.Join("; ", Log)}";
 
     private void Note(string action) => Log.Add($"{world.Time.ToString(@"hh\:mm\:ss", System.Globalization.CultureInfo.InvariantCulture)} {Kid.Name} in {Room} at {Kid.X},{Kid.Y}: {action}");
 
