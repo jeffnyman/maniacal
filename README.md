@@ -1,15 +1,17 @@
-# Maniacal
+<h1 align="center">
+<img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/maniacal-title.png" width="738" height="340" alt="Maniacal">
+</h1>
 
 [![Build](https://github.com/jeffnyman/maniacal/actions/workflows/build.yml/badge.svg)](https://github.com/jeffnyman/maniacal/actions/workflows/build.yml)
 [![NuGet](https://img.shields.io/nuget/vpre/Maniacal.svg)](https://www.nuget.org/packages/Maniacal)
 
-Maniacal is a C# implementation of the SCUMM interpreter for Maniac Mansion. It is a port of the
-parts of ScummVM's `engines/scumm` that Maniac Mansion uses (SCUMM versions 0, 1 and 2),
+*Maniacal* is a C# implementation of the SCUMM interpreter for *Maniac Mansion*. It's a port of the
+parts of ScummVM's `engines/scumm` that *Maniac Mansion* uses (SCUMM versions 0, 1 and 2),
 restructured as a .NET library on a small host contract of its own, so the same engine runs
 headless (as the tests run it) and on the desktop (SDL).
 
-Maniacal is not a ScummVM fork and does not aim to run any other SCUMM game. Zak McKracken uses
-the same engine generations and would come nearly for free, but it is not a goal.
+*Maniacal* is not a ScummVM fork and does not aim to run any other SCUMM game. *Zak McKracken* uses
+the same engine generations and would come nearly for free, but, at least for right now, it's not a goal.
 
 ## Screenshots
 
@@ -39,40 +41,61 @@ walkthrough tests make along their routes: the same three scenes in each release
 
 ## Status
 
-Early, but the DOS releases can be played. Releases are identified by ScummVM's MD5 table. For
-both DOS releases the index, rooms (objects, walkboxes), room pictures, object images and
-costumes are read, and every script decodes. `maniacal <folder>` opens the game in a window: the
-scripts run, change rooms, set the camera and object states, and put, walk and animate actors; the
-message line shows what is said, and the verbs, the sentence line and the inventory work with the
-mouse and the keys. Kids are picked by clicking, the intro plays, and the kids walk from room to
-room and pick things up; dark rooms are black but for the flashlight. Inside the house the game
-plays as in ScummVM as far as it has been checked: the kitchen, Edna catching a kid and the
-dungeon, the gargoyle's door, and the basement with its lights. The music and sound effects play
-as the PCjr made them, or as the PC speaker did with `--speaker`. F5 opens the game's own save
-screen; saves are ScummVM's own files (`maniac.s01` for Game A, and so on), so they can be moved
-between Maniacal and ScummVM 2.7 or later. A save loaded with `--load` goes through the game's save
-room on the way in, as one loaded from ScummVM's launcher does.
-As in ScummVM, the copy protection is bypassed: the steel security door stays open, so its code
-from the manual is never needed; `--copy-protection` keeps it.
+All three releases play from the title screen to "You won the game!". The walkthrough tests win
+the game every way it can be won (Syd's recording contract, Bernard's call to the Meteor Police,
+Wendy's memoirs and Michael's photographs) in each release, and the saves they make along the way,
+loaded in ScummVM 2.7.0, show the same screen but for the cursor and the DOS sentence line. The
+packages are an alpha: the engine works, but its public API is still to be settled before a 1.0.
+
+| Release | SCUMM version | Data | State |
+|---|---|---|---|
+| Commodore 64 (1987) | 0 | `maniac1.d64`, `maniac2.d64` disk images | Winnable, with the SID's sound and saves |
+| DOS (1987) | 1 | `00.LFL` to `52.LFL`, XOR-encoded | Winnable, with sound and saves |
+| DOS, enhanced (1988) | 2 | `00.LFL` to `53.LFL`, XOR-encoded | Winnable, with sound and saves |
+| NES (1990) | 1 (NES dialect) | `.prg` extracted from the ROM | Not supported; later, if at all |
+
+What works, in every release:
+
+- **Detection.** Releases are identified by ScummVM's MD5 table; the C64's disk images by
+  ScummVM's names or by the bytes each disk starts with.
+- **Pictures.** Rooms, object images, costumes and the masks actors walk behind, with the room
+  transitions; dark rooms are black but for the flashlight.
+- **Scripts.** Every script decodes and runs: rooms change, the camera follows, actors walk and
+  talk, cutscenes play, and the mansion's timed events (Edna, Ed's doorbell, the mail, the
+  meltdown) come when they should.
+- **The interface.** Kid selection, the verbs, the sentence line and the inventory, with the mouse
+  and the keys.
+- **Sound.** The DOS music and effects as the PCjr made them, or as the PC speaker did with
+  `--speaker`; the C64's through an emulated SID.
+- **Saves.** ScummVM's own files (`maniac.s01` for Game A, and so on), so saves move between
+  Maniacal and ScummVM 2.7 or later. F5 opens the game's save screen; `--load` loads one through the
+  game's save room, as ScummVM's launcher does.
+- **Copy protection.** Bypassed, as in ScummVM: the steel security door stays open, so its code
+  from the manual is never needed. `--copy-protection` keeps it.
+
+### Playing
 
 A verb is clicked, then an object; clicking the object again, or clicking the sentence line,
 carries the sentence out, as in the original. The right button, Escape or F4 skip a cutscene, and
 the period key skips a line of speech.
 
-The player also has tools for looking inside the game: `--room N` writes a room as a PNG with its
-objects as the game starts and lists them, `--view N` the 320x200 screen with the camera and
-standing actors, `--costume N` a sheet of a costume's figures, `--font` or `--text "words"` the
-built-in font, `--script N` or `--room-scripts N` a disassembly, and `--run [steps] --screenshot
-file.png` the game headless, with clicks and keys given at chosen steps (`--click step:x,y`,
-`--key step:key`), and saves loaded or written (`--load file`, `--save file`, `--saves folder`).
-[ROADMAP.md](ROADMAP.md) gives the order of work.
+### Looking inside
 
-| Release | SCUMM version | Data | State |
-|---|---|---|---|
-| DOS V1 (1987) | 1 | `00.LFL` to `52.LFL`, XOR-encoded | Playable, with sound and saves |
-| DOS V2 "enhanced" (1988) | 2 | `00.LFL` to `53.LFL`, XOR-encoded | Playable, with sound and saves |
-| Commodore 64 (1987) | 0 | `maniac1.d64`, `maniac2.d64` disk images | Plays from the kid selection into the house, with the SID's sound and saves |
-| NES (1990) | 1 (NES dialect) | `.prg` extracted from the ROM | Later, if at all |
+The player also has tools for looking inside the game:
+
+| Option | What it does |
+|---|---|
+| `--room N` | Writes a room as a PNG, with its objects as the game starts, and lists them. |
+| `--view N` | Writes the 320×200 screen, with the camera and standing actors. |
+| `--costume N` | Writes a sheet of a costume's figures. |
+| `--font`, `--text "words"` | Writes the built-in font, or words in it. |
+| `--script N`, `--room-scripts N` | Disassembles a script, or a room's scripts. |
+| `--run [steps]` | Plays headless, with clicks and keys at chosen steps (`--click step:x,y`, `--key step:key`), saves loaded or written (`--load`, `--save`, `--saves`), and a `--screenshot` or `--wav` at the end. |
+
+### Not yet
+
+The NES release; the demos (there is no data here to test them); the Amiga and Atari ST releases.
+[ROADMAP.md](ROADMAP.md) gives the order of work, done and to come.
 
 ## Layout
 
