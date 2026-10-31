@@ -60,6 +60,10 @@ internal sealed class Costume
     private readonly int _animationOffsets;
     private readonly int _commands;
 
+    /// <summary>Whether the bytes are long enough for a costume and have a version 1 or 2 costume's format.</summary>
+    internal static bool IsCostume(ReadOnlySpan<byte> data)
+        => data.Length >= 10 && (data[5] & 0x7F) is FormatV1 or 0x58 or 0x59;
+
     private Costume(int number, ReadOnlyMemory<byte> data)
     {
         var span = data.Span;

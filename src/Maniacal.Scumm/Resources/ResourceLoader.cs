@@ -95,6 +95,30 @@ public sealed class ResourceLoader
         return file.Slice(location.Offset, size);
     }
 
+    /// <summary>
+    /// Whether an index entry names a resource that can be read: one in a room file (an entry in
+    /// room 0 is how the index keeps an empty slot, and to ScummVM's <c>loadResource</c> it means the
+    /// room on screen, which these releases never ask for out of play) that fits in that file. The
+    /// releases keep a few entries that are neither, numbers the game never loads.
+    /// </summary>
+    internal bool IsReadable(ResourceType type, int index)
+    {
+        var location = Index.Locate(type, index);
+        if (!location.IsPresent || location.Room == 0 || !LflFile.Exists(_game, location.Room, _extension))
+        {
+            return false;
+        }
+
+        var file = RoomFile(location.Room);
+        if (location.Offset + 2 > file.Length)
+        {
+            return false;
+        }
+
+        int size = BinaryPrimitives.ReadUInt16LittleEndian(file.Span[location.Offset..]);
+        return size >= 2 && location.Offset + size <= file.Length;
+    }
+
     /// <summary>Loads and parses a room, or returns null when the index has no such room.</summary>
     internal Room? LoadRoom(int room)
         => Load(ResourceType.Room, room) is { } data ? Room.Parse(room, Index.Version, data) : null;

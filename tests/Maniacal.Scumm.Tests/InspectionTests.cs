@@ -14,6 +14,33 @@ public class InspectionTests
     private static GameInspector? Open(string folder)
         => GameFolders.Find(folder) is { } path ? new GameInspector(ResourceLoader.Open(new DirectoryGameContainer(path))) : null;
 
+    /// <summary>
+    /// Every number is asked, as a program that lists a release's rooms, scripts and costumes asks
+    /// them, and none throws: the index's empty slots (entries in room 0: number 0 in the 1988
+    /// release and on the C64, scripts 176 to 199 in the 1987 release, whose script 0 is a real
+    /// one) and the entries pointing at nothing the game loads (the 1988 release's script 134, the
+    /// 1987 release's 50, 72 and 162 and its costume 0, which holds no costume; the C64's scripts
+    /// 67, 152, 153 and 159) answer null. Found by a program written against the package.
+    /// </summary>
+    [Theory]
+    [InlineData(WalkthroughTests.V2, 53, 169, new[] { 0, 134 })]
+    [InlineData(WalkthroughTests.V1, 52, 173, new[] { 50, 72, 162, 176, 199 })]
+    [InlineData(WalkthroughTests.C64, 52, 155, new[] { 0, 67, 152, 153, 159 })]
+    public void Every_number_is_answered_without_throwing(string folder, int rooms, int scripts, int[] noScripts)
+    {
+        if (Open(folder) is not { } inspector)
+        {
+            return;
+        }
+
+        Assert.Equal(rooms, Enumerable.Range(0, 100).Count(n => inspector.Room(n) is not null));
+        Assert.Equal(scripts, Enumerable.Range(0, 256).Count(n => inspector.Script(n) is not null));
+        Assert.All(Enumerable.Range(0, 100), n => inspector.RoomScripts(n));
+        Assert.All(Enumerable.Range(0, 100), n => inspector.Costume(n));
+        Assert.All(noScripts, n => Assert.Null(inspector.Script(n)));
+        Assert.Null(inspector.Room(0));
+    }
+
     [Fact]
     public void A_room_comes_with_its_picture_mask_and_objects()
     {

@@ -198,7 +198,10 @@ public sealed record RoomScreen
 /// <summary>
 /// Looks inside a release's data without playing it: room pictures and their objects, costumes,
 /// scripts decoded, and a room's screen with figures standing in it. Rooms and objects are as the
-/// game starts them. Damaged data throws <see cref="InvalidDataException"/>.
+/// game starts them. A number the release's index keeps nothing readable under answers null: one
+/// that is not there, the index's empty slots (entries in room 0, as number 0 mostly is), and the
+/// few entries the original data has that point at nothing the game loads. Data that is damaged
+/// inside a resource throws <see cref="InvalidDataException"/>.
 /// </summary>
 /// <param name="loader">The release's resources, from <see cref="ResourceLoader.Open"/>.</param>
 public sealed class GameInspector(ResourceLoader loader)
@@ -212,7 +215,7 @@ public sealed class GameInspector(ResourceLoader loader)
     /// <summary>A room's picture with its objects, or null if there is no such room.</summary>
     public RoomPicture? Room(int number, RoomObjects objects = RoomObjects.Initial)
     {
-        if (loader.LoadRoom(number) is not { } room)
+        if (!loader.IsReadable(ResourceType.Room, number) || loader.LoadRoom(number) is not { } room)
         {
             return null;
         }
@@ -236,6 +239,11 @@ public sealed class GameInspector(ResourceLoader loader)
     /// <summary>A costume's standing and walking figures, or null if there is no such costume.</summary>
     public CostumeFigures? Costume(int number)
     {
+        if (!loader.IsReadable(ResourceType.Costume, number))
+        {
+            return null;
+        }
+
         if (Version == 0)
         {
             if (loader.LoadCostumeV0(number) is not { } clips)
@@ -253,7 +261,9 @@ public sealed class GameInspector(ResourceLoader loader)
             };
         }
 
-        if (loader.LoadCostume(number) is not { } costume)
+        // an entry whose bytes are no costume (the 1987 release's costume 0) is one the game never loads
+        if (loader.Load(ResourceType.Costume, number) is not { } data || !Costumes.Costume.IsCostume(data.Span)
+            || loader.LoadCostume(number) is not { } costume)
         {
             return null;
         }
@@ -277,7 +287,7 @@ public sealed class GameInspector(ResourceLoader loader)
     /// <summary>A global script decoded, or null if there is no such script.</summary>
     public ScriptListing? Script(int number)
     {
-        if (loader.Load(ResourceType.Script, number) is not { } data)
+        if (!loader.IsReadable(ResourceType.Script, number) || loader.Load(ResourceType.Script, number) is not { } data)
         {
             return null;
         }
@@ -289,7 +299,7 @@ public sealed class GameInspector(ResourceLoader loader)
     /// <summary>A room's entry and exit scripts and its objects' verb scripts decoded, or null if there is no such room.</summary>
     public IReadOnlyList<ScriptListing>? RoomScripts(int number)
     {
-        if (loader.LoadRoom(number) is not { } room)
+        if (!loader.IsReadable(ResourceType.Room, number) || loader.LoadRoom(number) is not { } room)
         {
             return null;
         }
@@ -321,7 +331,7 @@ public sealed class GameInspector(ResourceLoader loader)
     /// </summary>
     public RoomScreen? View(int number, int? cameraX = null, IReadOnlyList<StandingActor>? actors = null)
     {
-        if (loader.LoadRoom(number) is not { } room)
+        if (!loader.IsReadable(ResourceType.Room, number) || loader.LoadRoom(number) is not { } room)
         {
             return null;
         }
@@ -336,6 +346,11 @@ public sealed class GameInspector(ResourceLoader loader)
         foreach (var actor in (actors ?? []).OrderBy(a => a.Y))
         {
             int direction = (int)actor.Facing;
+            if (!loader.IsReadable(ResourceType.Costume, actor.Costume))
+            {
+                throw NoCostume(actor.Costume);
+            }
+
             CostumeFrame frame = room.Version == 0
                 ? V0CostumeRenderer.DrawClip(loader.LoadCostumeV0(actor.Costume) ?? throw NoCostume(actor.Costume), V0StandLeft + direction, actor.Costume)
                 : CostumeRenderer.DrawFrame(loader.LoadCostume(actor.Costume) ?? throw NoCostume(actor.Costume), direction,

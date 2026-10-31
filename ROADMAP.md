@@ -693,13 +693,31 @@ Where it comes from:
     `postProcessDOSGraphics` does for `kTextVirtScreen` (the original interpreter doing the same,
     its comment says), which came after 2.7.0: talk colour 14 shows light blue, 1 white.
 
+- **Used from outside.** Three programs written against the published 0.2.0-alpha package alone,
+  in a folder of their own (`maniacal-playground` beside this repository): a room atlas (every
+  room as a PNG with its objects, and an index page), a script browser (every script decoded to
+  text), and an attract mode (the title, the kid selection clicked through, and the intro played
+  headless, frames and sound written). They ran on all three releases, and their notes found two
+  bugs, now fixed: the inspector threw for the index's empty slots (entries in room 0: number 0
+  in the 1988 release and on the C64, the 1987 release's scripts 176 to 199) and for the entries
+  the original data has that point at nothing the game loads (the 1988 release's script 134, the
+  1987 release's scripts 50, 72 and 162 and costume 0, the C64's scripts 67, 152, 153 and 159),
+  as if the data were damaged. They now answer null, as for a number that is not there
+  (`ResourceLoader.IsReadable`); loading during play is unchanged. `InspectionTests` asks every
+  number in every release.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies
   a movement step apart from ScummVM's at one moment; right after a load, Syd and Razor turning
   to face left are drawn a strip apart for a second or two. Both are about how version 1 moves
   and animates actors, not about drawing them; the twinkling star differs too, being random.
-- Use 0.2.0-alpha from outside the repository and fix what is awkward while that is still cheap.
+- The rest of what the programs used from outside found awkward: nothing lists which rooms,
+  scripts and costumes a release has; verbs come as numbers only; picking the kids means knowing
+  where they are on the screen (and on the C64 nothing says); opening a game takes four types and
+  up to seven namespaces, where one entry point from a folder could detect, open and say what it
+  found; reading the sound as the game runs is left to every caller; `Palettes.ForVersion` is a
+  span that cannot be kept.
 - At 1.0, move `PublicAPI.Unshipped.txt` into `PublicAPI.Shipped.txt` and set package
   validation's baseline (`PackageValidationBaselineVersion`), so a breaking change fails the build.
 
