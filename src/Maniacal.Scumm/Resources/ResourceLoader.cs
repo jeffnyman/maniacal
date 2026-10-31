@@ -16,14 +16,20 @@ public sealed class ResourceLoader
 {
     private readonly IGameContainer _game;
     private readonly Dictionary<int, byte[]> _files = [];
+    private readonly string _extension;
 
-    internal ResourceLoader(IGameContainer game, ResourceIndex index)
+    internal ResourceLoader(IGameContainer game, ResourceIndex index, bool demo = false, string extension = LflFile.Extension)
     {
         _game = game;
         Index = index;
+        IsDemo = demo;
+        _extension = extension;
     }
 
     internal ResourceIndex Index { get; }
+
+    /// <summary>Whether the release is a demo (<c>GF_DEMO</c>), which the engine treats a little differently.</summary>
+    internal bool IsDemo { get; }
 
     /// <summary>The files of the release.</summary>
     public IGameContainer Game => _game;
@@ -31,7 +37,7 @@ public sealed class ResourceLoader
     /// <summary>
     /// Reads the index from <c>00.LFL</c> (on the C64, from the disk images) and returns a loader
     /// over it. Throws <see cref="NotSupportedException"/> for a release Maniacal knows but does
-    /// not play (another language, platform, or a demo; the message says which),
+    /// not play (another language or platform, or the C64's demo; the message says which),
     /// <see cref="FileNotFoundException"/> when the container has no <c>00.LFL</c>, and
     /// <see cref="InvalidDataException"/> when its index is not Maniac Mansion's or ends early.
     /// Data that is no release ScummVM knows is opened as it is.
@@ -39,12 +45,14 @@ public sealed class ResourceLoader
     public static ResourceLoader Open(IGameContainer game)
     {
         game = C64DiskImage.Open(game) ?? game;
-        if (ScummDetector.Identify(game) is { Unsupported: { } reason } found)
+        var found = ScummDetector.Identify(game);
+        if (found is { Unsupported: { } reason })
         {
             throw new NotSupportedException($"This is {found.Description}, which Maniacal does not play: {reason}.");
         }
 
-        return new(game, ResourceIndex.Parse(LflFile.Read(game, 0)));
+        string extension = found?.Variant == "V1 Demo" ? LflFile.DemoExtension : LflFile.Extension;
+        return new(game, ResourceIndex.Parse(LflFile.Read(game, 0, extension)), found?.IsDemo ?? false, extension);
     }
 
     /// <summary>The decoded contents of a room file.</summary>
@@ -52,7 +60,7 @@ public sealed class ResourceLoader
     {
         if (!_files.TryGetValue(room, out var data))
         {
-            data = LflFile.Read(_game, room);
+            data = LflFile.Read(_game, room, _extension);
             _files[room] = data;
         }
 
@@ -67,7 +75,7 @@ public sealed class ResourceLoader
     internal ReadOnlyMemory<byte>? Load(ResourceType type, int index)
     {
         var location = Index.Locate(type, index);
-        if (!location.IsPresent || !LflFile.Exists(_game, location.Room))
+        if (!location.IsPresent || !LflFile.Exists(_game, location.Room, _extension))
         {
             return null;
         }
@@ -75,13 +83,13 @@ public sealed class ResourceLoader
         var file = RoomFile(location.Room);
         if (location.Offset + 2 > file.Length)
         {
-            throw new InvalidDataException($"{type} {index}: offset {location.Offset} is past the end of {LflFile.NameOf(location.Room)} ({file.Length} bytes).");
+            throw new InvalidDataException($"{type} {index}: offset {location.Offset} is past the end of {LflFile.NameOf(location.Room, _extension)} ({file.Length} bytes).");
         }
 
         int size = BinaryPrimitives.ReadUInt16LittleEndian(file.Span[location.Offset..]);
         if (size < 2 || location.Offset + size > file.Length)
         {
-            throw new InvalidDataException($"{type} {index}: size {size} at offset {location.Offset} does not fit in {LflFile.NameOf(location.Room)} ({file.Length} bytes).");
+            throw new InvalidDataException($"{type} {index}: size {size} at offset {location.Offset} does not fit in {LflFile.NameOf(location.Room, _extension)} ({file.Length} bytes).");
         }
 
         return file.Slice(location.Offset, size);

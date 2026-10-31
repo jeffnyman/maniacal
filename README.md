@@ -52,12 +52,15 @@ packages are an alpha: the engine works, but its public API is still to be settl
 | Commodore 64 (1987) | 0 | `maniac1.d64`, `maniac2.d64` disk images | Winnable, with the SID's sound and saves |
 | DOS (1987) | 1 | `00.LFL` to `52.LFL`, XOR-encoded | Winnable, with sound and saves |
 | DOS, enhanced (1988) | 2 | `00.LFL` to `53.LFL`, XOR-encoded | Winnable, with sound and saves |
+| DOS demo (1987) | 1 | `00.MAN` to `49.MAN`, the full release's rooms renamed | Plays its demo through |
+| DOS demo (1988) | 2 | `00.LFL` to `53.LFL`, rooms of the 1988 release | Plays its demo through |
 | NES (1990) | 1 (NES dialect) | `.prg` extracted from the ROM | Not supported; later, if at all |
 
-These are the English releases, and only they are played: a release in another language, for
-another platform, or a demo is named and refused (`maniacal: this is Maniac Mansion (V2, German,
-DOS), which Maniacal does not play: it plays only the English releases.`), by the tool and by the
-library alike.
+These are the English releases, and only they are played: a release in another language or for
+another platform, or the C64's demo, is named and refused (`maniacal: this is Maniac Mansion (V2,
+German, DOS), which Maniacal does not play: it plays only the English releases.`), by the tool
+and by the library alike. The demos run themselves, as they were made to, from the title through
+the mansion to the Edisons' lab.
 
 What works, in every release:
 
@@ -112,8 +115,8 @@ data could not be read, a headless run stopped on an error, or the window could 
 
 ### Not yet
 
-The demos (the 1987 and 1988 DOS demos are detected and refused for now; the C64's has no data
-here); the other languages; the NES release; the Amiga and Atari ST releases.
+The C64's demo (there is no data here to test it); the other languages; the NES release; the
+Amiga and Atari ST releases.
 [ROADMAP.md](ROADMAP.md) gives the order of work, done and to come.
 
 ## Layout

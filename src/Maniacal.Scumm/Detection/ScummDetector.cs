@@ -15,16 +15,17 @@ internal sealed record ScummGame(Md5Entry Entry, string Variant, int Version, bo
     public string? Platform => Entry.Platform;
 
     /// <summary>
-    /// Whether Maniacal plays the release: the English releases for the Commodore 64 and DOS, the
-    /// ones it is tested on. Not the demos yet, nor other languages or platforms.
+    /// Whether Maniacal plays the release: the English releases for the Commodore 64 and DOS and
+    /// the DOS demos, the ones it is tested on. Not the C64's demo yet (there is no data to test
+    /// it), nor other languages or platforms.
     /// </summary>
     public bool IsSupported => Unsupported is null;
 
     /// <summary>Why Maniacal does not play the release, or null when it does.</summary>
     public string? Unsupported
-        => IsDemo ? "the demos are not supported yet"
-        : Language != "en" ? "it plays only the English releases"
+        => Language != "en" ? "it plays only the English releases"
         : !(Platform == "dos" && Version is 1 or 2) && !(Platform == "c64" && Version == 0) ? "it plays only the Commodore 64 and DOS releases"
+        : IsDemo && Platform == "c64" ? "the Commodore 64 demo is not supported yet"
         : null;
 
     /// <summary>The release in words: <c>Maniac Mansion (V2, German, DOS)</c>.</summary>
@@ -122,10 +123,14 @@ internal static class ScummDetector
             var buffer = new byte[Math.Min(stream.Length, Md5FileSizeLimit)];
             stream.ReadExactly(buffer);
 
-            // the V1 demo's 00.MAN is the full release's 00.LFL: ScummVM tells them apart by the
-            // file names (detection_tables.h's "%02d.MAN" pattern, variant "V1 Demo")
+            // ScummVM tells two demos from their releases by the files' names, not the MD5:
+            // the V1 demo's 00.MAN is the full release's 00.LFL (detection_tables.h's "%02d.MAN",
+            // "V1 Demo"), and the C64 demo's table row is "C64" with the extra "Demo", its disk
+            // being maniacdemo.d64 ("C64 Demo")
             if (ScummMd5Table.Find(Md5.ComputeHex(buffer)) is { } entry
-                && (name == "00.MAN" && entry.Variant == "V1" ? "V1 Demo" : entry.Variant) is var variantName
+                && (name == "00.MAN" && entry.Variant == "V1" ? "V1 Demo"
+                    : container is C64DiskImage { IsDemo: true } ? "C64 Demo"
+                    : entry.Variant) is var variantName
                 && Variants.TryGetValue(variantName, out var variant))
             {
                 return new ScummGame(entry, variantName, variant.Version, variant.Demo);

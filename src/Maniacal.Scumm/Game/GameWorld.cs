@@ -39,6 +39,9 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// <summary>The talk colours version 1 actors start with. Mirrors <c>v1MMActorTalkColor</c>.</summary>
     private static readonly int[] V1TalkColors = [1, 7, 2, 14, 8, 1, 3, 7, 7, 12, 1, 13, 1, 4, 5, 5, 4, 3, 1, 5, 1, 1, 1, 7, 7];
 
+    /// <summary>The talk colours <c>resetScumm</c> gives the 1988 demo's actors.</summary>
+    private static readonly (int Actor, int Color)[] V2DemoTalkColors = [(9, 15), (10, 7), (11, 2), (13, 5), (23, 14)];
+
     private readonly ResourceLoader _loader;
 
     // the world before the boot script, which a restart goes back to
@@ -73,16 +76,22 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             loader.Index.ObjectOwners,
             loader.Index.ObjectStates,
             seed);
+        IsDemo = loader.IsDemo;
         Actors = new Actor[ActorCount];
         for (int i = 0; i < ActorCount; i++)
         {
             Actors[i] = Version == 0 ? new ActorV0(i, this) : new Actor(i, this);
 
-            // resetScumm: version 0 and 1 actors start in the costume of their number, and with their own
-            // talk colours; version 0's names are the engine's own (getActorName)
-            if (Version <= 1)
+            // resetScumm: version 0 and 1 actors, and the demos', start in the costume of their
+            // number; version 0 and 1 actors with their own talk colours; version 0's names are the
+            // engine's own (getActorName)
+            if (Version <= 1 || IsDemo)
             {
                 Actors[i].SetCostume(i);
+            }
+
+            if (Version <= 1)
+            {
                 Actors[i].TalkColor = Version == 0 ? V0Actors.TalkColors[i] : V1TalkColors[i];
             }
 
@@ -92,9 +101,19 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             }
         }
 
-        var font = Font.English(Version);
+        // resetScumm: the 1988 demo's script wants actor 3's colour 3 drawn as 1, and these talk colours
+        if (Version == 2 && IsDemo)
+        {
+            Actors[3].Palette[3] = 1;
+            foreach (var (actor, color) in V2DemoTalkColors)
+            {
+                Actors[actor].TalkColor = color;
+            }
+        }
+
+        var font = Font.English(Version, IsDemo);
         Messages = new MessageLine(font, Engine, n => n is > 0 and < ActorCount ? Actors[n] : null, NameOf, VerbName);
-        Verbs = new VerbArea(font, ScreenLayout.ForVersion(Version).RoomBottom, () => Engine.Interface, c64: Version == 0);
+        Verbs = new VerbArea(font, ScreenLayout.ForVersion(Version).RoomBottom, () => Engine.Interface, c64: Version == 0, demo: IsDemo);
 
         // ScummEngine_v0::resetScumm: the C64's engine makes its verbs itself, and resetScummVars
         // resets the sentence and starts it with Dave as the kid
@@ -240,7 +259,13 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     }
 
     /// <summary>Starts the game: runs script 1, as <c>runBootscript</c> does for the full game.</summary>
-    public void Boot() => Engine.RunScript(1);
+    public void Boot() => Engine.RunScript(IsDemo && Version != 0 ? DemoBootScript : 1);
+
+    /// <summary>The script the DOS demos boot with, their demo mode. Mirrors <c>runBootscript</c>.</summary>
+    internal const int DemoBootScript = 9;
+
+    /// <summary>Whether the release is a demo, which boots and colours some things differently.</summary>
+    internal bool IsDemo { get; }
 
     /// <summary>
     /// One step of the main loop, in the order of <c>scummLoop</c> for these versions: count the
@@ -438,6 +463,12 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
             // o5_print: the first operand is the actor saying it, or 255 for nobody; o5_printEgo: the kid says it
             case "o5_print":
+                // decodeParseString: the demos print nobody's text in their own colour
+                if (IsDemo && arguments[0] == MessageLine.NoActor)
+                {
+                    Messages.StringColor = Version == 2 ? 15 : 1;
+                }
+
                 Messages.Talk(arguments[0], MessageLine.Decode(instruction.Operands[1].Text));
                 return 0;
             case "o5_printEgo":
@@ -986,7 +1017,8 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
                 actor.SetCostume(arguments[1]);
                 break;
             case 5:
-                actor.TalkColor = arguments[1];
+                // o2_actorOps: the 1988 demo's talk colour 1 is drawn as 15
+                actor.TalkColor = Version == 2 && IsDemo && arguments[1] == 1 ? 15 : arguments[1];
                 break;
         }
     }

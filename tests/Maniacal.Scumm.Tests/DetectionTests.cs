@@ -88,7 +88,7 @@ public class DetectionTests
         Assert.True(game.IsDemo);
     }
 
-    /// <summary>For now Maniacal plays the English releases for the Commodore 64 and DOS, and refuses the rest by name.</summary>
+    /// <summary>Maniacal plays the English releases for the Commodore 64 and DOS and the DOS demos, and refuses the rest by name.</summary>
     [Theory]
     [InlineData("b250d0f9cc83f80ced56fe11a4fb057c", "V2", null)]
     [InlineData("624cdb93654667c869d204a64af7e57f", "V2", null)]
@@ -97,11 +97,12 @@ public class DetectionTests
     [InlineData("183d7464902d40d00800e8ee1f04117c", "V2", "This is Maniac Mansion (V2, German, DOS), which Maniacal does not play: it plays only the English releases.")]
     [InlineData("0c331637580950aea2346e012ef2a868", "V2", "This is Maniac Mansion (V2, English, Atari ST), which Maniacal does not play: it plays only the Commodore 64 and DOS releases.")]
     [InlineData("91d5db93187fab54d823f73bd6441cb6", "NES", "This is Maniac Mansion (NES, English, NES), which Maniacal does not play: it plays only the Commodore 64 and DOS releases.")]
-    [InlineData("40564ec47da48a67787d1f9bd043902a", "V2 Demo", "This is Maniac Mansion (V2 Demo, English, DOS), which Maniacal does not play: the demos are not supported yet.")]
+    [InlineData("40564ec47da48a67787d1f9bd043902a", "V2 Demo", null)]
+    [InlineData("2cb46375dd5cdfd023e2f07e0a21b530", "C64 Demo", "This is Maniac Mansion (C64 Demo, English, Commodore 64), which Maniacal does not play: the Commodore 64 demo is not supported yet.")]
     public void Plays_the_english_c64_and_dos_releases(string md5, string variant, string? refusal)
     {
         var entry = ScummMd5Table.Find(md5)!;
-        var game = new ScummGame(entry, variant, variant.StartsWith("V2", StringComparison.Ordinal) ? 2 : variant == "C64" ? 0 : 1, variant.EndsWith("Demo", StringComparison.Ordinal));
+        var game = new ScummGame(entry, variant, variant.StartsWith("V2", StringComparison.Ordinal) ? 2 : variant.StartsWith("C64", StringComparison.Ordinal) ? 0 : 1, variant.EndsWith("Demo", StringComparison.Ordinal));
 
         Assert.Equal(refusal is null, game.IsSupported);
         if (refusal is not null)
@@ -110,19 +111,6 @@ public class DetectionTests
         }
     }
 
-    [Theory]
-    [InlineData("maniac_mansion_demo_ega_dos")]
-    [InlineData("maniac_mansion_demo_vga_dos")]
-    public void Opening_a_demo_says_it_is_not_supported_yet(string folder)
-    {
-        if (GameFolders.Find(folder) is not { } path)
-        {
-            return;
-        }
-
-        var ex = Assert.Throws<NotSupportedException>(() => Resources.ResourceLoader.Open(new DirectoryGameContainer(path)));
-        Assert.EndsWith("the demos are not supported yet.", ex.Message);
-    }
 
     [Fact]
     public void Md5_table_holds_every_scummvm_row()

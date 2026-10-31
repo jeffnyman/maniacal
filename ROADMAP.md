@@ -662,12 +662,43 @@ Where it comes from:
   release's save can no longer overwrite or be offered to another. Checked against ScummVM
   2026.4.0's detection of the two DOS demos ("V1 Demo/DOS/English", "V2 Demo/DOS/English").
 
+- **The DOS demos.** The 1987 and 1988 demos play through, as ScummVM plays them: the 1987
+  demo's rooms are read from its `NN.MAN` files; both boot into their demo mode, script 9
+  (`runBootscript`), not 1; every actor of a demo starts in the costume of its number, and the
+  1988 demo's actor 3 draws colour 3 as 1 and five actors have their own talk colours
+  (`resetScumm`); its talk colour 1 is drawn as 15 (`o2_actorOps`); text with no actor is in
+  colour 15 in the 1988 demo and 1 in the 1987 one (`decodeParseString`); the verbs are drawn in
+  colour 13 (`o2_verbOps`); and the 1987 demo's font has the 1988 release's apostrophe, as
+  ScummVM's charset gives it. The C64's demo is identified by its disk's name, as ScummVM does
+  (its table row is "C64" with the extra "Demo"), and refused: there is no data here to test it.
+  Both DOS demos go from the title through the front porch and room 10 to the lab and back with
+  every instruction handled (`DemoTests`); the windowed player keeps their saves in
+  `saves/maniac/v1-demo` and `v2-demo`.
+- **Checked against ScummVM 2026.4.0, and three fixes it found.** ScummVM ran in a window of its
+  own (a scratch configuration, the window shown without taking the focus, never given input),
+  captured every few seconds, and each capture was matched against every step of a headless run.
+  The 1988 demo: all 22 captures over its first 100 seconds match a step to the pixel. The 1987
+  demo: 22 of 24. A save of the driveway made here and loaded there: the same screen in version 2,
+  and in version 1 once the actors have settled. The fixes, each to all three releases:
+  - A script that starts a script with a cutscene in it now carries on after it, as ScummVM's
+    `runScriptNested` lets it: the caller resumes unless its `freezeCount` is raised, which
+    `freezeScripts` never does for versions 0 to 2 (they only set the 0x80 bit). The port asked
+    the 0x80 bit, so the 1988 demo's script 9 stood frozen before starting its quotes (script
+    173), and the boot script of the full releases one instruction from its end, holding a slot.
+  - A mirrored (left-facing) cel now covers `-x - width + 1` to `-x`, as `paintCelByleRLE` draws it
+    from `x` leftwards; the port had it a column further left. This is ScummVM 2.7.0's placement
+    too, so the earlier comparisons with 2.7.0, which found the screens the same, did not have a
+    left-facing figure where a column shows: Syd and Razor on the driveway differ in 546 pixels.
+  - Version 1 shows its message line through its colour table, as ScummVM's
+    `postProcessDOSGraphics` does for `kTextVirtScreen` (the original interpreter doing the same,
+    its comment says), which came after 2.7.0: talk colour 14 shows light blue, 1 white.
+
 ### Next, before a 1.0
 
-- The 1987 and 1988 DOS demos: ScummVM boots them with script 9 (the demo mode) rather than 1,
-  reads the 1987 demo's rooms from `NN.MAN`, gives each demo actor the costume of its own
-  number, and fixes a palette and five talk colours for the 1988 demo's script
-  (`ScummEngine::runBootscript`, `resetScumm`). Checked against ScummVM 2026.4.0.
+- What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies
+  a movement step apart from ScummVM's at one moment; right after a load, Syd and Razor turning
+  to face left are drawn a strip apart for a second or two. Both are about how version 1 moves
+  and animates actors, not about drawing them; the twinkling star differs too, being random.
 - Use 0.2.0-alpha from outside the repository and fix what is awkward while that is still cheap.
 - At 1.0, move `PublicAPI.Unshipped.txt` into `PublicAPI.Shipped.txt` and set package
   validation's baseline (`PackageValidationBaselineVersion`), so a breaking change fails the build.

@@ -69,6 +69,11 @@ internal sealed class VerbArea
     private const int C64TextColor = 16, C64ArrowColor = 6, C64HighlightColor = 7;
     private const int C64VerbColor = 5, C64VerbHighlight = 7, C64VerbDimColor = 11;
     private const int VerbColor = 2, VerbDimColor = 8;
+
+    // o2_verbOps: the demos' verbs are drawn in this colour
+    private const int DemoVerbColor = 13;
+
+    private readonly bool _demo;
     private const int SentenceChars = 40, InventoryChars = 18;
 
     // the keys o2_verbOps gives the first 15 slots
@@ -99,9 +104,11 @@ internal sealed class VerbArea
     /// <param name="top">The screen line the area starts at.</param>
     /// <param name="userState">The user state, whose interface bits say what shows (<c>_userState</c>).</param>
     /// <param name="c64">Whether this is the C64's: its colours, and the sentence line and inventory a pixel right and down.</param>
-    public VerbArea(Font font, int top, Func<int> userState, bool c64 = false)
+    /// <param name="demo">Whether this is a demo's, whose verbs are drawn in another colour.</param>
+    public VerbArea(Font font, int top, Func<int> userState, bool c64 = false, bool demo = false)
     {
         _font = font;
+        _demo = demo;
         _userState = userState;
         _offset = c64 ? 1 : 0;
         _textColor = c64 ? C64TextColor : TextColor;
@@ -141,7 +148,7 @@ internal sealed class VerbArea
     {
         var verb = Slot(slot);
         verb.Id = id;
-        verb.Color = VerbColor;
+        verb.Color = _demo ? DemoVerbColor : VerbColor;
         verb.HiColor = HighlightColor;
         verb.DimColor = VerbDimColor;
         verb.Mode = 1;
