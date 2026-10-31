@@ -1,4 +1,5 @@
 using Maniacal.Scumm.Costumes;
+using CostumeData = Maniacal.Scumm.Costumes.Costume;
 using Maniacal.Scumm.Graphics;
 using Maniacal.Scumm.Resources;
 using Maniacal.Scumm.Rooms;
@@ -209,8 +210,19 @@ public sealed class GameInspector(ResourceLoader loader)
     // the C64's clips: walking right, and standing facing left (then right, front and back)
     private const int V0WalkRight = 1, V0StandLeft = 4;
 
+    private IReadOnlyList<int>? _rooms, _scripts, _costumes;
+
     /// <summary>The SCUMM version of the release: 0 for the C64, 1 and 2 for DOS.</summary>
     public int Version => loader.Index.Version;
+
+    /// <summary>The numbers of the release's rooms, in order: those <see cref="Room"/> and <see cref="RoomScripts"/> answer.</summary>
+    public IReadOnlyList<int> Rooms => _rooms ??= Numbers(ResourceType.Room, _ => true);
+
+    /// <summary>The numbers of the release's global scripts, in order: those <see cref="Script"/> answers.</summary>
+    public IReadOnlyList<int> Scripts => _scripts ??= Numbers(ResourceType.Script, _ => true);
+
+    /// <summary>The numbers of the release's costumes, in order: those <see cref="Costume"/> answers.</summary>
+    public IReadOnlyList<int> Costumes => _costumes ??= Numbers(ResourceType.Costume, HoldsCostume);
 
     /// <summary>A room's picture with its objects, or null if there is no such room.</summary>
     public RoomPicture? Room(int number, RoomObjects objects = RoomObjects.Initial)
@@ -261,9 +273,7 @@ public sealed class GameInspector(ResourceLoader loader)
             };
         }
 
-        // an entry whose bytes are no costume (the 1987 release's costume 0) is one the game never loads
-        if (loader.Load(ResourceType.Costume, number) is not { } data || !Costumes.Costume.IsCostume(data.Span)
-            || loader.LoadCostume(number) is not { } costume)
+        if (!HoldsCostume(number) || loader.LoadCostume(number) is not { } costume)
         {
             return null;
         }
@@ -366,6 +376,17 @@ public sealed class GameInspector(ResourceLoader loader)
 
         return new RoomScreen { Screen = RoomView.Screen(image, ScreenLayout.ForVersion(room.Version)), CameraX = camera.X, ViewLeft = camera.Left, Actors = placed };
     }
+
+    /// <summary>The numbers of an index's entries that hold something readable that passes the test.</summary>
+    private List<int> Numbers(ResourceType type, Func<int, bool> holds)
+        => Enumerable.Range(0, loader.Index.Count(type)).Where(n => loader.IsReadable(type, n) && holds(n)).ToList();
+
+    /// <summary>
+    /// Whether a readable costume entry holds a costume: the C64's always do; one whose bytes have
+    /// no costume's format (the 1987 release's costume 0) is one the game never loads.
+    /// </summary>
+    private bool HoldsCostume(int number)
+        => Version == 0 || (loader.Load(ResourceType.Costume, number) is { } data && CostumeData.IsCostume(data.Span));
 
     private int InitialState(int obj)
     {

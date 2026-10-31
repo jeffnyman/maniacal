@@ -76,17 +76,18 @@ public class PublicApiTests
             return;
         }
 
-        long read = 0;
+        long frames = 0;
         int peak = 0;
         ToTheDriveway(world, () =>
         {
-            long due = (long)(world.Time.TotalSeconds * GameWorld.DefaultSampleRate);
-            var buffer = new short[(due - read) * 2];
-            world.Audio.Read(buffer);
-            read = due;
-            peak = Math.Max(peak, buffer.DefaultIfEmpty().Max(s => Math.Abs((int)s)));
+            var samples = world.ReadAudio();
+            frames += samples.Length / 2;
+            peak = Math.Max(peak, samples.DefaultIfEmpty().Max(s => Math.Abs((int)s)));
         });
 
+        Assert.Equal(GameWorld.DefaultSampleRate, world.SampleRate);
+        Assert.Equal((long)(world.Time.TotalSeconds * world.SampleRate), frames);
+        Assert.Empty(world.ReadAudio());
         Assert.True(peak > 0);
     }
 

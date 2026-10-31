@@ -491,23 +491,18 @@ internal static class Program
 
         // with a WAV to write, the run reads the sound as a host would, a step's worth after each step
         var audio = new List<short>();
-        long framesRead = 0;
         void ReadAudio()
         {
-            long due = (long)(world.Time.TotalSeconds * Maniacal.Scumm.Game.GameWorld.DefaultSampleRate);
-            if (wav is null || due <= framesRead)
+            if (wav is null)
             {
                 return;
             }
 
-            var buffer = new short[(due - framesRead) * 2];
-            world.Audio.Read(buffer);
+            var buffer = world.ReadAudio();
             for (int i = 0; i < buffer.Length; i += 2)
             {
                 audio.Add(buffer[i]);
             }
-
-            framesRead = due;
         }
 
         bool stopped = false;
@@ -567,8 +562,8 @@ internal static class Program
 
         if (wav is not null)
         {
-            File.WriteAllBytes(wav, Maniacal.Scumm.Sound.WavWriter.Encode(audio.ToArray(), Maniacal.Scumm.Game.GameWorld.DefaultSampleRate, 1));
-            Console.WriteLine($"Sound written to {wav}: {audio.Count / (double)Maniacal.Scumm.Game.GameWorld.DefaultSampleRate:F1} seconds, peak {audio.DefaultIfEmpty().Max(s => Math.Abs((int)s))}");
+            File.WriteAllBytes(wav, Maniacal.Scumm.Sound.WavWriter.Encode(audio.ToArray(), world.SampleRate, 1));
+            Console.WriteLine($"Sound written to {wav}: {audio.Count / (double)world.SampleRate:F1} seconds, peak {audio.DefaultIfEmpty().Max(s => Math.Abs((int)s))}");
         }
 
         Console.WriteLine();

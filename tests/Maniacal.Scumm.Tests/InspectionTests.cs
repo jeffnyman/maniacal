@@ -35,6 +35,11 @@ public class InspectionTests
 
         Assert.Equal(rooms, Enumerable.Range(0, 100).Count(n => inspector.Room(n) is not null));
         Assert.Equal(scripts, Enumerable.Range(0, 256).Count(n => inspector.Script(n) is not null));
+
+        // the lists say the same as asking every number
+        Assert.Equal(Enumerable.Range(0, 100).Where(n => inspector.Room(n) is not null), inspector.Rooms);
+        Assert.Equal(Enumerable.Range(0, 256).Where(n => inspector.Script(n) is not null), inspector.Scripts);
+        Assert.Equal(Enumerable.Range(0, 100).Where(n => inspector.Costume(n) is not null), inspector.Costumes);
         Assert.All(Enumerable.Range(0, 100), n => inspector.RoomScripts(n));
         Assert.All(Enumerable.Range(0, 100), n => inspector.Costume(n));
         Assert.All(noScripts, n => Assert.Null(inspector.Script(n)));

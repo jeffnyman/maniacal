@@ -706,18 +706,22 @@ Where it comes from:
   (`ResourceLoader.IsReadable`); loading during play is unchanged. `InspectionTests` asks every
   number in every release.
 
+- **What a release holds, and its sound a step at a time.** `GameInspector.Rooms`, `Scripts`
+  and `Costumes` list the numbers the inspector answers, in order, so a program no longer tries
+  every number. `GameWorld.ReadAudio` hands out the sound made since its last call, as much as the
+  game time that has passed holds, and `GameWorld.SampleRate` says at what rate; the player's
+  `--wav` uses it, and writes the same file as before.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies
   a movement step apart from ScummVM's at one moment; right after a load, Syd and Razor turning
   to face left are drawn a strip apart for a second or two. Both are about how version 1 moves
   and animates actors, not about drawing them; the twinkling star differs too, being random.
-- The rest of what the programs used from outside found awkward: nothing lists which rooms,
-  scripts and costumes a release has; verbs come as numbers only; picking the kids means knowing
-  where they are on the screen (and on the C64 nothing says); opening a game takes four types and
-  up to seven namespaces, where one entry point from a folder could detect, open and say what it
-  found; reading the sound as the game runs is left to every caller; `Palettes.ForVersion` is a
-  span that cannot be kept.
+- The rest of what the programs used from outside found awkward: verbs come as numbers only;
+  picking the kids means knowing where they are on the screen (and on the C64 nothing says);
+  opening a game takes four types and up to seven namespaces, where one entry point from a folder
+  could detect, open and say what it found; `Palettes.ForVersion` is a span that cannot be kept.
 - At 1.0, move `PublicAPI.Unshipped.txt` into `PublicAPI.Shipped.txt` and set package
   validation's baseline (`PackageValidationBaselineVersion`), so a breaking change fails the build.
 

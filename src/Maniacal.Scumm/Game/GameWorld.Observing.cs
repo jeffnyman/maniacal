@@ -75,6 +75,32 @@ public sealed partial class GameWorld
     /// </summary>
     public IAudioSource Audio => Sound.Output;
 
+    /// <summary>The rate the world makes its sound at, in frames a second: the one it was made with.</summary>
+    public int SampleRate { get; }
+
+    // the stereo frames ReadAudio has handed out
+    private long _audioFramesRead;
+
+    /// <summary>
+    /// The sound made since the last call, or since the world was made: interleaved stereo at
+    /// <see cref="SampleRate"/>, as many frames as the game time that has passed holds, none when
+    /// none has. Called after each step, as a recording does, it keeps up with <see cref="Audio"/>
+    /// by itself. Read the sound this way or from <see cref="Audio"/>, not both.
+    /// </summary>
+    public short[] ReadAudio()
+    {
+        long due = (long)(Time.TotalSeconds * SampleRate);
+        if (due <= _audioFramesRead)
+        {
+            return [];
+        }
+
+        var buffer = new short[(due - _audioFramesRead) * 2];
+        Audio.Read(buffer);
+        _audioFramesRead = due;
+        return buffer;
+    }
+
     /// <summary>Skips the running cutscene, its script jumping to its override. Mirrors <c>abortCutscene</c>.</summary>
     public void SkipCutscene() => Engine.AbortCutscene();
 

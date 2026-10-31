@@ -1,1 +1,6 @@
 #nullable enable
+Maniacal.Scumm.Game.GameWorld.ReadAudio() -> short[]!
+Maniacal.Scumm.Game.GameWorld.SampleRate.get -> int
+Maniacal.Scumm.Inspection.GameInspector.Costumes.get -> System.Collections.Generic.IReadOnlyList<int>!
+Maniacal.Scumm.Inspection.GameInspector.Rooms.get -> System.Collections.Generic.IReadOnlyList<int>!
+Maniacal.Scumm.Inspection.GameInspector.Scripts.get -> System.Collections.Generic.IReadOnlyList<int>!

@@ -68,6 +68,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     public GameWorld(ResourceLoader loader, int seed = 1, int sampleRate = DefaultSampleRate, bool pcjr = true)
     {
         _loader = loader;
+        SampleRate = sampleRate;
         Sound = new SoundSystem(loader.Index.Version, LoadSound, sampleRate, pcjr);
         Engine = new ScriptEngine(
             loader.Index.Version,
