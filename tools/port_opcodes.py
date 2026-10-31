@@ -14,7 +14,10 @@ def read_table(path, engine):
     with open(path, encoding="utf-8") as handle:
         source = handle.read()
 
-    body = re.search(r"void " + engine + r"::setupOpcodes\(\) \{(.*?)\n\}", source, re.S).group(1)
+    match = re.search(r"void " + engine + r"::setupOpcodes\(\) \{(.*?)\n\}", source, re.DOTALL)
+    if match is None:
+        sys.exit(f"Could not find {engine}::setupOpcodes")
+    body = match.group(1)
     table = {int(op, 16): name for op, name in re.findall(r"OPCODE\((0x[0-9a-fA-F]{2}), (\w+)\);", body)}
     if sorted(table) != list(range(256)):
         sys.exit(f"{engine}::setupOpcodes defines {len(table)} opcodes, not 256")
