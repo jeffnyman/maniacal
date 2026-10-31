@@ -27,7 +27,7 @@ public sealed partial class GameWorld
     private const int WhereInventory = 0, WhereRoom = 1, WhereGlobal = 2;
 
     /// <summary>The room the game's save screen is in; a game loaded from elsewhere starts again from the boot script first (<c>saveRoom</c>).</summary>
-    public const int SaveRoom = 50;
+    internal const int SaveRoom = 50;
 
     /// <summary>Where the game's own save screen keeps its saves; with none, saving fails and no save exists.</summary>
     public Maniacal.Scumm.Storage.ISaveStore? SaveStore { get; set; }
@@ -46,7 +46,7 @@ public sealed partial class GameWorld
     /// Loads a ScummVM save file made here or by ScummVM, as ScummVM's own load does: the save is
     /// restored, then the game goes through its save room as if the save screen had loaded it.
     /// </summary>
-    internal SaveInfo Load(byte[] file)
+    public SaveInfo Load(byte[] file)
     {
         var (info, state) = SaveFile.Read(file, Engine.ObjectOwners.Length, Version == 0);
         Restore(state);

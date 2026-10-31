@@ -404,8 +404,7 @@ internal static class Program
         string? savesDir = null, string target = "maniac", bool copyProtection = false)
     {
         var world = new Maniacal.Scumm.Game.GameWorld(ResourceLoader.Open(container), pcjr: !speaker);
-        var engine = world.Engine;
-        engine.CopyProtection = copyProtection;
+        world.CopyProtection = copyProtection;
 
         // the game's own save screen saves to and loads from a folder, named as ScummVM names saves
         if (savesDir is not null)
@@ -426,7 +425,7 @@ internal static class Program
             }
 
             var buffer = new short[(due - framesRead) * 2];
-            world.Sound.Output.Read(buffer);
+            world.Audio.Read(buffer);
             for (int i = 0; i < buffer.Length; i += 2)
             {
                 audio.Add(buffer[i]);
@@ -451,7 +450,7 @@ internal static class Program
             // variables set after the boot stand in for input there is no way to give yet
             foreach (var (variable, value) in settings)
             {
-                engine.WriteVar(variable, value);
+                world.SetVariable(variable, value);
             }
 
             for (int step = 0; step < steps; step++)
@@ -459,7 +458,7 @@ internal static class Program
                 // a skip presses the cutscene key: the cutscene's override jump is taken
                 if (skips.Contains(step))
                 {
-                    engine.AbortCutscene();
+                    world.SkipCutscene();
                 }
 
                 foreach (var input in inputs.Where(input => input.Step == step))
@@ -473,7 +472,7 @@ internal static class Program
         }
         catch (Exception ex) when (ex is InvalidOperationException or InvalidDataException)
         {
-            Console.WriteLine($"Stopped in script {engine.CurrentScriptNumber}: {ex.Message}");
+            Console.WriteLine($"Stopped in script {world.CurrentScript}: {ex.Message}");
         }
 
         foreach (var call in world.Unhandled)
@@ -495,8 +494,8 @@ internal static class Program
 
         Console.WriteLine();
         Console.WriteLine($"Room {world.CurrentRoom?.Number ?? 0}, camera at {world.Camera.X}, {world.Steps} steps, {world.Time.TotalSeconds:F1} seconds");
-        Console.WriteLine("Actors here: " + string.Join(", ", world.Actors.Skip(1).Where(a => a.InCurrentRoom)
-            .Select(a => $"{a.Number} \"{a.Name}\" costume {a.CostumeNumber} at ({a.X}, {a.Y}) facing {a.Facing}{(a.Visible ? "" : " hidden")}")));
+        Console.WriteLine("Actors here: " + string.Join(", ", world.ActorsHere()
+            .Select(a => $"{a.Number} \"{a.Name}\" costume {a.Costume} at ({a.X}, {a.Y}) facing {a.Facing}{(a.Visible ? "" : " hidden")}")));
         if (screenshot is not null)
         {
             using var file = File.Create(screenshot);
@@ -507,9 +506,9 @@ internal static class Program
         }
 
         Console.WriteLine();
-        Console.WriteLine("Slots: " + string.Join(", ", engine.Slots.Select((s, i) => (s, i)).Where(p => !p.s.IsDead)
-            .Select(p => $"{p.i}: {p.s.Kind} {p.s.Number} at {p.s.Offset:X4} status {p.s.Status:X2}{(p.s.Status == SlotStatus.Paused ? $" delay {p.s.Delay}" : "")}")));
-        Console.WriteLine("Variables: " + string.Join(", ", engine.Variables.Select((v, i) => (v, i)).Where(p => p.v != 0).Select(p => $"{p.i}={p.v}")));
+        Console.WriteLine("Slots: " + string.Join(", ", world.RunningScripts()
+            .Select(s => $"{s.Slot}: {s.Kind} {s.Number} at {s.Offset:X4} status {s.Status:X2}{(s.Status == SlotStatus.Paused ? $" delay {s.Delay}" : "")}")));
+        Console.WriteLine("Variables: " + string.Join(", ", world.Variables.Select((v, i) => (v, i)).Where(p => p.v != 0).Select(p => $"{p.i}={p.v}")));
         return 0;
     }
 

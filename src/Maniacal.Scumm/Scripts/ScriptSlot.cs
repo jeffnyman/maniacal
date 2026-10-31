@@ -10,7 +10,7 @@ public static class SlotStatus
 }
 
 /// <summary>What a slot's code belongs to. Mirrors ScummVM's <c>WIO_GLOBAL</c>, <c>WIO_ROOM</c> and <c>WIO_INVENTORY</c>.</summary>
-internal enum ScriptKind
+public enum ScriptKind
 {
     /// <summary>A numbered global script.</summary>
     Global,

@@ -582,13 +582,26 @@ Where it comes from:
   resource index, room objects, the rendered rooms, C64 costumes, decoded instructions, walkboxes).
   Checked: the tests pass with the game data, and the package smoke check plays all three
   releases from the packed library as before.
+- **`GameWorld`'s public face.** What a host, a recording or a tool drives and looks on at: boot,
+  step, the screen and cursor, clicks, keys and the mouse, saves and loads (`Load` returning the
+  now public `SaveInfo`), the save folder, the time, steps, room, camera and inventory; and, new,
+  `CopyProtection`, `Audio` (read a step's worth after each step: sound unread for a quarter of a
+  second is thrown away), `SkipCutscene`, `Variables` and `SetVariable`, `CurrentScript`, and
+  copies of the running scripts (`RunningScripts`, with `ScriptKind` public) and of the actors in
+  the room (`ActorsHere`, `ActorInfo`). What the engine and the tests use is internal: the
+  variable numbers and click areas, the C64's modes and object types, `StartScene`,
+  `LoadRoomWithEgo`, the object and box queries, the timer's frequency and ticks. The player's
+  headless run now uses only the public face; `PublicApiTests` drives the game through it to the
+  driveway, hears the intro, and loads a save back. Checked: the same runs (V2 from the kid
+  selection with a skip, a variable set, a WAV, a save and its load with the copy protection; V1
+  with the speaker; the C64 with Escape) give the same output, screenshots and sound, byte for
+  byte, before and after.
 
 ### Next, before a 1.0
 
-- Decide what the player's headless run and inspection tools should have as public API, and
-  give it to them, so the player needs no internals: a narrow face on `GameWorld` (load and save
-  returning public types, sound output, options such as the copy protection, read-only views of
-  the actors), and either a small inspection API or the inspection code moved into the player.
+- Decide what the player's inspection tools (`--room`, `--costume`, `--script`, `--view`) should
+  have as public API: a small inspection API, or the inspection code moved into the player. Then
+  the player needs no internals, and its `InternalsVisibleTo` goes.
 - The names (V0, V1 and V2 or the releases' names), sealing, read-only collections, the
   exceptions a bad game folder throws, and documentation comments required on what is public.
 - At 1.0, move `PublicAPI.Unshipped.txt` into `PublicAPI.Shipped.txt` and set package

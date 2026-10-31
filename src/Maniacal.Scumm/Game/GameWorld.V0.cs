@@ -12,10 +12,10 @@ namespace Maniacal.Scumm.Game;
 public sealed partial class GameWorld
 {
     /// <summary>Version 0's modes (<c>CurrentMode</c>): what the interface shows and whether the scripts freeze.</summary>
-    public const int ModeCutscene = 0, ModeKeypad = 1, ModeNoNewKid = 2, ModeNormal = 3;
+    internal const int ModeCutscene = 0, ModeKeypad = 1, ModeNoNewKid = 2, ModeNormal = 3;
 
     /// <summary>Version 0's object types, in the high byte of an object's number (<c>ObjectV0Type</c>).</summary>
-    public const int TypeForeground = 0, TypeBackground = 1, TypeActor = 2;
+    internal const int TypeForeground = 0, TypeBackground = 1, TypeActor = 2;
 
     // version 0's verbs (VerbsV0) and the prepositions they take (VerbPrepsV0)
     private const int V0VerbNone = 0, V0VerbGive = 3, V0VerbFix = 6, V0VerbNewKid = 7, V0VerbUnlock = 8, V0VerbPush = 9,
@@ -41,16 +41,16 @@ public sealed partial class GameWorld
     private const int WalkDone = 0, WalkWalking = 1, WalkTurning = 2;
 
     /// <summary>Version 0's mode (<c>_currentMode</c>).</summary>
-    public int CurrentMode { get; private set; }
+    internal int CurrentMode { get; private set; }
 
     /// <summary>Version 0: the verb chosen (<c>_activeVerb</c>).</summary>
-    public int ActiveVerb { get; private set; } = V0VerbWalkTo;
+    internal int ActiveVerb { get; private set; } = V0VerbWalkTo;
 
     /// <summary>Version 0: the objects chosen for it, with their types (<c>_activeObject</c>, <c>_activeObject2</c>).</summary>
-    public int ActiveObject { get; private set; }
+    internal int ActiveObject { get; private set; }
 
     /// <inheritdoc cref="ActiveObject"/>
-    public int ActiveObject2 { get; private set; }
+    internal int ActiveObject2 { get; private set; }
 
     // the cutscene's mode and room, for its end (vm.cutSceneData[0] and [2])
     private (int Mode, int Room) _beforeV0Cutscene;
@@ -65,7 +65,7 @@ public sealed partial class GameWorld
     private bool _redrawSentenceLine;
 
     /// <summary>An object number with its type, as version 0 keeps them (<c>OBJECT_V0</c>).</summary>
-    public static int V0Object(int id, int type) => type << 8 | id;
+    internal static int V0Object(int id, int type) => type << 8 | id;
 
     /// <summary>Version 0's instructions that touch the world; false for those it does not have.</summary>
     private bool ExecuteV0(ScriptEngine engine, Instruction instruction, IReadOnlyList<int> arguments, out int result)

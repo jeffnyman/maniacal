@@ -18,23 +18,23 @@ namespace Maniacal.Scumm.Game;
 public sealed partial class GameWorld : IScriptHost, IActorWorld
 {
     // engine variables of version 2 (ScummEngine_v2::setupScummVars)
-    public const int VarCameraPosX = 2, VarCurrentLights = 12, VarMusicTimer = 17, VarActorRangeMin = 19, VarActorRangeMax = 20,
+    internal const int VarCameraPosX = 2, VarCurrentLights = 12, VarMusicTimer = 17, VarActorRangeMin = 19, VarActorRangeMax = 20,
         VarCameraMinX = 23, VarCameraMaxX = 24, VarLastSound = 37;
 
     /// <summary>The sample rate the world's sound is made at when no host says otherwise.</summary>
     public const int DefaultSampleRate = 22050;
 
     /// <summary>The script <c>startScene</c> runs after every room's entry script in versions 1 and 2.</summary>
-    public const int AfterEntryScript = 5;
+    internal const int AfterEntryScript = 5;
 
     /// <summary>Mirrors <c>_numActors</c> for Maniac Mansion; actor 0 is not used.</summary>
-    public const int ActorCount = 25;
+    internal const int ActorCount = 25;
 
     /// <summary>The light bit that draws actors in their own colours. Mirrors <c>LIGHTMODE_actor_use_colors</c>.</summary>
-    public const int LightActorColors = 8;
+    internal const int LightActorColors = 8;
 
     /// <summary>The light bit that draws actors in their costume's colours. Mirrors <c>LIGHTMODE_actor_use_base_palette</c>.</summary>
-    public const int LightActorBasePalette = 1;
+    internal const int LightActorBasePalette = 1;
 
     /// <summary>The talk colours version 1 actors start with. Mirrors <c>v1MMActorTalkColor</c>.</summary>
     private static readonly int[] V1TalkColors = [1, 7, 2, 14, 8, 1, 3, 7, 7, 12, 1, 13, 1, 4, 5, 5, 4, 3, 1, 5, 1, 1, 1, 7, 7];
@@ -115,7 +115,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// How fast the game's clock runs, in quarter-frames a second: 1193182 / 5041 for version 2,
     /// and for version 1 twelve a tick of the PC's 18.2 Hz timer. Mirrors <c>setTimerAndShakeFrequency</c>.
     /// </summary>
-    public double TimerFrequency => Version switch
+    internal double TimerFrequency => Version switch
     {
         0 => C64NtscTimerRate,
         1 => 1193182.0 / 65536 * 12,
@@ -131,7 +131,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// took to draw the last step (<c>DelayCalculateDelta</c>). Mirrors the <c>delta</c> of
     /// <c>ScummEngine::go</c>.
     /// </summary>
-    public int StepTicks
+    internal int StepTicks
     {
         get
         {
@@ -175,12 +175,16 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
     int IActorWorld.CurrentRoom => CurrentRoom?.Number ?? 0;
 
+    int IActorWorld.BoxFlags(int box) => BoxFlags(box);
+
+    bool IActorWorld.IsPlayer(int actor) => IsPlayer(actor);
+
     int IActorWorld.BoxCount => CurrentRoom?.WalkBoxes.Count ?? 0;
 
     BoxCorners IActorWorld.BoxCorners(int box) => Rooms.BoxCorners.Of(CurrentRoom!.WalkBoxes.Boxes[box]);
 
     /// <summary>A box's flags as the scripts have left them (<c>setBoxFlags</c>), or 0 for no box.</summary>
-    public int BoxFlags(int box) => box >= 0 && box < _boxFlags.Length ? _boxFlags[box] : 0;
+    internal int BoxFlags(int box) => box >= 0 && box < _boxFlags.Length ? _boxFlags[box] : 0;
 
     int IActorWorld.NextBox(int from, int to)
     {
@@ -206,7 +210,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// Whether the player controls an actor: in version 1 the kid being played, in version 2 the
     /// actors from Var[42] to Var[43]. Mirrors <c>Actor_v2::isPlayer</c>.
     /// </summary>
-    public bool IsPlayer(int actor) => Version == 1
+    internal bool IsPlayer(int actor) => Version == 1
         ? actor == Engine.Variables[ScriptEngine.VarEgo]
         : Engine.Variables[42] <= actor && actor <= Engine.Variables[43];
 
@@ -655,7 +659,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// camera limits are set, the actors in the new room show, its entry script runs, then script
     /// 5. The sentence goes back to the default verb. The camera keeps its x, clamped to the new room.
     /// </summary>
-    public void StartScene(int number)
+    internal void StartScene(int number)
     {
         Messages.Stop();
         FadeOut(LeaveEffect);
@@ -732,7 +736,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// the object's walk-to point (moved into a walkbox) facing away from it, the camera follows,
     /// and with a target at or above 0 the kid walks there. Mirrors <c>o2_loadRoomWithEgo</c>.
     /// </summary>
-    public void LoadRoomWithEgo(int obj, int room, int walkX, int walkY)
+    internal void LoadRoomWithEgo(int obj, int room, int walkX, int walkY)
     {
         var ego = ActorOf(Engine.Variables[ScriptEngine.VarEgo]);
         ego.Put(ego.X, ego.Y, room);
@@ -761,7 +765,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// Where an object in the current room is for walking to: its walk-to point in actor units, and
     /// the facing it asks for. Mirrors <c>getObjectXYPos</c> for versions 1 and 2.
     /// </summary>
-    public (int X, int Y, int Direction)? ObjectPosition(int obj)
+    internal (int X, int Y, int Direction)? ObjectPosition(int obj)
     {
         if (CurrentRoom?.FindObject(obj) is not { } o)
         {
@@ -786,7 +790,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// Where an actor or object is, in actor units, or null when it is not in the current room. A
     /// carried object is where the actor carrying it is. Mirrors <c>getObjectOrActorXY</c>.
     /// </summary>
-    public (int X, int Y)? ObjectOrActorPosition(int obj)
+    internal (int X, int Y)? ObjectOrActorPosition(int obj)
     {
         if (obj < ActorCount)
         {
@@ -807,7 +811,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// when one is not here. An object's point is first moved into a walkbox for an actor. Mirrors
     /// <c>getObjActToObjActDist</c> and <c>getDist</c>.
     /// </summary>
-    public int Distance(int a, int b)
+    internal int Distance(int a, int b)
     {
         var actorA = a is > 0 and < ActorCount ? Actors[a] : null;
         var actorB = b is > 0 and < ActorCount ? Actors[b] : null;
@@ -1043,7 +1047,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// in their number's high byte) have none and count as 0: ScummVM never reads them from the
     /// state table (<c>updateObjectStates</c>, <c>findObject</c>).
     /// </summary>
-    public int StateOf(int obj) => Version == 0 && obj >> 8 != 0 ? 0 : Engine.GetState(obj);
+    internal int StateOf(int obj) => Version == 0 && obj >> 8 != 0 ? 0 : Engine.GetState(obj);
 
     /// <summary>Writes an engine variable, when the version has it.</summary>
     private void SetVar(int number, int value)
@@ -1058,7 +1062,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// The lights: how the room and the actors are lit. Versions 1 and 2 keep them in a variable;
     /// version 0 in the engine, set by <c>o_lights</c> (<c>getCurrentLights</c>).
     /// </summary>
-    public int CurrentLights
+    internal int CurrentLights
     {
         get => Engine.Vars.CurrentLights == EngineVariables.None ? _lightsV0 : Engine.Variables[Engine.Vars.CurrentLights];
         private set

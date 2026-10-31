@@ -5,7 +5,7 @@ using System.Text;
 namespace Maniacal.Scumm.Saves;
 
 /// <summary>What a save says about itself: its name, format version, the time played and when it was made.</summary>
-internal sealed record SaveInfo(string Name, int Version, TimeSpan PlayTime, DateTime? Saved);
+public sealed record SaveInfo(string Name, int Version, TimeSpan PlayTime, DateTime? Saved);
 
 /// <summary>
 /// A ScummVM save file: gzip-compressed, a header naming it and giving its format version, then

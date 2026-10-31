@@ -163,6 +163,25 @@
 *REMOVED*Maniacal.Scumm.Game.Actor._dest -> Maniacal.Scumm.Rooms.Point
 *REMOVED*Maniacal.Scumm.Game.Actor._destBox -> int
 *REMOVED*Maniacal.Scumm.Game.Actor._destDir -> int
+Maniacal.Scumm.Game.ActorInfo
+Maniacal.Scumm.Game.ActorInfo.ActorInfo() -> void
+Maniacal.Scumm.Game.ActorInfo.ActorInfo(int Number, string! Name, int Costume, int X, int Y, int Facing, bool Visible) -> void
+Maniacal.Scumm.Game.ActorInfo.Costume.get -> int
+Maniacal.Scumm.Game.ActorInfo.Costume.init -> void
+Maniacal.Scumm.Game.ActorInfo.Deconstruct(out int Number, out string! Name, out int Costume, out int X, out int Y, out int Facing, out bool Visible) -> void
+Maniacal.Scumm.Game.ActorInfo.Equals(Maniacal.Scumm.Game.ActorInfo other) -> bool
+Maniacal.Scumm.Game.ActorInfo.Facing.get -> int
+Maniacal.Scumm.Game.ActorInfo.Facing.init -> void
+Maniacal.Scumm.Game.ActorInfo.Name.get -> string!
+Maniacal.Scumm.Game.ActorInfo.Name.init -> void
+Maniacal.Scumm.Game.ActorInfo.Number.get -> int
+Maniacal.Scumm.Game.ActorInfo.Number.init -> void
+Maniacal.Scumm.Game.ActorInfo.Visible.get -> bool
+Maniacal.Scumm.Game.ActorInfo.Visible.init -> void
+Maniacal.Scumm.Game.ActorInfo.X.get -> int
+Maniacal.Scumm.Game.ActorInfo.X.init -> void
+Maniacal.Scumm.Game.ActorInfo.Y.get -> int
+Maniacal.Scumm.Game.ActorInfo.Y.init -> void
 *REMOVED*Maniacal.Scumm.Game.ActorV0
 *REMOVED*Maniacal.Scumm.Game.ActorV0.ActorV0(int number, Maniacal.Scumm.Game.IActorWorld! world) -> void
 *REMOVED*Maniacal.Scumm.Game.ActorV0.CostumeV0.get -> Maniacal.Scumm.Costumes.V0Costume?
@@ -174,20 +193,48 @@
 *REMOVED*Maniacal.Scumm.Game.ActorV0.MiscFlags.set -> void
 *REMOVED*Maniacal.Scumm.Game.ActorV0.Speaking.get -> int
 *REMOVED*Maniacal.Scumm.Game.ActorV0.Speaking.set -> void
+*REMOVED*Maniacal.Scumm.Game.GameWorld.ActiveObject.get -> int
+*REMOVED*Maniacal.Scumm.Game.GameWorld.ActiveObject2.get -> int
+*REMOVED*Maniacal.Scumm.Game.GameWorld.ActiveVerb.get -> int
+*REMOVED*Maniacal.Scumm.Game.GameWorld.ActorFromPos(int x, int y) -> int
 *REMOVED*Maniacal.Scumm.Game.GameWorld.Actors.get -> Maniacal.Scumm.Game.Actor![]!
+Maniacal.Scumm.Game.GameWorld.ActorsHere() -> System.Collections.Generic.IReadOnlyList<Maniacal.Scumm.Game.ActorInfo>!
+Maniacal.Scumm.Game.GameWorld.Audio.get -> Maniacal.Scumm.Hosting.IAudioSource!
+*REMOVED*Maniacal.Scumm.Game.GameWorld.BoxFlags(int box) -> int
 *REMOVED*Maniacal.Scumm.Game.GameWorld.Capture() -> Maniacal.Scumm.Saves.ScummState!
+Maniacal.Scumm.Game.GameWorld.CopyProtection.get -> bool
+Maniacal.Scumm.Game.GameWorld.CopyProtection.set -> void
+*REMOVED*Maniacal.Scumm.Game.GameWorld.CurrentLights.get -> int
+*REMOVED*Maniacal.Scumm.Game.GameWorld.CurrentMode.get -> int
+Maniacal.Scumm.Game.GameWorld.CurrentScript.get -> int
+*REMOVED*Maniacal.Scumm.Game.GameWorld.Distance(int a, int b) -> int
 *REMOVED*Maniacal.Scumm.Game.GameWorld.Engine.get -> Maniacal.Scumm.Scripts.ScriptEngine!
 *REMOVED*Maniacal.Scumm.Game.GameWorld.Execute(Maniacal.Scumm.Scripts.ScriptEngine! engine, Maniacal.Scumm.Scripts.Instruction! instruction, System.Collections.Generic.IReadOnlyList<int>! arguments) -> int
+*REMOVED*Maniacal.Scumm.Game.GameWorld.FindInventory(int owner, int index) -> int
+*REMOVED*Maniacal.Scumm.Game.GameWorld.FindObject(int x, int y) -> int
 *REMOVED*Maniacal.Scumm.Game.GameWorld.FollowActor(Maniacal.Scumm.Game.Actor! actor) -> void
-*REMOVED*Maniacal.Scumm.Game.GameWorld.Load(byte[]! file) -> Maniacal.Scumm.Saves.SaveInfo!
+*REMOVED*Maniacal.Scumm.Game.GameWorld.InventoryCount(int owner) -> int
+*REMOVED*Maniacal.Scumm.Game.GameWorld.IsPlayer(int actor) -> bool
+*REMOVED*Maniacal.Scumm.Game.GameWorld.LoadRoomWithEgo(int obj, int room, int walkX, int walkY) -> void
 *REMOVED*Maniacal.Scumm.Game.GameWorld.Messages.get -> Maniacal.Scumm.Game.MessageLine!
 *REMOVED*Maniacal.Scumm.Game.GameWorld.ObjectCode(int obj) -> Maniacal.Scumm.Rooms.RoomObject?
+*REMOVED*Maniacal.Scumm.Game.GameWorld.ObjectOrActorPosition(int obj) -> (int X, int Y)?
+*REMOVED*Maniacal.Scumm.Game.GameWorld.ObjectPosition(int obj) -> (int X, int Y, int Direction)?
 *REMOVED*Maniacal.Scumm.Game.GameWorld.PositionOf(Maniacal.Scumm.Rooms.RoomObject! obj) -> (int X, int Y)
 *REMOVED*Maniacal.Scumm.Game.GameWorld.Restore(Maniacal.Scumm.Saves.ScummState! s) -> void
+Maniacal.Scumm.Game.GameWorld.RunningScripts() -> System.Collections.Generic.IReadOnlyList<Maniacal.Scumm.Game.RunningScript>!
 *REMOVED*Maniacal.Scumm.Game.GameWorld.Sentences.get -> System.Collections.Generic.IReadOnlyList<Maniacal.Scumm.Game.Sentence>!
+Maniacal.Scumm.Game.GameWorld.SetVariable(int number, int value) -> void
+Maniacal.Scumm.Game.GameWorld.SkipCutscene() -> void
 *REMOVED*Maniacal.Scumm.Game.GameWorld.Sound.get -> Maniacal.Scumm.Sound.SoundSystem!
+*REMOVED*Maniacal.Scumm.Game.GameWorld.StartScene(int number) -> void
+*REMOVED*Maniacal.Scumm.Game.GameWorld.StateOf(int obj) -> int
+*REMOVED*Maniacal.Scumm.Game.GameWorld.StepTicks.get -> int
+*REMOVED*Maniacal.Scumm.Game.GameWorld.TimerFrequency.get -> double
 *REMOVED*Maniacal.Scumm.Game.GameWorld.Transition.get -> System.Collections.Generic.IReadOnlyList<Maniacal.Scumm.Game.TransitionFrame>!
+Maniacal.Scumm.Game.GameWorld.Variables.get -> System.Collections.Generic.IReadOnlyList<int>!
 *REMOVED*Maniacal.Scumm.Game.GameWorld.Verbs.get -> Maniacal.Scumm.Game.VerbArea!
+*REMOVED*Maniacal.Scumm.Game.GameWorld.WhereIs(int obj) -> int
 *REMOVED*Maniacal.Scumm.Game.IActorWorld
 *REMOVED*Maniacal.Scumm.Game.IActorWorld.AreBoxesNeighbours(int box1, int box2) -> bool
 *REMOVED*Maniacal.Scumm.Game.IActorWorld.BoxCorners(int box) -> Maniacal.Scumm.Rooms.BoxCorners
@@ -217,6 +264,23 @@
 *REMOVED*Maniacal.Scumm.Game.MessageLine.Text.get -> Maniacal.Scumm.Graphics.Surface8!
 *REMOVED*Maniacal.Scumm.Game.MessageLine.TextSpeed.get -> int
 *REMOVED*Maniacal.Scumm.Game.MessageLine.TextSpeed.set -> void
+Maniacal.Scumm.Game.RunningScript
+Maniacal.Scumm.Game.RunningScript.Deconstruct(out int Slot, out Maniacal.Scumm.Scripts.ScriptKind Kind, out int Number, out int Offset, out byte Status, out int Delay) -> void
+Maniacal.Scumm.Game.RunningScript.Delay.get -> int
+Maniacal.Scumm.Game.RunningScript.Delay.init -> void
+Maniacal.Scumm.Game.RunningScript.Equals(Maniacal.Scumm.Game.RunningScript other) -> bool
+Maniacal.Scumm.Game.RunningScript.Kind.get -> Maniacal.Scumm.Scripts.ScriptKind
+Maniacal.Scumm.Game.RunningScript.Kind.init -> void
+Maniacal.Scumm.Game.RunningScript.Number.get -> int
+Maniacal.Scumm.Game.RunningScript.Number.init -> void
+Maniacal.Scumm.Game.RunningScript.Offset.get -> int
+Maniacal.Scumm.Game.RunningScript.Offset.init -> void
+Maniacal.Scumm.Game.RunningScript.RunningScript() -> void
+Maniacal.Scumm.Game.RunningScript.RunningScript(int Slot, Maniacal.Scumm.Scripts.ScriptKind Kind, int Number, int Offset, byte Status, int Delay) -> void
+Maniacal.Scumm.Game.RunningScript.Slot.get -> int
+Maniacal.Scumm.Game.RunningScript.Slot.init -> void
+Maniacal.Scumm.Game.RunningScript.Status.get -> byte
+Maniacal.Scumm.Game.RunningScript.Status.init -> void
 *REMOVED*Maniacal.Scumm.Game.Sentence
 *REMOVED*Maniacal.Scumm.Game.Sentence.Deconstruct(out int Verb, out int ObjectA, out int ObjectB) -> void
 *REMOVED*Maniacal.Scumm.Game.Sentence.Equals(Maniacal.Scumm.Game.Sentence other) -> bool
@@ -383,19 +447,6 @@
 *REMOVED*Maniacal.Scumm.Rooms.WalkBox.WalkBox() -> void
 *REMOVED*Maniacal.Scumm.Rooms.WalkBox.WalkBox(byte UpperY, byte LowerY, byte UpperLeftX, byte UpperRightX, byte LowerLeftX, byte LowerRightX, byte Mask, byte Flags) -> void
 *REMOVED*Maniacal.Scumm.Rooms.WalkBoxes.Boxes.get -> System.Collections.Generic.IReadOnlyList<Maniacal.Scumm.Rooms.WalkBox>!
-*REMOVED*Maniacal.Scumm.Saves.SaveInfo
-*REMOVED*Maniacal.Scumm.Saves.SaveInfo.<Clone>$() -> Maniacal.Scumm.Saves.SaveInfo!
-*REMOVED*Maniacal.Scumm.Saves.SaveInfo.Deconstruct(out string! Name, out int Version, out System.TimeSpan PlayTime, out System.DateTime? Saved) -> void
-*REMOVED*Maniacal.Scumm.Saves.SaveInfo.Equals(Maniacal.Scumm.Saves.SaveInfo? other) -> bool
-*REMOVED*Maniacal.Scumm.Saves.SaveInfo.Name.get -> string!
-*REMOVED*Maniacal.Scumm.Saves.SaveInfo.Name.init -> void
-*REMOVED*Maniacal.Scumm.Saves.SaveInfo.PlayTime.get -> System.TimeSpan
-*REMOVED*Maniacal.Scumm.Saves.SaveInfo.PlayTime.init -> void
-*REMOVED*Maniacal.Scumm.Saves.SaveInfo.SaveInfo(string! Name, int Version, System.TimeSpan PlayTime, System.DateTime? Saved) -> void
-*REMOVED*Maniacal.Scumm.Saves.SaveInfo.Saved.get -> System.DateTime?
-*REMOVED*Maniacal.Scumm.Saves.SaveInfo.Saved.init -> void
-*REMOVED*Maniacal.Scumm.Saves.SaveInfo.Version.get -> int
-*REMOVED*Maniacal.Scumm.Saves.SaveInfo.Version.init -> void
 *REMOVED*Maniacal.Scumm.Saves.SaveSerializer
 *REMOVED*Maniacal.Scumm.Saves.SaveSerializer.Array(int[]! values, int count, System.Action<Maniacal.Scumm.Saves.SaveSerializer!, int>! sync, int minVersion = 0, int maxVersion = 2147483647) -> void
 *REMOVED*Maniacal.Scumm.Saves.SaveSerializer.Bool(ref bool value, int minVersion = 0, int maxVersion = 2147483647) -> void
@@ -880,10 +931,6 @@
 *REMOVED*Maniacal.Scumm.Scripts.ScriptEngine.Vars.get -> Maniacal.Scumm.Scripts.EngineVariables!
 *REMOVED*Maniacal.Scumm.Scripts.ScriptEngine.Version.get -> int
 *REMOVED*Maniacal.Scumm.Scripts.ScriptEngine.WriteVar(int number, int value) -> void
-*REMOVED*Maniacal.Scumm.Scripts.ScriptKind
-*REMOVED*Maniacal.Scumm.Scripts.ScriptKind.Global = 0 -> Maniacal.Scumm.Scripts.ScriptKind
-*REMOVED*Maniacal.Scumm.Scripts.ScriptKind.Inventory = 2 -> Maniacal.Scumm.Scripts.ScriptKind
-*REMOVED*Maniacal.Scumm.Scripts.ScriptKind.Room = 1 -> Maniacal.Scumm.Scripts.ScriptKind
 *REMOVED*Maniacal.Scumm.Scripts.ScriptSlot
 *REMOVED*Maniacal.Scumm.Scripts.ScriptSlot.Code.get -> System.ReadOnlyMemory<byte>
 *REMOVED*Maniacal.Scumm.Scripts.ScriptSlot.Delay.get -> int
@@ -968,6 +1015,48 @@
 *REMOVED*const Maniacal.Scumm.Game.ActorV0.MiscFlagFreeze = 64 -> int
 *REMOVED*const Maniacal.Scumm.Game.ActorV0.MiscFlagHide = 128 -> int
 *REMOVED*const Maniacal.Scumm.Game.ActorV0.Standing = 2 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.ActorCount = 25 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.AfterEntryScript = 5 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.InputScript = 4 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.InventoryClickArea = 3 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.KeyClickArea = 4 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.LightActorBasePalette = 1 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.LightActorColors = 8 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.ModeCutscene = 0 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.ModeKeypad = 1 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.ModeNoNewKid = 2 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.ModeNormal = 3 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.OwnerRoom = 15 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.SaveRoom = 50 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.SceneClickArea = 2 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.SentenceClickArea = 5 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.TypeActor = 2 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.TypeBackground = 1 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.TypeForeground = 0 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarActiveObject1 = 9 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarActiveObject2 = 10 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarActiveVerb = 8 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarActorRangeMax = 20 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarActorRangeMin = 19 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarBackupVerb = 38 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarCameraMaxX = 24 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarCameraMinX = 23 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarCameraPosX = 2 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarClickArea = 32 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarClickObject = 35 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarClickVerb = 33 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarCurrentLights = 12 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarKeypress = 39 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarLastSound = 37 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarMusicTimer = 17 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarSentenceObject1 = 27 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarSentenceObject2 = 28 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarSentencePreposition = 29 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarSentenceVerb = 26 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarVerbAllowed = 18 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarVirtMouseX = 30 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VarVirtMouseY = 31 -> int
+*REMOVED*const Maniacal.Scumm.Game.GameWorld.VerbClickArea = 1 -> int
 *REMOVED*const Maniacal.Scumm.Game.MessageLine.Height = 16 -> int
 *REMOVED*const Maniacal.Scumm.Game.MessageLine.NoActor = 255 -> int
 *REMOVED*const Maniacal.Scumm.Game.MessageLine.Width = 320 -> int
@@ -1067,6 +1156,7 @@
 *REMOVED*override Maniacal.Scumm.Detection.ScummGame.Equals(object? obj) -> bool
 *REMOVED*override Maniacal.Scumm.Detection.ScummGame.GetHashCode() -> int
 *REMOVED*override Maniacal.Scumm.Detection.ScummGame.ToString() -> string!
+override Maniacal.Scumm.Game.ActorInfo.GetHashCode() -> int
 *REMOVED*override Maniacal.Scumm.Game.ActorV0.AdjustToBox(int x, int y) -> (Maniacal.Scumm.Rooms.Point Point, int Box)
 *REMOVED*override Maniacal.Scumm.Game.ActorV0.Animate(int animation) -> void
 *REMOVED*override Maniacal.Scumm.Game.ActorV0.AnimateCostume() -> void
@@ -1077,6 +1167,7 @@
 *REMOVED*override Maniacal.Scumm.Game.ActorV0.StopMoving() -> void
 *REMOVED*override Maniacal.Scumm.Game.ActorV0.TurnTo(int direction) -> void
 *REMOVED*override Maniacal.Scumm.Game.ActorV0.Walk() -> void
+override Maniacal.Scumm.Game.RunningScript.GetHashCode() -> int
 *REMOVED*override Maniacal.Scumm.Game.Sentence.GetHashCode() -> int
 *REMOVED*override Maniacal.Scumm.Game.TransitionFrame.GetHashCode() -> int
 *REMOVED*override Maniacal.Scumm.Graphics.MaskedImage.Equals(object? obj) -> bool
@@ -1086,9 +1177,6 @@
 *REMOVED*override Maniacal.Scumm.Rooms.BoxCorners.GetHashCode() -> int
 *REMOVED*override Maniacal.Scumm.Rooms.Point.GetHashCode() -> int
 *REMOVED*override Maniacal.Scumm.Rooms.WalkBox.GetHashCode() -> int
-*REMOVED*override Maniacal.Scumm.Saves.SaveInfo.Equals(object? obj) -> bool
-*REMOVED*override Maniacal.Scumm.Saves.SaveInfo.GetHashCode() -> int
-*REMOVED*override Maniacal.Scumm.Saves.SaveInfo.ToString() -> string!
 *REMOVED*override Maniacal.Scumm.Saves.ScummState.Resource.Equals(object? obj) -> bool
 *REMOVED*override Maniacal.Scumm.Saves.ScummState.Resource.GetHashCode() -> int
 *REMOVED*override Maniacal.Scumm.Saves.ScummState.Resource.ToString() -> string!
@@ -1137,8 +1225,13 @@
 *REMOVED*static Maniacal.Scumm.Detection.ScummGame.operator ==(Maniacal.Scumm.Detection.ScummGame? left, Maniacal.Scumm.Detection.ScummGame? right) -> bool
 *REMOVED*static Maniacal.Scumm.Game.Actor.NewDirToOldDir(int facing) -> int
 *REMOVED*static Maniacal.Scumm.Game.Actor.OldDirToNewDir(int direction) -> int
+static Maniacal.Scumm.Game.ActorInfo.operator !=(Maniacal.Scumm.Game.ActorInfo left, Maniacal.Scumm.Game.ActorInfo right) -> bool
+static Maniacal.Scumm.Game.ActorInfo.operator ==(Maniacal.Scumm.Game.ActorInfo left, Maniacal.Scumm.Game.ActorInfo right) -> bool
+*REMOVED*static Maniacal.Scumm.Game.GameWorld.V0Object(int id, int type) -> int
 *REMOVED*static Maniacal.Scumm.Game.MessageLine.Decode(System.ReadOnlySpan<byte> text) -> byte[]!
 *REMOVED*static Maniacal.Scumm.Game.MessageLine.DecodeV0(System.ReadOnlySpan<byte> text) -> byte[]!
+static Maniacal.Scumm.Game.RunningScript.operator !=(Maniacal.Scumm.Game.RunningScript left, Maniacal.Scumm.Game.RunningScript right) -> bool
+static Maniacal.Scumm.Game.RunningScript.operator ==(Maniacal.Scumm.Game.RunningScript left, Maniacal.Scumm.Game.RunningScript right) -> bool
 *REMOVED*static Maniacal.Scumm.Game.Sentence.operator !=(Maniacal.Scumm.Game.Sentence left, Maniacal.Scumm.Game.Sentence right) -> bool
 *REMOVED*static Maniacal.Scumm.Game.Sentence.operator ==(Maniacal.Scumm.Game.Sentence left, Maniacal.Scumm.Game.Sentence right) -> bool
 *REMOVED*static Maniacal.Scumm.Game.TransitionFrame.operator !=(Maniacal.Scumm.Game.TransitionFrame left, Maniacal.Scumm.Game.TransitionFrame right) -> bool
@@ -1178,8 +1271,6 @@
 *REMOVED*static Maniacal.Scumm.Saves.SaveFile.Read(byte[]! file, int globalObjects, bool c64 = false) -> (Maniacal.Scumm.Saves.SaveInfo! Info, Maniacal.Scumm.Saves.ScummState! State)
 *REMOVED*static Maniacal.Scumm.Saves.SaveFile.ReadInfo(byte[]! file) -> Maniacal.Scumm.Saves.SaveInfo!
 *REMOVED*static Maniacal.Scumm.Saves.SaveFile.Write(Maniacal.Scumm.Saves.ScummState! state, string! name, System.TimeSpan playTime, System.DateTime saved, int version = 108) -> byte[]!
-*REMOVED*static Maniacal.Scumm.Saves.SaveInfo.operator !=(Maniacal.Scumm.Saves.SaveInfo? left, Maniacal.Scumm.Saves.SaveInfo? right) -> bool
-*REMOVED*static Maniacal.Scumm.Saves.SaveInfo.operator ==(Maniacal.Scumm.Saves.SaveInfo? left, Maniacal.Scumm.Saves.SaveInfo? right) -> bool
 *REMOVED*static Maniacal.Scumm.Saves.SaveSerializer.ForLoading(byte[]! data, int version) -> Maniacal.Scumm.Saves.SaveSerializer!
 *REMOVED*static Maniacal.Scumm.Saves.SaveSerializer.ForSaving(int version) -> Maniacal.Scumm.Saves.SaveSerializer!
 *REMOVED*static Maniacal.Scumm.Saves.ScummState.Resource.operator !=(Maniacal.Scumm.Saves.ScummState.Resource? left, Maniacal.Scumm.Saves.ScummState.Resource? right) -> bool
@@ -1225,6 +1316,10 @@
 *REMOVED*~override Maniacal.Scumm.Costumes.LimbAnimation.ToString() -> string
 *REMOVED*~override Maniacal.Scumm.Costumes.V0Cel.Equals(object obj) -> bool
 *REMOVED*~override Maniacal.Scumm.Costumes.V0Cel.ToString() -> string
+~override Maniacal.Scumm.Game.ActorInfo.Equals(object obj) -> bool
+~override Maniacal.Scumm.Game.ActorInfo.ToString() -> string
+~override Maniacal.Scumm.Game.RunningScript.Equals(object obj) -> bool
+~override Maniacal.Scumm.Game.RunningScript.ToString() -> string
 *REMOVED*~override Maniacal.Scumm.Game.Sentence.Equals(object obj) -> bool
 *REMOVED*~override Maniacal.Scumm.Game.Sentence.ToString() -> string
 *REMOVED*~override Maniacal.Scumm.Game.TransitionFrame.Equals(object obj) -> bool

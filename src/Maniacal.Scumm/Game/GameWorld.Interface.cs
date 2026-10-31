@@ -21,22 +21,22 @@ internal readonly record struct Sentence(int Verb, int ObjectA, int ObjectB)
 public sealed partial class GameWorld
 {
     // engine variables of the interface (ScummEngine_v2::setupScummVars)
-    public const int VarActiveVerb = 8, VarActiveObject1 = 9, VarActiveObject2 = 10, VarVerbAllowed = 18,
+    internal const int VarActiveVerb = 8, VarActiveObject1 = 9, VarActiveObject2 = 10, VarVerbAllowed = 18,
         VarSentenceVerb = 26, VarSentenceObject1 = 27, VarSentenceObject2 = 28, VarSentencePreposition = 29,
         VarVirtMouseX = 30, VarVirtMouseY = 31, VarClickArea = 32, VarClickVerb = 33, VarClickObject = 35,
         VarBackupVerb = 38, VarKeypress = 39;
 
     /// <summary>The global script clicks and keys go to. Mirrors <c>verbScript = 4</c> in <c>ScummEngine_v2::runInputScript</c>.</summary>
-    public const int InputScript = 4;
+    internal const int InputScript = 4;
 
     // where a click was (verbs.h: kVerbClickArea and the rest)
-    public const int VerbClickArea = 1, SceneClickArea = 2, InventoryClickArea = 3, KeyClickArea = 4, SentenceClickArea = 5;
+    internal const int VerbClickArea = 1, SceneClickArea = 2, InventoryClickArea = 3, KeyClickArea = 4, SentenceClickArea = 5;
 
     /// <summary>Key codes the input takes besides characters: the function keys are 315 to 323, as in ScummVM.</summary>
     public const int KeyEscape = 27, KeyF1 = 315, KeyF4 = 318, KeyF9 = 323;
 
     /// <summary>The owner of an object that is in its room. Mirrors <c>OF_OWNER_ROOM</c>.</summary>
-    public const int OwnerRoom = 0x0F;
+    internal const int OwnerRoom = 0x0F;
 
     // the sentence verbs o2_doSentence handles itself
     private const int VerbStopObject = 254, VerbSpecial = 253, VerbBackground = 250, ClearSentences = 252, ResetSentenceLine = 251;
@@ -158,7 +158,7 @@ public sealed partial class GameWorld
     /// version 0 an object that is part of a room, or an actor, has no owner and is only looked
     /// for in the room.
     /// </summary>
-    public int WhereIs(int obj)
+    internal int WhereIs(int obj)
     {
         bool owned = Version != 0 || obj >> 8 == TypeForeground;
         if (obj < 1 || (owned && obj >= Engine.ObjectOwners.Length))
@@ -183,7 +183,7 @@ public sealed partial class GameWorld
     };
 
     /// <summary>The n-th object (from 1) an actor carries, or 0. Mirrors <c>findInventory</c>.</summary>
-    public int FindInventory(int owner, int index)
+    internal int FindInventory(int owner, int index)
     {
         int count = 1;
         foreach (int obj in _inventory)
@@ -198,13 +198,13 @@ public sealed partial class GameWorld
     }
 
     /// <summary>How many objects an actor carries. Mirrors <c>getInventoryCount</c>.</summary>
-    public int InventoryCount(int owner) => _inventory.Count(obj => obj != 0 && Engine.GetOwner(obj) == owner);
+    internal int InventoryCount(int owner) => _inventory.Count(obj => obj != 0 && Engine.GetOwner(obj) == owner);
 
     /// <summary>
     /// The topmost object at a point of the room, in pixels, that is not untouchable and whose
     /// parents are in the states it needs; or 0. Mirrors <c>findObject</c> for versions 1 and 2.
     /// </summary>
-    public int FindObject(int x, int y)
+    internal int FindObject(int x, int y)
     {
         if (CurrentRoom is not { } room)
         {
@@ -233,7 +233,7 @@ public sealed partial class GameWorld
     /// The actor at a point of the room, in pixels: one drawn in the point's column, standing at most
     /// 40 lines below it. The kid being played is never found. Mirrors <c>getActorFromPos</c>.
     /// </summary>
-    public int ActorFromPos(int x, int y)
+    internal int ActorFromPos(int x, int y)
     {
         int strip = x / 8;
         for (int i = 1; i < ActorCount; i++)
