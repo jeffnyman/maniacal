@@ -26,11 +26,11 @@
     <RepositoryUrl>https://github.com/jeffnyman/maniacal</RepositoryUrl>
     <PackageProjectUrl>https://github.com/jeffnyman/maniacal</PackageProjectUrl>
     <!-- dotnet pack -p:VersionSuffix=alpha.2 for the next prerelease; an empty suffix is a release -->
-    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionPrefix>0.2.0</VersionPrefix>
     <VersionSuffix>alpha</VersionSuffix>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>scumm;maniac-mansion;lucasfilm;c64;adventure;interpreter;scummvm;retro;games</PackageTags>
-    <PackageReleaseNotes>First prerelease. Maniac Mansion's SCUMM interpreter (versions 0, 1 and 2) for the Commodore 64 release and the 1987 and 1988 DOS releases: the whole game plays, every winning ending included, with PC speaker, PCjr and SID sound, and saves that load in ScummVM.</PackageReleaseNotes>
+    <PackageReleaseNotes>Second prerelease: the library's public API, settled for a 1.0. It breaks code written against 0.1.0-alpha. The engine's internals (the script engine, actors, sound players, decoders, renderers, resource index, save serializer) are no longer public. GameWorld is the way to play headless: boot, step, screen, input, saves and loads, and new CopyProtection, Audio, SkipCutscene, Variables and SetVariable, CurrentScript, RunningScripts and ActorsHere. GameInspector (Maniacal.Scumm.Inspection) is new: room pictures with their objects, costumes' figures, scripts decoded, and a room's screen with figures standing in it. Every public member is documented. The maniacal tool plays as before; its --room, --costume, --script and --view are built on the inspection API. Built and tested on Windows, Linux and macOS.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsPackable)' == 'true'">

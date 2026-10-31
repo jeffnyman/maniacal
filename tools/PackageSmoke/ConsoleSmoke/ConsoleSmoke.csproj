@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <ManiacalVersion Condition="'$(ManiacalVersion)' == ''">0.1.0-*</ManiacalVersion>
+    <ManiacalVersion Condition="'$(ManiacalVersion)' == ''">0.2.0-*</ManiacalVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Maniacal.Scumm" Version="$(ManiacalVersion)" />

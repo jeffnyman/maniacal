@@ -13,7 +13,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 3 | The interpreter (V2 and V1) | Done |
 | 4 | Sound, saves and options (V2 and V1) | Done |
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
-| 6 | A release of its own | 0.1.0-alpha on nuget.org; the public API being settled for a 1.0 |
+| 6 | A release of its own | 0.2.0-alpha, the public API settled; then a 1.0 |
 | Later | A browser player, the NES, the demos, Amiga and Atari ST, Zak McKracken | Perhaps |
 
 ## Design
@@ -540,7 +540,7 @@ Where it comes from:
 - `docs/c64-engine` is the authority here: `interpreter/script_engine.asm`, `include/opcode_handlers.inc`,
   `walkboxes/`, `ui/sentence_action.asm`, `sound/sid_voice_controller.asm`.
 
-## Phase 6: a release of its own (0.1.0-alpha)
+## Phase 6: a release of its own (0.2.0-alpha)
 
 - **Standing alone.** The host contract, screen surfaces, PNG and WAV writing, game folders, save stores, the audio sources and the SDL host came from Daventry's packages
   (0.1.0-alpha); they are now Maniacal's own, as `Maniacal.Scumm`'s `Hosting`, `Input`,
@@ -630,8 +630,16 @@ Where it comes from:
   audio and the pixels of a `Surface8`, which callers draw into; and `Version` stays the SCUMM
   version (0, 1 or 2), documented as such, being what the engine and its data go by.
 
+- **The second release.** 0.2.0-alpha puts the settled API out to be used before it is promised
+  at 1.0. It breaks code written against 0.1.0-alpha, as the release notes say. At the release
+  `PublicAPI.Unshipped.txt` moved into `PublicAPI.Shipped.txt`, which is now 0.2.0-alpha's surface
+  (838 members: 2,026 shipped, 1,408 removed, 220 added), so what changes after it shows as
+  unshipped again. Published, as the first was, by the publish workflow from the tag
+  `v0.2.0-alpha`.
+
 ### Next, before a 1.0
 
+- Use 0.2.0-alpha from outside the repository and fix what is awkward while that is still cheap.
 - At 1.0, move `PublicAPI.Unshipped.txt` into `PublicAPI.Shipped.txt` and set package
   validation's baseline (`PackageValidationBaselineVersion`), so a breaking change fails the build.
 
