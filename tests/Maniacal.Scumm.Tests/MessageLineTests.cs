@@ -41,12 +41,12 @@ public class MessageLineTests
         public V0Costume? LoadCostumeV0(int costume) => null;
     }
 
-    private static (MessageLine Line, ScriptEngine Engine, Actor[] Actors) Line()
+    private static (MessageLine Line, ScriptEngine Engine, Actor[] Actors) Line(int version = 2)
     {
-        var engine = new ScriptEngine(2, _ => null, new RecordingHost(), new byte[600], new byte[600]);
+        var engine = new ScriptEngine(version, _ => null, new RecordingHost(), new byte[600], new byte[600]);
         var world = new Room1();
         var actors = Enumerable.Range(0, 4).Select(n => new Actor(n, world)).ToArray();
-        var line = new MessageLine(Font.English(2), engine, n => n is > 0 and < 4 ? actors[n] : null, n => $"thing {n}", _ => "Push");
+        var line = new MessageLine(Font.English(version), engine, n => n is > 0 and < 4 ? actors[n] : null, n => $"thing {n}", _ => "Push");
         return (line, engine, actors);
     }
 
@@ -206,6 +206,26 @@ public class MessageLineTests
 
         line.Stop();
         Assert.Equal(MessageLine.NoActor, line.TalkingActor);
+    }
+
+    /// <summary>
+    /// Version 1 shows its text through its colour table, as ScummVM's postProcessDOSGraphics does
+    /// for kTextVirtScreen: talk colour 14 shows light blue (9), 1 white (15). Checked against
+    /// ScummVM 2026.4.0, where Dave says "Ok, let's go rescue Sandy!" in light blue.
+    /// </summary>
+    [Theory]
+    [InlineData(14, 9)]
+    [InlineData(1, 15)]
+    public void Version_1_text_is_shown_through_its_colour_table(int talkColor, int shown)
+    {
+        var (line, _, actors) = Line(version: 1);
+        actors[2].TalkColor = talkColor;
+        actors[2].Room = 1;
+
+        line.Talk(2, Message("Hi"));
+
+        Assert.True(Drawn(line, 0, 0, shown));
+        Assert.False(Drawn(line, 0, 0, talkColor));
     }
 
     /// <summary>A talking kid starts the talk frame, and stops it when the message goes.</summary>

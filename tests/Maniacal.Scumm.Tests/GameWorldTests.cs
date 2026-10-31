@@ -363,9 +363,13 @@ public class GameWorldTests
         Assert.Equal(13, world.ActiveVerb);
     }
 
-    /// <summary>Pinned after checking the screens by eye: the title, START and the seven kids, after 60 steps with seed 1.</summary>
+    /// <summary>
+    /// Pinned after checking the screens by eye: the title, START and the seven kids, after 60 steps
+    /// with seed 1. Version 1's re-pinned when its text came to be shown through its colour table,
+    /// as ScummVM shows it.
+    /// </summary>
     [Theory]
-    [InlineData(V1Folder, "09c1f7ddfc8ee22b22a3126cebd04151")]
+    [InlineData(V1Folder, "1651ad4b5e3530f1690b90a25fc21065")]
     [InlineData(V2Folder, "94c5b94df4c443508a7ad9c8ad5bacbd")]
     [InlineData(C64Folder, "f837caf9ecdc9ae403db05f9df376c2d")]
     public void The_title_screen_is_stable(string folder, string md5)

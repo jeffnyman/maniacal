@@ -119,7 +119,9 @@ internal static class CostumeRenderer
             moveX += cel.MoveX;
             moveY -= cel.MoveY;
 
-            int left = toRight ? x : -x - cel.Width;
+            // mirrored, the cel's columns run leftwards from -x, so it covers -x - width + 1 to -x
+            // (paintCelByleRLE: rect.left = x - width, rect.right = x, drawing from x)
+            int left = toRight ? x : -x - cel.Width + 1;
             parts.Add((DrawCel(costume, cel, palette, !toRight), left, y));
         }
 

@@ -539,12 +539,15 @@ internal sealed class ScriptEngine
             return;
         }
 
+        // the caller goes on if it is still there, frozen or not: ScummVM asks its freezeCount, which
+        // freezeScripts never raises for versions 0 to 2 (they only set the 0x80 bit), so a script
+        // that starts a cutscene script carries on after it as far as its own next yield
         var nest = _nested[level];
         _nested.RemoveAt(level);
         if (nest.Number != 0)
         {
             var slot = Slots[nest.Slot];
-            if (slot.Number == nest.Number && slot.Kind == nest.Kind && !slot.IsDead && (slot.Status & SlotStatus.Frozen) == 0)
+            if (slot.Number == nest.Number && slot.Kind == nest.Kind && !slot.IsDead)
             {
                 CurrentSlot = nest.Slot;
                 return;

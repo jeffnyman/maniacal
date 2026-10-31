@@ -43,6 +43,15 @@ internal sealed class MessageLine
     private int _color;
     private int _talkingActor;
 
+    /// <summary>
+    /// The colour a message is drawn in. Version 1 shows the text screen through its colour table
+    /// as it does room pictures (talk colour 1 is white, 14 light blue), as ScummVM's
+    /// <c>postProcessDOSGraphics</c> remaps <c>kTextVirtScreen</c> for <c>renderV1</c>, the original
+    /// interpreter doing the same; the colour itself, as saved, stays the script's.
+    /// </summary>
+    private byte ShownColor(int color)
+        => _engine.Version == 1 ? Palettes.ManiacV1ToEga[color & 0x0F] : (byte)color;
+
     public MessageLine(Font font, ScriptEngine engine, Func<int, Actor?> actorOf, Func<int, string> nameOf, Func<int, string> verbNameOf)
     {
         _font = font;
@@ -249,7 +258,7 @@ internal sealed class MessageLine
             {
                 if (_nextLeft + Font.CharWidth <= Width && c < Font.GlyphCount)
                 {
-                    _font.DrawGlyph(Text, c, _nextLeft, _nextTop, (byte)_color);
+                    _font.DrawGlyph(Text, c, _nextLeft, _nextTop, ShownColor(_color));
                 }
 
                 _nextLeft += Font.CharWidth;

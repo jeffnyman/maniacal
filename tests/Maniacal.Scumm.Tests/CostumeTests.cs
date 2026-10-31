@@ -84,9 +84,15 @@ public class CostumeTests
         var costume = loader.LoadCostume(Dave)!;
         Assert.False(costume.HasOwnLeftPictures);
 
-        var left = CostumeRenderer.DrawFrame(costume, CostumeRenderer.Left, Standing, Dave).Pixels;
-        var right = CostumeRenderer.DrawFrame(costume, CostumeRenderer.Right, Standing, Dave).Pixels;
+        var leftFrame = CostumeRenderer.DrawFrame(costume, CostumeRenderer.Left, Standing, Dave);
+        var rightFrame = CostumeRenderer.DrawFrame(costume, CostumeRenderer.Right, Standing, Dave);
+        var left = leftFrame.Pixels;
+        var right = rightFrame.Pixels;
 
+        // mirrored, a cel covers -x - width + 1 to -x (paintCelByleRLE draws from x leftwards), so
+        // the figure's columns are the other way round about the actor's column itself; checked
+        // against ScummVM 2026.4.0, where a figure a column further left differed by 546 pixels
+        Assert.Equal(right.Width - 1 - rightFrame.OriginX, leftFrame.OriginX);
         Assert.Equal(right.Width, left.Width);
         Assert.Equal(right.Height, left.Height);
         for (int y = 0; y < left.Height; y++)

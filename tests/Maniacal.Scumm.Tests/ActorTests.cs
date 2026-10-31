@@ -252,10 +252,18 @@ public class GameStartTests
         Assert.Equal([(1, "Syd", 29, 58, true), (2, "Razor", 34, 61, true), (3, "Dave", 24, 59, true)], kids);
     }
 
-    /// <summary>Pinned after checking the screens by eye: the three kids by the moon (Syd put into his walkbox, a line lower).</summary>
+    /// <summary>
+    /// Pinned after checking the screens by eye: the three kids by the moon (Syd put into his
+    /// walkbox, a line lower). Re-pinned when the boot script came to end as in ScummVM, carrying on
+    /// past the cutscene script 131 it starts: the scripts left then run in another order, and the
+    /// speaking kid's mouth is a frame on at step 300. Re-pinned again when mirrored figures came
+    /// to be placed as ScummVM places them, Syd and Razor (facing left) a column to the right, and
+    /// version 1's text shown through its colour table; a save of this screen loaded in ScummVM
+    /// 2026.4.0 shows the same screen in version 2.
+    /// </summary>
     [Theory]
-    [InlineData(V1Folder, "7ba03880af2f9eb4f02cd761ba97a633")]
-    [InlineData(V2Folder, "22d5ab753f41cc9ce770ec06edf86474")]
+    [InlineData(V1Folder, "503b7325d80bcfd42eee813aeb75ab74")]
+    [InlineData(V2Folder, "c7f4e748cb9fa36a80360a82b101aec7")]
     public void The_start_screen_is_stable(string folder, string md5)
     {
         if (StartGame(folder) is not { } world)
