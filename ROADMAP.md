@@ -719,6 +719,15 @@ Where it comes from:
   every release, but they are the 40 by 48 objects left to right and START the 40 by 8 one, so a
   program now picks the kids without knowing any place on the screen, the C64 too.
 
+- **A front door.** `ManiacMansion.Open(folder)` finds the release in a folder or one or two
+  below it, refuses one Maniacal does not play, and says what it found (`Description`,
+  `Version`, `IsDemo`, `Detected`); `Play()` gives a `GameWorld`, `Inspect()` a `GameInspector`,
+  `CreateEngine(host)` the engine for a window. A missing folder, a folder without a release and a
+  release not played each throw their own exception. `Open(IGameContainer)` takes files kept
+  anywhere else. With `var`, the common path needs `using Maniacal.Scumm;` alone. The step-by-step
+  way in (`ResourceLoader.Open`, `new GameWorld`, `new GameInspector`) stays, for hosts and tests;
+  the README's examples use the front door.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies
@@ -726,8 +735,7 @@ Where it comes from:
   to face left are drawn a strip apart for a second or two. Both are about how version 1 moves
   and animates actors, not about drawing them; the twinkling star differs too, being random.
 - The rest of what the programs used from outside found awkward: verbs come as numbers only;
-  opening a game takes four types and up to seven namespaces, where one entry point from a folder
-  could detect, open and say what it found; `Palettes.ForVersion` is a span that cannot be kept.
+  `Palettes.ForVersion` is a span that cannot be kept.
 - At 1.0, move `PublicAPI.Unshipped.txt` into `PublicAPI.Shipped.txt` and set package
   validation's baseline (`PackageValidationBaselineVersion`), so a breaking change fails the build.
 

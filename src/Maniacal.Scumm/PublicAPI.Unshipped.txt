@@ -29,8 +29,20 @@ Maniacal.Scumm.Game.RoomObjectInfo.Y.init -> void
 Maniacal.Scumm.Inspection.GameInspector.Costumes.get -> System.Collections.Generic.IReadOnlyList<int>!
 Maniacal.Scumm.Inspection.GameInspector.Rooms.get -> System.Collections.Generic.IReadOnlyList<int>!
 Maniacal.Scumm.Inspection.GameInspector.Scripts.get -> System.Collections.Generic.IReadOnlyList<int>!
+Maniacal.Scumm.ManiacMansion
+Maniacal.Scumm.ManiacMansion.CreateEngine(Maniacal.Scumm.Hosting.IHost! host) -> Maniacal.Scumm.ScummEngine!
+Maniacal.Scumm.ManiacMansion.Description.get -> string!
+Maniacal.Scumm.ManiacMansion.Detected.get -> Maniacal.Scumm.Hosting.DetectedGame!
+Maniacal.Scumm.ManiacMansion.Files.get -> Maniacal.Scumm.Storage.IGameContainer!
+Maniacal.Scumm.ManiacMansion.Inspect() -> Maniacal.Scumm.Inspection.GameInspector!
+Maniacal.Scumm.ManiacMansion.IsDemo.get -> bool
+Maniacal.Scumm.ManiacMansion.Play(int seed = 1, int sampleRate = 22050, bool pcjr = true) -> Maniacal.Scumm.Game.GameWorld!
+Maniacal.Scumm.ManiacMansion.Version.get -> int
 override Maniacal.Scumm.Game.RoomObjectInfo.GetHashCode() -> int
+override Maniacal.Scumm.ManiacMansion.ToString() -> string!
 static Maniacal.Scumm.Game.RoomObjectInfo.operator !=(Maniacal.Scumm.Game.RoomObjectInfo left, Maniacal.Scumm.Game.RoomObjectInfo right) -> bool
 static Maniacal.Scumm.Game.RoomObjectInfo.operator ==(Maniacal.Scumm.Game.RoomObjectInfo left, Maniacal.Scumm.Game.RoomObjectInfo right) -> bool
+static Maniacal.Scumm.ManiacMansion.Open(Maniacal.Scumm.Storage.IGameContainer! files) -> Maniacal.Scumm.ManiacMansion!
+static Maniacal.Scumm.ManiacMansion.Open(string! folder) -> Maniacal.Scumm.ManiacMansion!
 ~override Maniacal.Scumm.Game.RoomObjectInfo.Equals(object obj) -> bool
 ~override Maniacal.Scumm.Game.RoomObjectInfo.ToString() -> string

@@ -154,15 +154,16 @@ dotnet add package Maniacal.Scumm --prerelease
 ```
 
 `maniacal` plays in a window (SDL3); `--run` plays headless, for screenshots and recordings. The
-library plays headless from a game folder:
+library opens a release from its folder (or one a level or two below it) and plays it headless:
 
 ```csharp
-using Maniacal.Scumm.Game;
+using Maniacal.Scumm;
 using Maniacal.Scumm.Graphics;
-using Maniacal.Scumm.Resources;
-using Maniacal.Scumm.Storage;
 
-var world = new GameWorld(ResourceLoader.Open(new DirectoryGameContainer(folder)));
+var game = ManiacMansion.Open(folder);
+Console.WriteLine(game);                  // Maniac Mansion (V2, English, DOS)
+
+var world = game.Play();
 world.Boot();
 for (int i = 0; i < 600; i++)
 {
@@ -173,18 +174,22 @@ using var file = File.Create("screen.png");
 PngWriter.Write(file, world.Screen(), Palettes.ForVersion(world.Version));
 ```
 
+A missing folder, a folder with no release in it, and a release Maniacal does not play each
+throw their own exception (`DirectoryNotFoundException`, `FileNotFoundException`,
+`NotSupportedException`), with a message that says which. Headless, the game can be watched as
+well as played: `world.ObjectsHere()` and `ActorsHere()` say what is in the room and where,
+`ClickObject` clicks an object, and `ReadAudio()` hands out the sound each step made.
+
 It also looks inside a release without playing it, as the player's `--room`, `--costume`,
 `--script` and `--view` do: room pictures with their objects, costumes' figures, scripts decoded,
 and a room's screen with figures standing in it.
 
 ```csharp
-using Maniacal.Scumm.Inspection;
-
-var inspector = new GameInspector(ResourceLoader.Open(new DirectoryGameContainer(folder)));
-var room = inspector.Room(12)!;
-foreach (var obj in room.Objects)
+var inspector = ManiacMansion.Open(folder).Inspect();
+foreach (int number in inspector.Rooms)
 {
-    Console.WriteLine($"{obj.Number} \"{obj.Name}\" at ({obj.X}, {obj.Y})");
+    var room = inspector.Room(number)!;
+    Console.WriteLine($"Room {number}: {room.Width}x{room.Height}, {room.Objects.Count} objects");
 }
 
 foreach (var line in inspector.Script(4)!.Lines)
@@ -192,6 +197,10 @@ foreach (var line in inspector.Script(4)!.Lines)
     Console.WriteLine($"[{line.Offset:X4}] {line.Instruction ?? $"{line.Length} unreachable bytes"}");
 }
 ```
+
+`ManiacMansion` is the front door: `ResourceLoader.Open` with `new GameWorld(...)` or `new
+GameInspector(...)` does the same a step at a time, and `CreateEngine(host)` gives a host the
+engine that plays the release in its window.
 
 `tools/PackageSmoke/run.ps1 -Game <folder> [-MoreGames <folder>,...]` packs the repository into
 `artifacts/packages` and checks the packages as a consumer would: a console app restores

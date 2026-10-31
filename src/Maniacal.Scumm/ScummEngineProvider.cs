@@ -24,8 +24,12 @@ public sealed class ScummEngineProvider : IEngineProvider
             return [];
         }
 
-        return [new DetectedGame(EngineId, found.Entry.GameId, "Maniac Mansion", found.Variant, found.Language, found.Platform)];
+        return [Describe(found)];
     }
+
+    /// <summary>A detected release as the engine registry names it.</summary>
+    internal static DetectedGame Describe(ScummGame found)
+        => new(EngineId, found.Entry.GameId, "Maniac Mansion", found.Variant, found.Language, found.Platform);
 
     /// <inheritdoc />
     public Engine Create(IHost host, IGameContainer game, DetectedGame detected)
