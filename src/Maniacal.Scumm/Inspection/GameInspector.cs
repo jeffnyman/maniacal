@@ -10,31 +10,60 @@ namespace Maniacal.Scumm.Inspection;
 /// <summary>Which objects a room picture shows: none, those the game starts with drawn (by their states at the start), or all of them.</summary>
 public enum RoomObjects
 {
+    /// <summary>The room's picture alone.</summary>
     None,
+
+    /// <summary>The objects drawn as the game starts.</summary>
     Initial,
+
+    /// <summary>Every object with an image, whatever its state.</summary>
     All,
 }
 
 /// <summary>The way a figure faces.</summary>
 public enum Facing
 {
+    /// <summary>To the left.</summary>
     Left,
+
+    /// <summary>To the right.</summary>
     Right,
+
+    /// <summary>Towards the player.</summary>
     Front,
+
+    /// <summary>Away from the player.</summary>
     Back,
 }
 
-/// <summary>An object of a room as the room's data gives it: its number, name, rectangle in pixels, the point a kid walks to, and the verbs it answers to with where their code starts.</summary>
+/// <summary>An object of a room as the room's data gives it.</summary>
 public sealed record ObjectInfo
 {
+    /// <summary>The object's number.</summary>
     public int Number { get; init; }
+
+    /// <summary>The object's name, as the game shows it.</summary>
     public string Name { get; init; } = "";
+
+    /// <summary>The left of its rectangle in the room, in pixels.</summary>
     public int X { get; init; }
+
+    /// <summary>The top of its rectangle in the room, in pixels.</summary>
     public int Y { get; init; }
+
+    /// <summary>Its rectangle's width, in pixels.</summary>
     public int Width { get; init; }
+
+    /// <summary>Its rectangle's height, in pixels.</summary>
     public int Height { get; init; }
+
+    /// <summary>Where a kid walks to use it, in actor units.</summary>
     public int WalkX { get; init; }
+
+    /// <summary>Where a kid walks to use it, in actor units.</summary>
     public int WalkY { get; init; }
+
+    /// <summary>The verbs it answers to, and where each one's code starts in the object's code.</summary>
     public IReadOnlyList<VerbEntry> Verbs { get; init; } = [];
 }
 
@@ -45,11 +74,22 @@ public sealed record ObjectInfo
 /// </summary>
 public sealed record RoomPicture
 {
+    /// <summary>The room's number.</summary>
     public int Number { get; init; }
+
+    /// <summary>The room's width, in pixels.</summary>
     public int Width { get; init; }
+
+    /// <summary>The room's height, in pixels.</summary>
     public int Height { get; init; }
+
+    /// <summary>The picture, with the objects asked for.</summary>
     public required Surface8 Pixels { get; init; }
+
+    /// <summary>The mask: non-zero where an actor in a masked walkbox goes behind the picture.</summary>
     public required Surface8 Mask { get; init; }
+
+    /// <summary>The room's objects, drawn or not.</summary>
     public IReadOnlyList<ObjectInfo> Objects { get; init; } = [];
 }
 
@@ -64,18 +104,32 @@ public sealed record CostumeFigures
     /// <summary>The colour number of the pixels a figure does not cover.</summary>
     public const byte Transparent = CostumeRenderer.Transparent;
 
+    /// <summary>The costume's number.</summary>
     public int Number { get; init; }
+
+    /// <summary>The costume's format byte (0x58 in version 2, 0x57 in version 1), or null on the C64, which has none.</summary>
     public int? Format { get; init; }
+
+    /// <summary>How many animations it has, or on the C64 how many clips.</summary>
     public int Animations { get; init; }
+
+    /// <summary>Standing, facing left, right, front and back.</summary>
     public IReadOnlyList<CostumeFrame> Standing { get; init; } = [];
+
+    /// <summary>Each step of the walk to the right.</summary>
     public IReadOnlyList<CostumeFrame> Walking { get; init; } = [];
 }
 
 /// <summary>A line of a script listing: an instruction as text (<c>putActor(1, 80, 60)</c>), or, with no text, bytes that execution never reaches.</summary>
 public readonly record struct ScriptLine
 {
+    /// <summary>Where the line starts in the code.</summary>
     public int Offset { get; init; }
+
+    /// <summary>How many bytes it covers.</summary>
     public int Length { get; init; }
+
+    /// <summary>The instruction as text, or null for bytes execution never reaches.</summary>
     public string? Instruction { get; init; }
 }
 
@@ -86,31 +140,58 @@ public readonly record struct ScriptLine
 /// </summary>
 public sealed record ScriptListing
 {
+    /// <summary>What the code is.</summary>
     public string Title { get; init; } = "";
+
+    /// <summary>For an object's code, the verbs and where each starts; none otherwise.</summary>
     public IReadOnlyList<VerbEntry> Verbs { get; init; } = [];
+
+    /// <summary>The instructions and unreachable bytes, in order of offset.</summary>
     public IReadOnlyList<ScriptLine> Lines { get; init; } = [];
+
+    /// <summary>Why the decoding stopped, or null when it did not.</summary>
     public string? Error { get; init; }
 }
 
-/// <summary>A figure to stand on a room's screen: its costume, its position in the room in actor units, and which way it faces.</summary>
+/// <summary>A figure to stand on a room's screen.</summary>
+/// <param name="Costume">The costume it wears, coloured as the actor with the costume's number.</param>
+/// <param name="X">Its position in the room, in actor units.</param>
+/// <param name="Y">Its position in the room, in actor units.</param>
+/// <param name="Facing">The way it faces.</param>
 public readonly record struct StandingActor(int Costume, int X, int Y, Facing Facing);
 
 /// <summary>Where a standing figure was drawn: the walkbox under it (-1 for none) and whether that walkbox put it behind the room's mask.</summary>
 public readonly record struct PlacedActor
 {
+    /// <summary>The figure's costume.</summary>
     public int Costume { get; init; }
+
+    /// <summary>The figure's position in the room, in actor units.</summary>
     public int X { get; init; }
+
+    /// <summary>The figure's position in the room, in actor units.</summary>
     public int Y { get; init; }
+
+    /// <summary>The walkbox under the figure, or -1 for none.</summary>
     public int Box { get; init; }
+
+    /// <summary>Whether the walkbox put the figure behind the room's mask.</summary>
     public bool Behind { get; init; }
 }
 
 /// <summary>The 320x200 screen with a room in view, the camera's centre and the room's first column in view, and where the figures went.</summary>
 public sealed record RoomScreen
 {
+    /// <summary>The 320x200 screen, in the release's colour numbers.</summary>
     public required Surface8 Screen { get; init; }
+
+    /// <summary>The camera's centre, in room pixels.</summary>
     public int CameraX { get; init; }
+
+    /// <summary>The first room column in view, in pixels.</summary>
     public int ViewLeft { get; init; }
+
+    /// <summary>The figures in the order they were drawn, back to front.</summary>
     public IReadOnlyList<PlacedActor> Actors { get; init; } = [];
 }
 
@@ -119,6 +200,7 @@ public sealed record RoomScreen
 /// scripts decoded, and a room's screen with figures standing in it. Rooms and objects are as the
 /// game starts them. Damaged data throws <see cref="InvalidDataException"/>.
 /// </summary>
+/// <param name="loader">The release's resources, from <see cref="ResourceLoader.Open"/>.</param>
 public sealed class GameInspector(ResourceLoader loader)
 {
     // the C64's clips: walking right, and standing facing left (then right, front and back)

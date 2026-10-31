@@ -8,8 +8,13 @@ namespace Maniacal.Scumm.Graphics;
 /// </summary>
 public sealed class Font
 {
+    /// <summary>How many glyphs there are: the 128 ASCII characters.</summary>
     public const int GlyphCount = 128;
+
+    /// <summary>The width of every character, in pixels.</summary>
     public const int CharWidth = 8;
+
+    /// <summary>The height of every glyph, in pixels.</summary>
     public const int Height = 8;
 
     private readonly byte[] _glyphs;
@@ -42,6 +47,7 @@ public sealed class Font
         return _glyphs.AsSpan(glyph * Height, Height);
     }
 
+    /// <summary>The width of a line of text, in pixels.</summary>
     public static int Width(ReadOnlySpan<byte> text) => text.Length * CharWidth;
 
     /// <summary>Draws one glyph with its top left at (x, y); only the set bits are drawn, clipped to the surface.</summary>

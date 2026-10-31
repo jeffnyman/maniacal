@@ -57,6 +57,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     private readonly Dictionary<int, string> _newNames = [];
     private (int Strips, int Rows) _flashlight = (Flashlight.DefaultStrips, Flashlight.DefaultRows);
 
+    /// <summary>A world for a release, before <see cref="Boot"/> or <see cref="Load"/>.</summary>
     /// <param name="loader">The release's resources.</param>
     /// <param name="seed">The seed of the scripts' random numbers.</param>
     /// <param name="sampleRate">The rate the sound is made at.</param>
@@ -156,10 +157,12 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// <summary>The game time the steps so far have taken.</summary>
     public TimeSpan Time { get; private set; }
 
+    /// <summary>The camera, whose centre is the room column in the middle of the screen.</summary>
     public Camera Camera { get; } = new();
 
     internal Actor[] Actors { get; }
 
+    /// <summary>The release's SCUMM version: 0 for the Commodore 64, 1 for the 1987 DOS release, 2 for the 1988 one.</summary>
     public int Version => Engine.Version;
 
     /// <summary>The room on screen, or null for room 0, no room.</summary>
@@ -171,6 +174,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// <summary>The world instructions with no subsystem yet, as the scripts ran them.</summary>
     public IReadOnlyList<string> Unhandled => _recorder.Calls;
 
+    /// <summary>How many steps the world has taken.</summary>
     public int Steps { get; private set; }
 
     int IActorWorld.CurrentRoom => CurrentRoom?.Number ?? 0;

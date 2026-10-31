@@ -3,30 +3,50 @@ using Maniacal.Scumm.Scripts;
 
 namespace Maniacal.Scumm.Game;
 
-/// <summary>An actor as it is at the moment it was looked at: its number, name, costume, position, facing (in degrees) and whether it is drawn.</summary>
+/// <summary>An actor as it was at the moment it was looked at.</summary>
 public readonly record struct ActorInfo
 {
+    /// <summary>The actor's number.</summary>
     public int Number { get; init; }
+
+    /// <summary>The actor's name, as the game shows it.</summary>
     public string Name { get; init; }
+
+    /// <summary>The costume the actor wears.</summary>
     public int Costume { get; init; }
+
+    /// <summary>The actor's position in the room, in actor units.</summary>
     public int X { get; init; }
+
+    /// <summary>The actor's position in the room, in actor units.</summary>
     public int Y { get; init; }
+
+    /// <summary>The way the actor faces, in degrees: 90 right, 270 left, 180 to the front, 0 to the back.</summary>
     public int Facing { get; init; }
+
+    /// <summary>Whether the actor is drawn.</summary>
     public bool Visible { get; init; }
 }
 
-/// <summary>
-/// A script alive in a slot at the moment it was looked at: what its code belongs to, its number
-/// (a script's, or an object's for a verb script), where it is in its code, its
-/// <see cref="SlotStatus"/> and, while paused, its delay in ticks.
-/// </summary>
+/// <summary>A script alive in a slot at the moment it was looked at.</summary>
 public readonly record struct RunningScript
 {
+    /// <summary>The slot it runs in.</summary>
     public int Slot { get; init; }
+
+    /// <summary>What its code belongs to.</summary>
     public ScriptKind Kind { get; init; }
+
+    /// <summary>The script's number, or the object's for a verb script.</summary>
     public int Number { get; init; }
+
+    /// <summary>Where it is in its code.</summary>
     public int Offset { get; init; }
+
+    /// <summary>Its <see cref="SlotStatus"/>, with <see cref="SlotStatus.Frozen"/> added while frozen.</summary>
     public byte Status { get; init; }
+
+    /// <summary>While paused, the ticks left before it runs again.</summary>
     public int Delay { get; init; }
 }
 

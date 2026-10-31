@@ -617,10 +617,21 @@ Where it comes from:
   error: a view whose costume is missing now fails before it places any figure, so it no longer
   lists the figures before it first.
 
+- **The public API documented, and polished.** Every public member of `Maniacal.Scumm` has a
+  documentation comment, and a missing one fails the build (CS1591 is on for the library alone;
+  the key, modifier and mouse button names stand for themselves). Implementations take their
+  interface's comment (`inheritdoc`). The entry points say what they throw: `ResourceLoader.Open`
+  a `FileNotFoundException` without `00.LFL` and an `InvalidDataException` for an index that is
+  not Maniac Mansion's (and `ScummEngine.Initialize` so too), `DirectoryGameContainer` a
+  `DirectoryNotFoundException`, the save store an `ArgumentException` for a name that is not a
+  file name. `DetectInDirectory`'s comment no longer gives the Sierra games' folders as examples.
+  Looked over and kept: the classes are sealed but the two abstract bases (`Engine`,
+  `MonoAudioSource`); the arrays left are file contents (saves, PNGs, container files), pulled
+  audio and the pixels of a `Surface8`, which callers draw into; and `Version` stays the SCUMM
+  version (0, 1 or 2), documented as such, being what the engine and its data go by.
+
 ### Next, before a 1.0
 
-- The names (V0, V1 and V2 or the releases' names), sealing, read-only collections, the
-  exceptions a bad game folder throws, and documentation comments required on what is public.
 - At 1.0, move `PublicAPI.Unshipped.txt` into `PublicAPI.Shipped.txt` and set package
   validation's baseline (`PackageValidationBaselineVersion`), so a breaking change fails the build.
 

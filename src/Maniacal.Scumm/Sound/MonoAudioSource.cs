@@ -15,12 +15,14 @@ public abstract class MonoAudioSource : IAudioSource
     private long _framesRendered;
     private int _gain = UnityGain;
 
+    /// <summary>A source made at the sample rate. Throws <see cref="ArgumentOutOfRangeException"/> for a rate that is not positive.</summary>
     protected MonoAudioSource(int sampleRate)
     {
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(sampleRate, 0);
         SampleRate = sampleRate;
     }
 
+    /// <summary>The rate the sound is made at, in frames a second.</summary>
     public int SampleRate { get; }
 
     /// <summary>Master gain from 0 (silent) to 1 (unity). Safe to set from any thread.</summary>
@@ -33,6 +35,7 @@ public abstract class MonoAudioSource : IAudioSource
     /// <summary>Total stereo frames rendered so far through <see cref="Read"/>.</summary>
     public long FramesRendered => Volatile.Read(ref _framesRendered);
 
+    /// <inheritdoc />
     public void Read(Span<short> interleavedStereo)
     {
         int frames = interleavedStereo.Length / 2;

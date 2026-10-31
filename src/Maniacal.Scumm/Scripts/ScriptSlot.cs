@@ -3,9 +3,16 @@ namespace Maniacal.Scumm.Scripts;
 /// <summary>Mirrors ScummVM's <c>ssDead</c>, <c>ssPaused</c> and <c>ssRunning</c>; <see cref="Frozen"/> is the 0x80 bit <c>freezeScripts</c> adds.</summary>
 public static class SlotStatus
 {
+    /// <summary>The slot is free.</summary>
     public const byte Dead = 0;
+
+    /// <summary>The script waits out a delay, or for something.</summary>
     public const byte Paused = 1;
+
+    /// <summary>The script runs.</summary>
     public const byte Running = 2;
+
+    /// <summary>The bit added while a cutscene or a script has frozen the script.</summary>
     public const byte Frozen = 0x80;
 }
 

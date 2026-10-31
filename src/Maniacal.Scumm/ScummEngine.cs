@@ -21,6 +21,7 @@ public sealed class ScummEngine : Engine
     private readonly Queue<TransitionFrame> _transition = new();
     private Maniacal.Scumm.Graphics.Surface8? _stepScreen;
 
+    /// <summary>The engine for a detected release, on a host. Nothing is read until <see cref="Initialize"/>.</summary>
     public ScummEngine(IHost host, IGameContainer game, DetectedGame detected)
         : base(host, game, detected)
     {
@@ -35,6 +36,11 @@ public sealed class ScummEngine : Engine
     /// <summary>The world being played, from <see cref="Initialize"/> on.</summary>
     public GameWorld World => _world ?? throw new InvalidOperationException("The engine is not initialized.");
 
+    /// <summary>
+    /// Opens the release, sets the display and the sound going, and boots the game. Throws
+    /// <see cref="FileNotFoundException"/> or <see cref="InvalidDataException"/> as
+    /// <see cref="ResourceLoader.Open"/> does.
+    /// </summary>
     public override void Initialize()
     {
         _world = new GameWorld(ResourceLoader.Open(Game), Host.RandomSeed ?? Environment.TickCount, Host.Audio.SampleRate, Pcjr)
@@ -50,6 +56,7 @@ public sealed class ScummEngine : Engine
         _world.Boot();
     }
 
+    /// <inheritdoc />
     public override TickResult Tick(TimeSpan elapsed)
     {
         var world = World;
@@ -111,6 +118,7 @@ public sealed class ScummEngine : Engine
         Host.Graphics.Present(screen);
     }
 
+    /// <summary>Stops the sound.</summary>
     public override void Dispose()
     {
         Host.Audio.Stop();

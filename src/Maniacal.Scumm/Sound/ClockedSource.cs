@@ -18,6 +18,7 @@ public sealed class ClockedSource : IAudioSource
     private bool _selfClocked;
     private short[]? _discard;
 
+    /// <summary>Wraps a source made at the sample rate.</summary>
     public ClockedSource(IAudioSource inner, int sampleRate)
     {
         _inner = inner;
@@ -30,6 +31,7 @@ public sealed class ClockedSource : IAudioSource
     /// <summary>True while the engine clocks the audio itself because the host reads none.</summary>
     public bool IsSelfClocked => _selfClocked;
 
+    /// <inheritdoc />
     public void Read(Span<short> interleavedStereo)
     {
         _inner.Read(interleavedStereo);

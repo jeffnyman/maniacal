@@ -27,7 +27,11 @@ public sealed class ResourceLoader
     /// <summary>The files of the release.</summary>
     public IGameContainer Game => _game;
 
-    /// <summary>Reads the index from <c>00.LFL</c> and returns a loader over it.</summary>
+    /// <summary>
+    /// Reads the index from <c>00.LFL</c> (on the C64, from the disk images) and returns a loader
+    /// over it. Throws <see cref="FileNotFoundException"/> when the container has no such file and
+    /// <see cref="InvalidDataException"/> when its index is not Maniac Mansion's or ends early.
+    /// </summary>
     public static ResourceLoader Open(IGameContainer game)
     {
         game = C64DiskImage.Open(game) ?? game;

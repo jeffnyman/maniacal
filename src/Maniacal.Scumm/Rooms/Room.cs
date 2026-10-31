@@ -88,8 +88,10 @@ public sealed class Room
     /// <summary>Where the walkboxes start in the room: their count, the boxes, then the matrix (version 0: the boxes up to 0xFF, then their neighbours). 0 for none.</summary>
     internal int BoxOffset { get; }
 
+    /// <summary>The room's number.</summary>
     public int Number { get; }
 
+    /// <summary>The SCUMM version the room's data is in (0, 1 or 2).</summary>
     public int Version { get; }
 
     /// <summary>The room resource, from its size word.</summary>

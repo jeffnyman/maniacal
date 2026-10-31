@@ -33,6 +33,7 @@ public record DetectedGame(
         }
     }
 
+    /// <summary>The title, the variant if any, and the engine and game ids: <c>Maniac Mansion (V2) [scumm:maniac]</c>.</summary>
     public sealed override string ToString()
         => Variant.Length == 0 ? $"{Title} [{EngineId}:{GameId}]" : $"{Title} ({Variant}) [{EngineId}:{GameId}]";
 }
@@ -40,10 +41,13 @@ public record DetectedGame(
 /// <summary>Detects and instantiates one engine family.</summary>
 public interface IEngineProvider
 {
+    /// <summary>The engine's id, as <see cref="DetectedGame.EngineId"/> names it.</summary>
     string Id { get; }
 
+    /// <summary>The games of this engine the container holds, none if it holds none.</summary>
     IReadOnlyList<DetectedGame> Detect(IGameContainer game);
 
+    /// <summary>An engine for a game this provider detected.</summary>
     Engine Create(IHost host, IGameContainer game, DetectedGame detected);
 }
 
@@ -52,22 +56,24 @@ public sealed class EngineRegistry
 {
     private readonly List<IEngineProvider> _providers = [];
 
+    /// <summary>The engines, in the order they were added.</summary>
     public IReadOnlyList<IEngineProvider> Providers => _providers;
 
+    /// <summary>Adds an engine and returns the registry, so additions chain.</summary>
     public EngineRegistry Add(IEngineProvider provider)
     {
         _providers.Add(provider);
         return this;
     }
 
+    /// <summary>Every game any engine finds in the container.</summary>
     public IReadOnlyList<DetectedGame> Detect(IGameContainer game)
         => _providers.SelectMany(p => p.Detect(game)).ToList();
 
     /// <summary>
     /// Detects the game in a folder, or in a subfolder up to <paramref name="maxDepth"/> levels
-    /// down when the folder itself holds none: some releases keep their data one folder in
-    /// (Codename Iceman's ICE, Space Quest 6's CDROM, a nested King's Quest 7). Returns the
-    /// container the games were found in, or null when there is none.
+    /// down when the folder itself holds none, as when a copy keeps the game's files one folder
+    /// in. Returns the container the games were found in, or null when there is none.
     /// </summary>
     public (DirectoryGameContainer Container, IReadOnlyList<DetectedGame> Games)? DetectInDirectory(string path, int maxDepth = 2)
     {
@@ -94,6 +100,10 @@ public sealed class EngineRegistry
         return null;
     }
 
+    /// <summary>
+    /// An engine for a detected game, from the provider its <see cref="DetectedGame.EngineId"/>
+    /// names. Throws <see cref="InvalidOperationException"/> when no such engine is registered.
+    /// </summary>
     public Engine Create(IHost host, IGameContainer game, DetectedGame detected)
     {
         var provider = _providers.FirstOrDefault(p => p.Id == detected.EngineId)

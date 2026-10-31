@@ -12,6 +12,7 @@ public static class PngWriter
 {
     private static readonly uint[] CrcTable = BuildCrcTable();
 
+    /// <summary>The surface as a PNG in the palette, each pixel enlarged to <paramref name="scaleX"/> by <paramref name="scaleY"/>.</summary>
     public static byte[] Encode(Surface8 surface, ReadOnlySpan<Rgb> palette, int scaleX = 1, int scaleY = 1)
     {
         using var stream = new MemoryStream();
@@ -19,6 +20,11 @@ public static class PngWriter
         return stream.ToArray();
     }
 
+    /// <summary>
+    /// Writes the surface to the stream as a PNG in the palette, each pixel enlarged to
+    /// <paramref name="scaleX"/> by <paramref name="scaleY"/>. Throws
+    /// <see cref="ArgumentOutOfRangeException"/> for a scale below 1.
+    /// </summary>
     public static void Write(Stream stream, Surface8 surface, ReadOnlySpan<Rgb> palette, int scaleX = 1, int scaleY = 1)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(scaleX, 1);
