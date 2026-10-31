@@ -13,8 +13,34 @@ namespace Maniacal.Player;
 
 internal static class Program
 {
+    // exit codes: done, not found, a mistake on the command line, data unreadable or no window
+    private const int Done = 0, NotFound = 1, BadCommandLine = 2, CannotRun = 3;
+
+    /// <summary>A mistake on the command line, said in one line.</summary>
+    private sealed class UsageException(string message) : Exception(message);
+
     private static int Main(string[] args)
     {
+        try
+        {
+            return Run(args);
+        }
+        catch (UsageException ex)
+        {
+            Error(ex.Message);
+            Console.Error.WriteLine("Run 'maniacal --help' for more.");
+            return BadCommandLine;
+        }
+    }
+
+    private static int Run(string[] args)
+    {
+        if (args.Length == 0)
+        {
+            PrintHelp();
+            return BadCommandLine;
+        }
+
         string? gamePath = null;
         bool listOnly = false;
         bool fullscreen = false;
@@ -47,13 +73,52 @@ internal static class Program
         bool mask = false;
         string objects = "initial";
         string? output = null;
+        var modes = new List<string>();
 
-        for (int i = 0; i < args.Length; i++)
+        int i = 0;
+
+        // the value after an option, which must be there and not be another option
+        string Next(string option, string what)
+            => i + 1 < args.Length && !args[i + 1].StartsWith("--", StringComparison.Ordinal)
+                ? args[++i]
+                : throw new UsageException($"{option} needs {what}");
+
+        int Number(string option, string what, int min = int.MinValue, int max = int.MaxValue)
+        {
+            string value = Next(option, what);
+            return int.TryParse(value, out int number) && number >= min && number <= max
+                ? number
+                : throw new UsageException($"{option} needs {what}, not '{value}'");
+        }
+
+        T Parsed<T>(string option, string what, Func<string, T?> parse)
+            where T : struct
+        {
+            string value = Next(option, what);
+            return parse(value) ?? throw new UsageException($"{option} needs {what}, not '{value}'");
+        }
+
+        void Mode(string option)
+        {
+            if (!modes.Contains(option))
+            {
+                modes.Add(option);
+            }
+        }
+
+        for (; i < args.Length; i++)
         {
             switch (args[i])
             {
+                case "--help" or "-h" or "-?":
+                    PrintHelp();
+                    return Done;
+                case "--version":
+                    Console.WriteLine($"maniacal {Version()}");
+                    return Done;
                 case "--list":
                     listOnly = true;
+                    Mode("--list");
                     break;
                 case "--fullscreen":
                     fullscreen = true;
@@ -61,72 +126,70 @@ internal static class Program
                 case "--verbose":
                     verbose = true;
                     break;
-                case "--frames" when i + 1 < args.Length && int.TryParse(args[i + 1], out int frameCount):
-                    frames = frameCount;
-                    i++;
+                case "--frames":
+                    frames = Number("--frames", "a number of frames", 1);
                     break;
-                case "--scale" when i + 1 < args.Length && int.TryParse(args[i + 1], out scale):
-                    i++;
+                case "--scale":
+                    scale = Number("--scale", "a scale from 1 to 8", 1, 8);
                     break;
-                case "--room" when i + 1 < args.Length && int.TryParse(args[i + 1], out int number):
-                    room = number;
-                    i++;
+                case "--room":
+                    room = Number("--room", "a room number", 0);
+                    Mode("--room");
                     break;
-                case "--costume" when i + 1 < args.Length && int.TryParse(args[i + 1], out int costumeNumber):
-                    costume = costumeNumber;
-                    i++;
+                case "--costume":
+                    costume = Number("--costume", "a costume number", 0);
+                    Mode("--costume");
                     break;
-                case "--zoom" when i + 1 < args.Length && int.TryParse(args[i + 1], out zoom) && zoom is >= 1 and <= 8:
-                    i++;
+                case "--zoom":
+                    zoom = Number("--zoom", "a zoom from 1 to 8", 1, 8);
                     break;
-                case "--view" when i + 1 < args.Length && int.TryParse(args[i + 1], out int viewRoom):
-                    view = viewRoom;
-                    i++;
+                case "--view":
+                    view = Number("--view", "a room number", 0);
+                    Mode("--view");
                     break;
-                case "--camera" when i + 1 < args.Length && int.TryParse(args[i + 1], out int cx):
-                    cameraX = cx;
-                    i++;
+                case "--camera":
+                    cameraX = Number("--camera", "a room column");
                     break;
-                case "--actor" when i + 1 < args.Length && ParseActor(args[i + 1]) is { } actor:
-                    actors.Add(actor);
-                    i++;
+                case "--actor":
+                    actors.Add(Parsed("--actor", "costume,x,y or costume,x,y,left|right|front|back", ParseActor));
                     break;
-                case "--script" when i + 1 < args.Length && int.TryParse(args[i + 1], out int scriptNumber):
-                    script = scriptNumber;
-                    i++;
+                case "--script":
+                    script = Number("--script", "a script number", 0);
+                    Mode("--script");
                     break;
-                case "--room-scripts" when i + 1 < args.Length && int.TryParse(args[i + 1], out int scriptsRoom):
-                    roomScripts = scriptsRoom;
-                    i++;
+                case "--room-scripts":
+                    roomScripts = Number("--room-scripts", "a room number", 0);
+                    Mode("--script");
                     break;
                 case "--run":
-                    runSteps = i + 1 < args.Length && int.TryParse(args[i + 1], out int steps) ? steps : 0;
+                    runSteps = i + 1 < args.Length && int.TryParse(args[i + 1], out int steps) && steps >= 0 ? steps : 0;
                     if (runSteps > 0 || (i + 1 < args.Length && args[i + 1] == "0"))
                     {
                         i++;
                     }
 
+                    Mode("--run");
                     break;
-                case "--screenshot" when i + 1 < args.Length:
-                    screenshot = args[++i];
+                case "--screenshot":
+                    screenshot = Next("--screenshot", "a file name");
                     break;
-                case "--wav" when i + 1 < args.Length:
-                    wav = args[++i];
+                case "--wav":
+                    wav = Next("--wav", "a file name");
                     break;
-                case "--saves" when i + 1 < args.Length:
-                    savesDir = args[++i];
+                case "--saves":
+                    savesDir = Next("--saves", "a folder");
                     break;
-                case "--target" when i + 1 < args.Length:
-                    target = args[++i];
+                case "--target":
+                    target = Next("--target", "a target name");
                     break;
-                case "--load" when i + 1 < args.Length:
-                    loadFile = args[++i];
+                case "--load":
+                    loadFile = Next("--load", "a save file");
                     break;
-                case "--save" when i + 1 < args.Length:
-                    saveFile = args[++i];
+                case "--save":
+                    saveFile = Next("--save", "a file name");
                     break;
-                case "--save-version" when i + 1 < args.Length && int.TryParse(args[i + 1], out saveVersion):
-                    i++;
+                case "--save-version":
+                    saveVersion = Number("--save-version", "a save version from 108 to 124", 108, 124);
                     break;
                 case "--speaker":
                     speaker = true;
@@ -134,51 +197,66 @@ internal static class Program
                 case "--copy-protection":
                     copyProtection = true;
                     break;
-                case "--click" when i + 1 < args.Length && ParseClick(args[i + 1]) is { } click:
+                case "--click":
+                    var click = Parsed("--click", "step:x,y", ParseClick);
                     inputs.Add((click.Step, w => w.Click(click.X, click.Y)));
-                    i++;
                     break;
-                case "--key" when i + 1 < args.Length && ParseKey(args[i + 1]) is { } key:
+                case "--key":
+                    var key = Parsed("--key", "step:key (a character, esc, enter, space or f1 to f9)", ParseKey);
                     inputs.Add((key.Step, w => w.PressKey(key.Code)));
-                    i++;
                     break;
-                case "--skip" when i + 1 < args.Length && int.TryParse(args[i + 1], out int skipStep):
-                    skips.Add(skipStep);
-                    i++;
+                case "--skip":
+                    skips.Add(Number("--skip", "a step number", 0));
                     break;
-                case "--set" when i + 1 < args.Length && args[i + 1].Split('=') is [var name, var value]
-                    && int.TryParse(name, out int variable) && int.TryParse(value, out int number):
-                    settings.Add((variable, number));
-                    i++;
+                case "--set":
+                    settings.Add(Parsed("--set", "variable=value", ParseSetting));
                     break;
                 case "--font":
                     font = true;
+                    Mode("--font");
                     break;
-                case "--text" when i + 1 < args.Length:
-                    text = args[++i];
+                case "--text":
+                    text = Next("--text", "the words to write");
+                    Mode("--font");
                     break;
                 case "--mask":
                     mask = true;
                     break;
-                case "--objects" when i + 1 < args.Length && args[i + 1] is "none" or "initial" or "all":
-                    objects = args[++i];
+                case "--objects":
+                    objects = Next("--objects", "none, initial or all");
+                    if (objects is not ("none" or "initial" or "all"))
+                    {
+                        throw new UsageException($"--objects needs none, initial or all, not '{objects}'");
+                    }
+
                     break;
-                case "--output" when i + 1 < args.Length:
-                    output = args[++i];
+                case "--output":
+                    output = Next("--output", "a file name");
                     break;
-                case var arg when !arg.StartsWith("--", StringComparison.Ordinal) && gamePath is null:
+                case var arg when arg.StartsWith('-'):
+                    throw new UsageException($"unknown option {arg}");
+                case var arg when gamePath is null:
                     gamePath = arg;
                     break;
-                default:
-                    PrintUsage();
-                    return 2;
+                case var arg:
+                    throw new UsageException($"one game folder only: '{gamePath}' and '{arg}' were both given");
             }
         }
 
-        if (gamePath is null || !Directory.Exists(gamePath))
+        if (modes.Count > 1)
         {
-            PrintUsage();
-            return 2;
+            throw new UsageException($"{string.Join(" and ", modes)} cannot be used together");
+        }
+
+        if (gamePath is null)
+        {
+            throw new UsageException("no game folder given");
+        }
+
+        if (!Directory.Exists(gamePath))
+        {
+            Error($"no such folder: {gamePath}");
+            return NotFound;
         }
 
         var log = new TextWriterLog(Console.Out, verbose ? LogLevel.Debug : LogLevel.Info);
@@ -186,8 +264,8 @@ internal static class Program
 
         if (registry.DetectInDirectory(gamePath) is not var (container, detected))
         {
-            Console.Error.WriteLine($"No Maniac Mansion release found in {gamePath} or its subfolders");
-            return 1;
+            Error($"no Maniac Mansion release found in {gamePath} or its subfolders");
+            return NotFound;
         }
 
         foreach (var game in detected)
@@ -195,66 +273,53 @@ internal static class Program
             Console.WriteLine(game);
         }
 
-        if (listOnly)
-        {
-            return 0;
-        }
-
-        if (runSteps is { } stepCount)
-        {
-            return RunHeadless(container, stepCount, screenshot, wav, speaker, zoom, settings, skips, inputs, loadFile, saveFile, saveVersion, savesDir, target, copyProtection);
-        }
-
-        if (script is not null || roomScripts is not null)
-        {
-            return Disassemble(container, script, roomScripts);
-        }
-
-        if (view is { } viewNumber)
-        {
-            return WriteView(container, viewNumber, cameraX, actors, zoom, output ?? $"view-{viewNumber:D2}.png");
-        }
-
-        if (font || text is not null)
-        {
-            return WriteFont(detected[0], text, zoom, output ?? (text is null ? "font.png" : "text.png"));
-        }
-
-        if (costume is { } costumeId)
-        {
-            return WriteCostume(container, costumeId, zoom, output ?? $"costume-{costumeId:D2}.png");
-        }
-
-        if (room is { } roomNumber)
-        {
-            return WriteRoom(container, roomNumber, objects, mask, zoom, output ?? $"room-{roomNumber:D2}{(mask ? "-mask" : "")}.png");
-        }
-
-        var saveDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Maniacal", "saves", detected[0].GameId);
-
-        using var host = new SdlHost(new SdlHostOptions
-        {
-            Title = "Maniacal",
-            Scale = scale,
-            Fullscreen = fullscreen,
-            Log = log,
-            Saves = new FileSaveStore(saveDirectory),
-        });
-
-        Engine engine;
         try
         {
-            engine = registry.Create(host, container, detected[0]);
-        }
-        catch (NotSupportedException ex)
-        {
-            Console.Error.WriteLine(ex.Message);
-            return 3;
-        }
+            if (listOnly)
+            {
+                return Done;
+            }
 
-        using (engine)
-        {
+            if (runSteps is { } stepCount)
+            {
+                return RunHeadless(container, stepCount, screenshot, wav, speaker, zoom, settings, skips, inputs, loadFile, saveFile, saveVersion, savesDir, target, copyProtection);
+            }
+
+            if (script is not null || roomScripts is not null)
+            {
+                return Disassemble(container, script, roomScripts);
+            }
+
+            if (view is { } viewNumber)
+            {
+                return WriteView(container, viewNumber, cameraX, actors, zoom, output ?? $"view-{viewNumber:D2}.png");
+            }
+
+            if (font || text is not null)
+            {
+                return WriteFont(detected[0], text, zoom, output ?? (text is null ? "font.png" : "text.png"));
+            }
+
+            if (costume is { } costumeId)
+            {
+                return WriteCostume(container, costumeId, zoom, output ?? $"costume-{costumeId:D2}.png");
+            }
+
+            if (room is { } roomNumber)
+            {
+                return WriteRoom(container, roomNumber, objects, mask, zoom, output ?? $"room-{roomNumber:D2}{(mask ? "-mask" : "")}.png");
+            }
+
+            using var host = new SdlHost(new SdlHostOptions
+            {
+                Title = "Maniacal",
+                Scale = scale,
+                Fullscreen = fullscreen,
+                Log = log,
+                Saves = new FileSaveStore(Path.Combine(SavesFolder, detected[0].GameId)),
+            });
+
+            using var engine = registry.Create(host, container, detected[0]);
             if (engine is ScummEngine scumm)
             {
                 scumm.Pcjr = !speaker;
@@ -264,10 +329,47 @@ internal static class Program
             // the game draws its own cursor, the crosshair
             SDL.SDL3.SDL_HideCursor();
             host.Run(engine, frames);
+            return Done;
+        }
+        catch (Exception ex) when (ex is SdlException or InvalidDataException or FileNotFoundException or NotSupportedException or IOException)
+        {
+            Error(ex.Message);
+            return CannotRun;
+        }
+    }
+
+    /// <summary>Where the windowed player keeps saves, a folder for each game under it.</summary>
+    private static string SavesFolder
+        => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Maniacal", "saves");
+
+    /// <summary>The package version, without the commit Source Link adds after a '+'.</summary>
+    private static string Version()
+    {
+        string version = typeof(Program).Assembly
+            .GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+            .OfType<System.Reflection.AssemblyInformationalVersionAttribute>()
+            .FirstOrDefault()?.InformationalVersion ?? "unknown";
+        int plus = version.IndexOf('+');
+        return plus < 0 ? version : version[..plus];
+    }
+
+    /// <summary>An error, in one line on standard error: <c>maniacal: no such folder: games</c>.</summary>
+    private static void Error(string message)
+    {
+        // a sentence's first letter in lower case after the prefix, but not an acronym's (SDL_Init, C64)
+        if (message.Length > 1 && char.IsUpper(message[0]) && char.IsLower(message[1]))
+        {
+            message = char.ToLowerInvariant(message[0]) + message[1..];
         }
 
-        return 0;
+        Console.Error.WriteLine($"maniacal: {message}");
     }
+
+    /// <summary>A variable set at the start of a run: <c>variable=value</c>.</summary>
+    private static (int Variable, int Value)? ParseSetting(string text)
+        => text.Split('=') is [var name, var value] && int.TryParse(name, out int variable) && int.TryParse(value, out int number)
+            ? (variable, number)
+            : null;
 
     /// <summary>
     /// Writes a room's picture, or its mask in black and white, as a PNG. The objects are drawn as
@@ -286,7 +388,7 @@ internal static class Program
             };
             if (inspector.Room(number, which) is not { } room)
             {
-                Console.Error.WriteLine($"There is no room {number}");
+                Error($"there is no room {number}");
                 return 1;
             }
 
@@ -309,7 +411,7 @@ internal static class Program
         }
         catch (Exception ex) when (ex is NotSupportedException or InvalidDataException)
         {
-            Console.Error.WriteLine(ex.Message);
+            Error(ex.Message);
             return 3;
         }
     }
@@ -325,7 +427,7 @@ internal static class Program
             var inspector = new GameInspector(ResourceLoader.Open(container));
             if (inspector.Costume(number) is not { } costume)
             {
-                Console.Error.WriteLine($"There is no costume {number}");
+                Error($"there is no costume {number}");
                 return 1;
             }
 
@@ -342,7 +444,7 @@ internal static class Program
         }
         catch (InvalidDataException ex)
         {
-            Console.Error.WriteLine(ex.Message);
+            Error(ex.Message);
             return 3;
         }
     }
@@ -388,6 +490,7 @@ internal static class Program
             framesRead = due;
         }
 
+        bool stopped = false;
         try
         {
             // a load takes the place of the boot script, as ScummVM does when started on a save
@@ -426,7 +529,9 @@ internal static class Program
         }
         catch (Exception ex) when (ex is InvalidOperationException or InvalidDataException)
         {
-            Console.WriteLine($"Stopped in script {world.CurrentScript}: {ex.Message}");
+            // the report below still shows where the run got to
+            Error($"stopped in script {world.CurrentScript}: {ex.Message}");
+            stopped = true;
         }
 
         foreach (var call in world.Unhandled)
@@ -463,7 +568,7 @@ internal static class Program
         Console.WriteLine("Slots: " + string.Join(", ", world.RunningScripts()
             .Select(s => $"{s.Slot}: {s.Kind} {s.Number} at {s.Offset:X4} status {s.Status:X2}{(s.Status == SlotStatus.Paused ? $" delay {s.Delay}" : "")}")));
         Console.WriteLine("Variables: " + string.Join(", ", world.Variables.Select((v, i) => (v, i)).Where(p => p.v != 0).Select(p => $"{p.i}={p.v}")));
-        return 0;
+        return stopped ? CannotRun : Done;
     }
 
     /// <summary>A click given at a step: <c>step:x,y</c>, in screen pixels.</summary>
@@ -531,7 +636,7 @@ internal static class Program
             {
                 if (inspector.Script(number) is not { } listing)
                 {
-                    Console.Error.WriteLine($"There is no script {number}");
+                    Error($"there is no script {number}");
                     return 1;
                 }
 
@@ -542,7 +647,7 @@ internal static class Program
             {
                 if (inspector.RoomScripts(n) is not { } listings)
                 {
-                    Console.Error.WriteLine($"There is no room {n}");
+                    Error($"there is no room {n}");
                     return 1;
                 }
 
@@ -556,7 +661,7 @@ internal static class Program
         }
         catch (InvalidDataException ex)
         {
-            Console.Error.WriteLine(ex.Message);
+            Error(ex.Message);
             return 3;
         }
     }
@@ -595,7 +700,7 @@ internal static class Program
             var inspector = new GameInspector(ResourceLoader.Open(container));
             if (inspector.View(number, cameraX, actors) is not { } view)
             {
-                Console.Error.WriteLine($"There is no room {number}");
+                Error($"there is no room {number}");
                 return 1;
             }
 
@@ -611,12 +716,12 @@ internal static class Program
         }
         catch (InvalidDataException ex)
         {
-            Console.Error.WriteLine(ex.Message);
+            Error(ex.Message);
             return 3;
         }
         catch (KeyNotFoundException ex)
         {
-            Console.Error.WriteLine(ex.Message);
+            Error(ex.Message);
             return 1;
         }
     }
@@ -644,7 +749,7 @@ internal static class Program
             var bytes = System.Text.Encoding.Latin1.GetBytes(text);
             if (bytes.Any(b => b >= Font.GlyphCount))
             {
-                Console.Error.WriteLine("The font has only the 128 ASCII characters");
+                Error("the font has only the 128 ASCII characters");
                 return 2;
             }
 
@@ -695,14 +800,57 @@ internal static class Program
         return sheet;
     }
 
-    private static void PrintUsage()
+    private static void PrintHelp()
     {
-        Console.Error.WriteLine("usage: maniacal <game folder> [--list] [--scale N] [--fullscreen] [--speaker] [--copy-protection] [--frames N] [--verbose]");
-        Console.Error.WriteLine("       maniacal <game folder> --room N [--objects none|initial|all] [--mask] [--zoom N] [--output file.png]");
-        Console.Error.WriteLine("       maniacal <game folder> --costume N [--zoom N] [--output file.png]");
-        Console.Error.WriteLine("       maniacal <game folder> --view N [--camera X] [--actor costume,x,y[,left|right|front|back]]... [--zoom N] [--output file.png]");
-        Console.Error.WriteLine("       maniacal <game folder> --script N | --room-scripts N");
-        Console.Error.WriteLine("       maniacal <game folder> --run [steps] [--click step:x,y]... [--key step:key]... [--set var=value]... [--skip step]... [--load file] [--save file [--save-version N]] [--saves folder [--target name]] [--screenshot file.png] [--wav file.wav [--speaker]] [--zoom N]");
-        Console.Error.WriteLine("       maniacal <game folder> --font | --text \"words\" [--zoom N] [--output file.png]");
+        Console.WriteLine($$"""
+            maniacal {{Version()}}: Maniac Mansion from the game's own files, the Commodore 64 release
+            and the DOS releases of 1987 and 1988.
+
+            Usage:
+              maniacal <game folder> [options]     play in a window
+              maniacal <game folder> <tool>        look inside the game, or run it headless
+              maniacal --help | --version
+
+            The game folder holds a release's files (00.LFL and the rest, or the C64's two .d64
+            disk images), or holds them in a folder below it. No game files come with Maniacal.
+
+            Playing:
+              --fullscreen          start in full screen
+              --scale N             the window N times 320x200, 1 to 8 (3)
+              --speaker             the PC speaker's sound, not the PCjr's (DOS releases)
+              --copy-protection     keep the security door's code (bypassed, as in ScummVM)
+              --list                name the release found, and stop
+              --verbose             log more
+
+              In the game: click a verb, then an object; click the object again, or the sentence
+              line, to carry it out. Escape, F4 or the right button skips a cutscene, the period
+              skips a line of speech, and F5 opens the game's save screen.
+              Saves go in {{SavesFolder}}, a folder for each game.
+              They are ScummVM's own files, so they move between Maniacal and ScummVM 2.7 or later.
+
+            Looking inside (a PNG is written to the current folder, or --output):
+              --room N              a room's picture, its objects listed
+                [--objects none|initial|all] [--mask]
+              --costume N           a sheet of a costume's figures
+              --view N              the screen with a room in view
+                [--camera X] [--actor costume,x,y[,left|right|front|back]]...
+              --script N            a global script decoded
+              --room-scripts N      a room's scripts decoded
+              --font                the built-in font
+              --text "words"        words in the built-in font
+              --output file.png     where to write the picture
+              --zoom N              the picture N times as large, 1 to 8
+
+            Headless runs, for testing and recording:
+              --run [steps]         boot (or --load) and run the steps, then report
+                --click step:x,y    --key step:key    --skip step    --set variable=value
+                --load file    --save file [--save-version N]    --saves folder [--target name]
+                --screenshot file.png    --wav file.wav    --zoom N
+              --frames N            in the window, stop after N frames
+
+            Exit codes: 0 done; 1 not found (folder, release, room, costume or script);
+            2 a mistake on the command line; 3 the game's data could not be read or the
+            window could not open.
+            """);
     }
 }

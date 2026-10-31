@@ -75,9 +75,13 @@ What works, in every release:
 
 ### Playing
 
-A verb is clicked, then an object; clicking the object again, or clicking the sentence line,
-carries the sentence out, as in the original. The right button, Escape or F4 skip a cutscene, and
-the period key skips a line of speech.
+`maniacal <game folder>` plays in a window; `--fullscreen`, `--scale N` (1 to 8), `--speaker`
+for the PC speaker's sound and `--copy-protection` change how. A verb is clicked, then an object;
+clicking the object again, or clicking the sentence line, carries the sentence out, as in the
+original. The right button, Escape or F4 skip a cutscene, the period key skips a line of speech,
+and F5 opens the game's save screen. Saves go in a `Maniacal/saves` folder under the user's
+application data (`%APPDATA%` on Windows, `~/.config` on Linux and macOS), a folder for each
+game. `maniacal --help` lists everything, and `maniacal --version` names the version.
 
 ### Looking inside
 
@@ -91,6 +95,11 @@ The player also has tools for looking inside the game:
 | `--font`, `--text "words"` | Writes the built-in font, or words in it. |
 | `--script N`, `--room-scripts N` | Disassembles a script, or a room's scripts. |
 | `--run [steps]` | Plays headless, with clicks and keys at chosen steps (`--click step:x,y`, `--key step:key`), saves loaded or written (`--load`, `--save`, `--saves`), and a `--screenshot` or `--wav` at the end. |
+
+A mistake on the command line is said in one line (`maniacal: --room needs a room number, not
+'abc'`). The exit code tells a script what happened: 0 done; 1 not found (the folder, a release
+in it, or the room, costume or script asked for); 2 a mistake on the command line; 3 the game's
+data could not be read, a headless run stopped on an error, or the window could not open.
 
 ### Not yet
 
@@ -184,13 +193,8 @@ Needs the .NET 10 SDK.
 ```
 dotnet build Maniacal.slnx
 dotnet test Maniacal.slnx
-dotnet run --project src/Maniacal.Player -- <game folder> [--list] [--scale N] [--fullscreen] [--speaker] [--copy-protection] [--frames N]
-dotnet run --project src/Maniacal.Player -- <game folder> --room N [--objects none|initial|all] [--mask] [--zoom N] [--output file.png]
-dotnet run --project src/Maniacal.Player -- <game folder> --view N [--camera X] [--actor costume,x,y[,direction]]... [--zoom N]
-dotnet run --project src/Maniacal.Player -- <game folder> --costume N [--zoom N] [--output file.png]
-dotnet run --project src/Maniacal.Player -- <game folder> --font | --text "words" [--zoom N] [--output file.png]
-dotnet run --project src/Maniacal.Player -- <game folder> --script N | --room-scripts N
-dotnet run --project src/Maniacal.Player -- <game folder> --run [steps] [--click step:x,y]... [--key step:key]... [--set var=value]... [--skip step]... [--load file] [--save file [--save-version N]] [--saves folder [--target name]] [--screenshot file.png] [--wav file.wav [--speaker]] [--zoom N]
+dotnet run --project src/Maniacal.Player -- <game folder> [options]
+dotnet run --project src/Maniacal.Player -- --help
 ```
 
 ## Game data

@@ -636,6 +636,16 @@ Where it comes from:
   (838 members: 2,026 shipped, 1,408 removed, 220 added), so what changes after it shows as
   unshipped again. Published, as the first was, by the publish workflow from the tag
   `v0.2.0-alpha`.
+- **The command line, ready for a 1.0.** `--help` (or `-h`) prints, on standard output, what the
+  player is, how to play (the options, the game's controls, where saves go), the tools for
+  looking inside, the headless runs, and the exit codes; `--version` names the version. A mistake
+  on the command line is one line saying what is wrong (an unknown option, a missing or bad
+  value, two tools at once, a second folder) and exit code 2, not the whole usage; a folder that
+  is not there, or holds no release, exit code 1; game data that cannot be read, a headless run
+  that stops on an error, or a window that cannot open, one line and exit code 3, not a stack
+  trace. `--scale` and `--save-version` are checked. Every message starts `maniacal:`. Checked:
+  the tools and headless runs on all three releases give the same output, pictures, sound and
+  exit codes as before (180 files), but for the messages on standard error.
 
 ### Next, before a 1.0
 
