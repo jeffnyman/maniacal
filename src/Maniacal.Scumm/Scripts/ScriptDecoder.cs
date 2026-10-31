@@ -33,7 +33,7 @@ public sealed class ScriptDecoder(int version)
     /// <summary>The ScummVM handler an opcode runs in this version.</summary>
     public string HandlerOf(byte opcode) => _handlers[opcode];
 
-    public Instruction Decode(ReadOnlySpan<byte> code, int offset)
+    internal Instruction Decode(ReadOnlySpan<byte> code, int offset)
     {
         var r = new Reader(code, offset);
         byte opcode = r.Byte();
@@ -449,7 +449,7 @@ public sealed class ScriptDecoder(int version)
     }
 
     /// <summary>Decodes instructions one after another from <paramref name="start"/> to the end of the code.</summary>
-    public IEnumerable<Instruction> DecodeAll(ReadOnlyMemory<byte> code, int start = 0)
+    internal IEnumerable<Instruction> DecodeAll(ReadOnlyMemory<byte> code, int start = 0)
     {
         for (int offset = start; offset < code.Length;)
         {
@@ -466,7 +466,7 @@ public sealed class ScriptDecoder(int version)
     /// last instruction. Throws <see cref="InvalidDataException"/> when a reachable instruction does
     /// not decode, or a jump leaves the code.
     /// </summary>
-    public SortedDictionary<int, Instruction> DecodeReachable(ReadOnlyMemory<byte> code, IEnumerable<int> entries)
+    internal SortedDictionary<int, Instruction> DecodeReachable(ReadOnlyMemory<byte> code, IEnumerable<int> entries)
     {
         var decoded = new SortedDictionary<int, Instruction>();
         var pending = new Stack<int>(entries);

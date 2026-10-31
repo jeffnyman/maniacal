@@ -7,7 +7,7 @@ using Maniacal.Scumm.View;
 namespace Maniacal.Scumm.Game;
 
 /// <summary>A sentence waiting for the sentence script: a verb and up to two objects. Mirrors <c>SentenceTab</c>.</summary>
-public readonly record struct Sentence(int Verb, int ObjectA, int ObjectB)
+internal readonly record struct Sentence(int Verb, int ObjectA, int ObjectB)
 {
     public bool HasPreposition => ObjectB != 0;
 }
@@ -62,10 +62,10 @@ public sealed partial class GameWorld
     private (int Room, CameraMode Mode) _beforeCutscene;
 
     /// <summary>The verbs, the sentence line and the inventory below the room.</summary>
-    public VerbArea Verbs { get; private set; } = null!;
+    internal VerbArea Verbs { get; private set; } = null!;
 
     /// <summary>The sentences waiting for the sentence script. Mirrors <c>_sentence</c> and <c>_sentenceNum</c>.</summary>
-    public IReadOnlyList<Sentence> Sentences => _sentences;
+    internal IReadOnlyList<Sentence> Sentences => _sentences;
 
     /// <summary>The objects the kids carry, in the order they were picked up. Mirrors <c>_inventory</c>.</summary>
     public IReadOnlyList<int> Inventory => _inventory;
@@ -175,7 +175,7 @@ public sealed partial class GameWorld
     }
 
     /// <summary>An object's code block, carried or in the room. Mirrors <c>getOBCDFromObject</c>.</summary>
-    public RoomObject? ObjectCode(int obj) => WhereIs(obj) switch
+    internal RoomObject? ObjectCode(int obj) => WhereIs(obj) switch
     {
         1 => _carried[obj],
         2 => CurrentRoom!.FindObject(obj),

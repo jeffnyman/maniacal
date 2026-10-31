@@ -8,7 +8,7 @@ namespace Maniacal.Scumm.Scripts;
 /// the handlers of <c>script_v2.cpp</c> that touch only script state. The rest goes to an
 /// <see cref="IScriptHost"/>.
 /// </summary>
-public sealed class ScriptEngine
+internal sealed class ScriptEngine
 {
     /// <summary>Mirrors <c>NUM_SCRIPT_SLOT</c>.</summary>
     public const int SlotCount = 80;

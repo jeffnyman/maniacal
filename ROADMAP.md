@@ -13,7 +13,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 3 | The interpreter (V2 and V1) | Done |
 | 4 | Sound, saves and options (V2 and V1) | Done |
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
-| 6 | A release of its own | 0.1.0-alpha on nuget.org; a pass over the public API before a 1.0 |
+| 6 | A release of its own | 0.1.0-alpha on nuget.org; the public API being settled for a 1.0 |
 | Later | A browser player, the NES, the demos, Amiga and Atari ST, Zak McKracken | Perhaps |
 
 ## Design
@@ -568,9 +568,31 @@ Where it comes from:
   publishing stays on Windows. The runners have no game data, so this checks that the engine
   builds and its own tests pass on each, not that the game plays there.
 
+- **The public API, a first pass.** `Microsoft.CodeAnalysis.PublicApiAnalyzers` keeps the
+  library's public surface in `src/Maniacal.Scumm/PublicAPI.Shipped.txt` (0.1.0-alpha's, 2,026
+  members) and `PublicAPI.Unshipped.txt` (the changes since), so a change to it shows in a diff and
+  a member made public by accident fails the build. The 51 types that neither the player nor a
+  consumer of the package used are internal now: the script engine and its slots, instructions and
+  variables, the actors, the sound players, the bitmap decoders, the resource index and files,
+  room objects, walkboxes, the save serializer and state, the verb area and message line, and
+  detection's tables; with them the public members that showed them (1,239 lines `*REMOVED*`,
+  787 left). `GameWorld` implements the script host's interface explicitly. The tests reach the
+  rest through `InternalsVisibleTo` as before, and so, for now, does the player: its headless run
+  (`world.Engine`, `world.Sound`, `world.Load`, `world.Actors`) and its inspection tools (the
+  resource index, room objects, the rendered rooms, C64 costumes, decoded instructions, walkboxes).
+  Checked: the tests pass with the game data, and the package smoke check plays all three
+  releases from the packed library as before.
+
 ### Next, before a 1.0
 
-- A pass over the public API, making the engine's internals `internal`.
+- Decide what the player's headless run and inspection tools should have as public API, and
+  give it to them, so the player needs no internals: a narrow face on `GameWorld` (load and save
+  returning public types, sound output, options such as the copy protection, read-only views of
+  the actors), and either a small inspection API or the inspection code moved into the player.
+- The names (V0, V1 and V2 or the releases' names), sealing, read-only collections, the
+  exceptions a bad game folder throws, and documentation comments required on what is public.
+- At 1.0, move `PublicAPI.Unshipped.txt` into `PublicAPI.Shipped.txt` and set package
+  validation's baseline (`PackageValidationBaselineVersion`), so a breaking change fails the build.
 
 ## Later, perhaps
 

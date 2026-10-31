@@ -14,7 +14,7 @@ namespace Maniacal.Scumm.Saves;
 /// Many fields are ScummVM's own bookkeeping; those this interpreter does not keep are written as
 /// ScummVM would have them and ignored when read.
 /// </remarks>
-public sealed class ScummState
+internal sealed class ScummState
 {
     // the sizes ScummVM gives these versions (readMAXS, allocateArrays, _numActors for Maniac Mansion)
     public const int ActorCount = 25, SlotCount = 80, LocalVariables = 26, LocalObjectCount = 200, VerbCount = 100,

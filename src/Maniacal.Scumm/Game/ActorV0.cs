@@ -13,7 +13,7 @@ namespace Maniacal.Scumm.Game;
 /// its low four bits say how the walk goes: 0 on the way, 1 there, 3 blocked across and going
 /// along, 4 blocked along and going across; bit 7 is set while the actor turns.
 /// </remarks>
-public sealed class ActorV0 : Actor
+internal sealed class ActorV0 : Actor
 {
     /// <summary>What <see cref="Actor.Moving"/> is for an actor standing still.</summary>
     public const int Standing = 2;

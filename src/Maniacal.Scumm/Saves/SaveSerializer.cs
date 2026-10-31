@@ -7,7 +7,7 @@ namespace Maniacal.Scumm.Saves;
 /// versions that have it. Mirrors ScummVM's <c>Common::Serializer</c>: a field with a version
 /// range outside the save's version is neither read nor written, and keeps its value.
 /// </summary>
-public sealed class SaveSerializer
+internal sealed class SaveSerializer
 {
     private readonly MemoryStream _stream;
 

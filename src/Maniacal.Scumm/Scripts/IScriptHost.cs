@@ -7,7 +7,7 @@ namespace Maniacal.Scumm.Scripts;
 /// operands already evaluated. For a few instructions it does its own part and then hands them on
 /// too: <c>cutscene</c>, <c>endCutscene</c>, <c>setOwnerOf</c> and the object state changes.
 /// </summary>
-public interface IScriptHost
+internal interface IScriptHost
 {
     /// <summary>
     /// Carries out an instruction. <paramref name="arguments"/> holds the value of each operand, in
@@ -20,7 +20,7 @@ public interface IScriptHost
 }
 
 /// <summary>A host that records what the scripts ask for and does nothing else: for running scripts headless.</summary>
-public sealed class RecordingHost : IScriptHost
+internal sealed class RecordingHost : IScriptHost
 {
     public List<string> Calls { get; } = [];
 

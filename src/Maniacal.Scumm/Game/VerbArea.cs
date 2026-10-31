@@ -3,7 +3,7 @@ using Maniacal.Scumm.Graphics;
 namespace Maniacal.Scumm.Game;
 
 /// <summary>A verb the scripts made: its name and where it shows. Mirrors ScummVM's <c>VerbSlot</c> for text verbs.</summary>
-public sealed class VerbSlot
+internal sealed class VerbSlot
 {
     /// <summary>The verb's number, which sentences use; 0 for an empty slot. Mirrors <c>verbid</c>.</summary>
     public int Id { get; internal set; }
@@ -51,7 +51,7 @@ public sealed class VerbSlot
 /// Verbs are placed in screen pixels; the sentence line is the area's first 8 lines and the
 /// inventory its lines 32 to 47, two names a row either side of the scroll arrows.
 /// </remarks>
-public sealed class VerbArea
+internal sealed class VerbArea
 {
     /// <summary>Mirrors <c>_numVerbs</c> for these versions.</summary>
     public const int SlotCount = 100;

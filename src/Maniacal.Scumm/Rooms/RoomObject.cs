@@ -18,7 +18,7 @@ public readonly record struct VerbEntry(byte Verb, int Offset);
 /// name's offset at 13 and the verbs from 14; its number's high byte is the object's type
 /// (<c>OBJECT_V0</c>): 0 for one with an owner and state, 1 for one that is part of the room.
 /// </remarks>
-public sealed class RoomObject
+internal sealed class RoomObject
 {
     /// <summary>
     /// The verb-table entry that matches any verb: 0xFF, and in version 0 What is, 0x0F. Mirrors

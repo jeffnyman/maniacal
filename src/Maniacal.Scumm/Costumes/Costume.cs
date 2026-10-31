@@ -7,7 +7,7 @@ namespace Maniacal.Scumm.Costumes;
 /// <param name="Start">Index of the first command, or null when the animation hides the limb.</param>
 /// <param name="Length">How many commands follow the first one.</param>
 /// <param name="Loop">Whether the run starts again after its last command.</param>
-public readonly record struct LimbAnimation(int Limb, int? Start, int Length, bool Loop);
+internal readonly record struct LimbAnimation(int Limb, int? Start, int Length, bool Loop);
 
 /// <summary>A picture of one limb, and how it is placed. Offsets are in pixels.</summary>
 /// <param name="Width">Width in pixels.</param>
@@ -17,7 +17,7 @@ public readonly record struct LimbAnimation(int Limb, int? Start, int Length, bo
 /// <param name="MoveX">How far the running position moves right for the next limb.</param>
 /// <param name="MoveY">How far the running position moves up for the next limb.</param>
 /// <param name="DataOffset">Where the cel's pixel data starts in the costume.</param>
-public readonly record struct CostumeCel(int Width, int Height, int RelX, int RelY, int MoveX, int MoveY, int DataOffset);
+internal readonly record struct CostumeCel(int Width, int Height, int RelX, int RelY, int MoveX, int MoveY, int DataOffset);
 
 /// <summary>
 /// A costume of versions 1 and 2: a character's animations. Mirrors ScummVM's
@@ -155,7 +155,7 @@ public sealed class Costume
     }
 
     /// <summary>The limbs an animation changes, or an empty list when the costume has no such animation.</summary>
-    public IReadOnlyList<LimbAnimation> Animation(int index)
+    internal IReadOnlyList<LimbAnimation> Animation(int index)
     {
         var span = Data.Span;
         if (index < 0 || index >= AnimationCount)
@@ -203,7 +203,7 @@ public sealed class Costume
     }
 
     /// <summary>The cel a command picks for a limb.</summary>
-    public CostumeCel Cel(int limb, int code)
+    internal CostumeCel Cel(int limb, int code)
     {
         var span = Data.Span;
         int frames = _base + Word(span, _frameOffsets + 2 * limb);

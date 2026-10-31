@@ -10,7 +10,7 @@ public static class SlotStatus
 }
 
 /// <summary>What a slot's code belongs to. Mirrors ScummVM's <c>WIO_GLOBAL</c>, <c>WIO_ROOM</c> and <c>WIO_INVENTORY</c>.</summary>
-public enum ScriptKind
+internal enum ScriptKind
 {
     /// <summary>A numbered global script.</summary>
     Global,
@@ -23,7 +23,7 @@ public enum ScriptKind
 }
 
 /// <summary>One of the cooperative threads scripts run in. Mirrors ScummVM's <c>ScriptSlot</c> for versions 1 and 2.</summary>
-public sealed class ScriptSlot
+internal sealed class ScriptSlot
 {
     /// <summary>The script, object or pseudo-number (<see cref="ScriptEngine.EntryScriptNumber"/>, <see cref="ScriptEngine.ExitScriptNumber"/>) running here.</summary>
     public int Number { get; internal set; }

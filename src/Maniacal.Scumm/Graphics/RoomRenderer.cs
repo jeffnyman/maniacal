@@ -11,7 +11,7 @@ public static class RoomRenderer
     /// <summary>The state bit that makes an object draw its image. Mirrors ScummVM's <c>kObjectStateIntrinsic</c>.</summary>
     public const int ImageState = 8;
 
-    public static MaskedImage DrawBackground(Room room) => room.Version switch
+    internal static MaskedImage DrawBackground(Room room) => room.Version switch
     {
         0 or 1 => V1Bitmap.ForRoom(room).DrawBackground(),
         _ => DecodeV2(room, room.ImageOffset, room.Width, room.Height),
@@ -21,7 +21,7 @@ public static class RoomRenderer
     /// Whether the object's image offset points into the room's images. Most objects without an
     /// image point it at the room's first object code block, past the end of the images.
     /// </summary>
-    public static bool HasImage(Room room, RoomObject obj)
+    internal static bool HasImage(Room room, RoomObject obj)
         => obj.Width > 0 && obj.Height > 0 && obj.ImageOffset > 0 && obj.ImageOffset < FirstCodeOffset(room);
 
     /// <summary>
@@ -31,12 +31,12 @@ public static class RoomRenderer
     /// state never has <see cref="ImageState"/> set; this test only matters when drawing images
     /// regardless of state.
     /// </summary>
-    public static bool OwnsImage(Room room, RoomObject obj)
+    internal static bool OwnsImage(Room room, RoomObject obj)
         => HasImage(room, obj)
         && !room.Objects.Any(other => other.ImageOffset == obj.ImageOffset && (other.Width != obj.Width || other.Height != obj.Height));
 
     /// <summary>Decodes an object's image, or returns null when it has none.</summary>
-    public static MaskedImage? DrawObject(Room room, RoomObject obj, V1Bitmap? v1 = null)
+    internal static MaskedImage? DrawObject(Room room, RoomObject obj, V1Bitmap? v1 = null)
     {
         if (!HasImage(room, obj))
         {
@@ -56,7 +56,7 @@ public static class RoomRenderer
     /// the room's mask where it is drawn. An object the scripts moved is drawn where
     /// <paramref name="positionOf"/> puts it.
     /// </summary>
-    public static MaskedImage Render(Room room, Func<int, int> stateOf, Func<RoomObject, (int X, int Y)>? positionOf = null)
+    internal static MaskedImage Render(Room room, Func<int, int> stateOf, Func<RoomObject, (int X, int Y)>? positionOf = null)
     {
         var image = DrawBackground(room);
         var v1 = room.Version <= 1 ? V1Bitmap.ForRoom(room) : null;
@@ -74,7 +74,7 @@ public static class RoomRenderer
     }
 
     /// <summary>The objects <see cref="Render"/> draws, in the order it draws them.</summary>
-    public static IEnumerable<RoomObject> VisibleObjects(Room room, Func<int, int> stateOf)
+    internal static IEnumerable<RoomObject> VisibleObjects(Room room, Func<int, int> stateOf)
     {
         for (int i = room.Objects.Count - 1; i >= 0; i--)
         {
@@ -90,7 +90,7 @@ public static class RoomRenderer
     /// Draws the room with every image that clearly belongs to its object (<see cref="OwnsImage"/>),
     /// whatever the states: for looking at the images, not as the game shows the room.
     /// </summary>
-    public static MaskedImage RenderAll(Room room)
+    internal static MaskedImage RenderAll(Room room)
     {
         var image = DrawBackground(room);
         var v1 = room.Version <= 1 ? V1Bitmap.ForRoom(room) : null;
@@ -106,7 +106,7 @@ public static class RoomRenderer
     }
 
     /// <summary>Whether every parent of an object is in the state the object needs to show or be found.</summary>
-    public static bool ParentsAllow(Room room, RoomObject obj, Func<int, int> stateOf)
+    internal static bool ParentsAllow(Room room, RoomObject obj, Func<int, int> stateOf)
     {
         // the parent indexes are 1-based; walk up while each parent's image state matches what its child expects
         var current = obj;

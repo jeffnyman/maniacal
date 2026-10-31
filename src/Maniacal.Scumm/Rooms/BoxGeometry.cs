@@ -1,13 +1,13 @@
 namespace Maniacal.Scumm.Rooms;
 
 /// <summary>A point in actor units: 8-pixel columns and 2-pixel lines.</summary>
-public readonly record struct Point(int X, int Y)
+internal readonly record struct Point(int X, int Y)
 {
     public int SquareDistance(Point other) => (X - other.X) * (X - other.X) + (Y - other.Y) * (Y - other.Y);
 }
 
 /// <summary>A walkbox's corners. Mirrors ScummVM's <c>BoxCoords</c>.</summary>
-public readonly record struct BoxCorners(Point UpperLeft, Point UpperRight, Point LowerRight, Point LowerLeft)
+internal readonly record struct BoxCorners(Point UpperLeft, Point UpperRight, Point LowerRight, Point LowerLeft)
 {
     /// <summary>The corners of a version 1 or 2 box: horizontal top and bottom edges. Mirrors the <c>version &lt;= 2</c> branch of <c>getBoxCoordinates</c>.</summary>
     public static BoxCorners Of(WalkBox box) => new(
@@ -23,7 +23,7 @@ public readonly record struct BoxCorners(Point UpperLeft, Point UpperRight, Poin
 /// <c>boxes.cpp</c>, and the <c>checkXYInBoxBounds</c> of <c>actor.cpp</c> that version 2
 /// actors use to find the nearest point of a box.
 /// </summary>
-public static class BoxGeometry
+internal static class BoxGeometry
 {
     /// <summary>The flag bits of a box. Mirrors <c>kBoxPlayerOnly</c>, <c>kBoxLocked</c> and <c>kBoxInvisible</c>.</summary>
     public const int PlayerOnly = 0x20, Locked = 0x40, Invisible = 0x80;

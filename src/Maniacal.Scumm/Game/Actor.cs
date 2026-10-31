@@ -4,7 +4,7 @@ using Maniacal.Scumm.Rooms;
 namespace Maniacal.Scumm.Game;
 
 /// <summary>What an actor needs of the room it walks in.</summary>
-public interface IActorWorld
+internal interface IActorWorld
 {
     int CurrentRoom { get; }
 
@@ -50,7 +50,7 @@ public interface IActorWorld
 /// <c>startWalkActor</c>, <c>walkActor</c>, <c>calcMovementFactor</c>, <c>actorWalkStep</c>,
 /// <c>updateActorDirection</c>, <c>remapDirection</c>, <c>adjustXYToBeInBox</c>, <c>adjustActorPos</c>).
 /// </summary>
-public class Actor
+internal class Actor
 {
     /// <summary>The bits of <see cref="Moving"/>. Mirrors <c>MF_NEW_LEG</c>, <c>MF_IN_LEG</c>, <c>MF_TURN</c> and <c>MF_LAST_LEG</c>.</summary>
     public const int NewLeg = 1, InLeg = 2, Turn = 4, LastLeg = 8;

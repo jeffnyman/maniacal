@@ -1,7 +1,7 @@
 namespace Maniacal.Scumm.View;
 
 /// <summary>What the camera does each step. Mirrors ScummVM's <c>kNormalCameraMode</c>, <c>kFollowActorCameraMode</c> and <c>kPanningCameraMode</c>.</summary>
-public enum CameraMode
+internal enum CameraMode
 {
     Normal = 1,
     FollowActor = 2,
@@ -24,7 +24,7 @@ public sealed class Camera
 
     private int _roomWidth = ScreenWidth;
 
-    public CameraMode Mode { get; private set; } = CameraMode.Normal;
+    internal CameraMode Mode { get; private set; } = CameraMode.Normal;
 
     /// <summary>The centre of the view, in room pixels.</summary>
     public int X { get; private set; } = ScreenWidth / 2;

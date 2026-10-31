@@ -7,7 +7,7 @@ namespace Maniacal.Scumm.Rooms;
 /// in <c>getBoxCoordinates</c>; version 0's rectangles, the <c>v0</c> member, are read into the
 /// same shape.
 /// </summary>
-public readonly record struct WalkBox(
+internal readonly record struct WalkBox(
     byte UpperY,
     byte LowerY,
     byte UpperLeftX,
@@ -110,7 +110,7 @@ public sealed class WalkBoxes
     /// <summary>For version 0, the boxes each box joins directly; null for the other versions.</summary>
     public IReadOnlyList<IReadOnlyList<byte>>? Neighbours => _neighbours;
 
-    public IReadOnlyList<WalkBox> Boxes { get; }
+    internal IReadOnlyList<WalkBox> Boxes { get; }
 
     public int Count => Boxes.Count;
 

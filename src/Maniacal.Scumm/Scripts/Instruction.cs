@@ -1,6 +1,6 @@
 namespace Maniacal.Scumm.Scripts;
 
-public enum OperandKind
+internal enum OperandKind
 {
     /// <summary>A number in the script.</summary>
     Constant,
@@ -15,7 +15,7 @@ public enum OperandKind
     CommandObject,
 }
 
-public readonly record struct Operand(OperandKind Kind, int Value, byte[]? Text = null)
+internal readonly record struct Operand(OperandKind Kind, int Value, byte[]? Text = null)
 {
     public static Operand Constant(int value) => new(OperandKind.Constant, value);
 
@@ -53,7 +53,7 @@ public readonly record struct Operand(OperandKind Kind, int Value, byte[]? Text 
 /// <param name="Result">The variable it writes, if any.</param>
 /// <param name="ResultIndirect">Whether <paramref name="Result"/> names a variable holding the number of the variable written.</param>
 /// <param name="JumpTarget">Where it jumps when its condition fails (or always, for <c>jumpRelative</c>).</param>
-public sealed record Instruction(
+internal sealed record Instruction(
     int Offset,
     byte Opcode,
     string Handler,

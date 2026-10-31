@@ -104,7 +104,7 @@ public sealed class Room
     /// <summary>Version 2: offset of the background picture and its mask (<c>_IM00_offs</c>). Versions 0 and 1 keep their graphics elsewhere and leave this 0.</summary>
     public int ImageOffset { get; }
 
-    public IReadOnlyList<RoomObject> Objects { get; }
+    internal IReadOnlyList<RoomObject> Objects { get; }
 
     public WalkBoxes WalkBoxes { get; }
 
@@ -119,7 +119,7 @@ public sealed class Room
     public ReadOnlyMemory<byte> ExitScript { get; }
 
     /// <summary>The object with a global number, or null when it is not in this room.</summary>
-    public RoomObject? FindObject(int number) => Objects.FirstOrDefault(o => o.Number == number);
+    internal RoomObject? FindObject(int number) => Objects.FirstOrDefault(o => o.Number == number);
 
     public static Room Parse(int number, int version, ReadOnlyMemory<byte> data)
     {

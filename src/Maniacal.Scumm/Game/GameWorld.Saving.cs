@@ -46,7 +46,7 @@ public sealed partial class GameWorld
     /// Loads a ScummVM save file made here or by ScummVM, as ScummVM's own load does: the save is
     /// restored, then the game goes through its save room as if the save screen had loaded it.
     /// </summary>
-    public SaveInfo Load(byte[] file)
+    internal SaveInfo Load(byte[] file)
     {
         var (info, state) = SaveFile.Read(file, Engine.ObjectOwners.Length, Version == 0);
         Restore(state);
@@ -121,7 +121,7 @@ public sealed partial class GameWorld
     }
 
     /// <summary>The world as a ScummVM save state. Mirrors the state <c>saveLoadWithSerializer</c> writes.</summary>
-    public ScummState Capture()
+    internal ScummState Capture()
     {
         var s = new ScummState(Engine.ObjectOwners.Length, Version == 0);
         var room = CurrentRoom;
@@ -237,7 +237,7 @@ public sealed partial class GameWorld
     /// Puts the world in the state a save holds. Mirrors <c>loadState</c>: sounds stop, the room is
     /// set up without running its scripts, and everything else is taken from the save.
     /// </summary>
-    public void Restore(ScummState s)
+    internal void Restore(ScummState s)
     {
         Sound.StopAll();
         foreach (var slot in Engine.Slots)

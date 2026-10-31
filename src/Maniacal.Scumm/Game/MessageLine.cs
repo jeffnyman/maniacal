@@ -16,7 +16,7 @@ namespace Maniacal.Scumm.Game;
 /// row, and stays for 60 ticks plus <see cref="TextSpeed"/> a character. Escape 3 waits there and
 /// shows the rest in a fresh line; escape 2 keeps the text so the next message carries on after it.
 /// </remarks>
-public sealed class MessageLine
+internal sealed class MessageLine
 {
     /// <summary>The text area: the 16 lines above the room (<c>initScreens(16, ...)</c>).</summary>
     public const int Width = 320, Height = 16;

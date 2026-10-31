@@ -12,7 +12,7 @@ namespace Maniacal.Scumm.Costumes;
 /// starts it again as many times as the clip's repeat says, -1 for ever; then it stays on its last
 /// frame and the clip is done.
 /// </remarks>
-public sealed class V0CostumeState
+internal sealed class V0CostumeState
 {
     /// <summary>No position, sequence or clip (<c>CostumeData::reset</c>'s 0xFFFF, and the 0xFF of <c>_costCommand</c>).</summary>
     public const int None = 0xFFFF, NoClip = 0xFF;

@@ -15,7 +15,7 @@ public enum ResourceType
 /// Where a resource lives: the room file that holds it and its offset in that file. Rooms
 /// themselves always start at offset 0 of their own file.
 /// </summary>
-public readonly record struct ResourceLocation(int Room, int Offset)
+internal readonly record struct ResourceLocation(int Room, int Offset)
 {
     /// <summary>Offset value meaning "no resource". Mirrors ScummVM's <c>0xFFFF</c> check before <c>RES_INVALID_OFFSET</c>.</summary>
     public const int Invalid = 0xFFFF;
@@ -37,7 +37,7 @@ public readonly record struct ResourceLocation(int Room, int Offset)
 /// some entries point at no real resource: version 1's tables are a fixed size, larger than the game
 /// needs, and a few entries in both versions are left over from resources that were removed.
 /// </remarks>
-public sealed class ResourceIndex
+internal sealed class ResourceIndex
 {
     /// <summary>First word of a version 1 index. Mirrors the <c>0x0A31</c> case of <c>readIndexFile</c>.</summary>
     public const ushort ClassicMagic = 0x0A31;

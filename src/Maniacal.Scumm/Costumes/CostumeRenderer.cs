@@ -60,10 +60,10 @@ public static class CostumeRenderer
     }
 
     /// <summary>Draws one cel, with <see cref="Palette"/>'s colours for the actor.</summary>
-    public static Surface8 DrawCel(Costume costume, CostumeCel cel, int actor, bool mirror = false)
+    internal static Surface8 DrawCel(Costume costume, CostumeCel cel, int actor, bool mirror = false)
         => DrawCel(costume, cel, Palette(costume, actor), mirror);
 
-    public static Surface8 DrawCel(Costume costume, CostumeCel cel, byte[] palette, bool mirror)
+    internal static Surface8 DrawCel(Costume costume, CostumeCel cel, byte[] palette, bool mirror)
     {
         var surface = new Surface8(Math.Max(cel.Width, 1), Math.Max(cel.Height, 1));
         surface.Fill(Transparent);
@@ -90,7 +90,7 @@ public static class CostumeRenderer
     /// left mirrors facing right unless the costume has its own left pictures. Mirrors
     /// <c>BaseCostumeRenderer::drawCostume</c> and <c>ClassicCostumeRenderer::drawLimb</c>.
     /// </summary>
-    public static CostumeFrame DrawLimbs(Costume costume, CostumeState state, int direction, byte[] palette)
+    internal static CostumeFrame DrawLimbs(Costume costume, CostumeState state, int direction, byte[] palette)
     {
         bool toRight = direction != Left || costume.HasOwnLeftPictures;
         var parts = new List<(Surface8 Image, int X, int Y)>();

@@ -17,7 +17,7 @@ namespace Maniacal.Scumm.Sound;
 /// song's notes rewrite. The resource locking of the original, which changes nothing here, is left
 /// out.</para>
 /// </remarks>
-public sealed class PlayerSid : MusicPlayer
+internal sealed class PlayerSid : MusicPlayer
 {
     // the player's tick, the C64's NTSC frame rate
     private const int TicksPerSecond = 60, FixpShift = 16;

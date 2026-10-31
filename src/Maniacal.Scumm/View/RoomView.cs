@@ -44,7 +44,7 @@ public readonly record struct ActorDrawing(CostumeFrame Frame, int X, int Y, boo
 public static class RoomView
 {
     /// <summary>The 320-pixel-wide part of a drawn room the camera shows, and its mask.</summary>
-    public static MaskedImage Window(MaskedImage room, Camera camera)
+    internal static MaskedImage Window(MaskedImage room, Camera camera)
     {
         int width = Math.Min(Camera.ScreenWidth, room.Pixels.Width);
         int height = room.Pixels.Height;
@@ -67,7 +67,7 @@ public static class RoomView
     /// it. Returns the columns of the view the figure covers, as <c>markAsDirty</c> marks them: a
     /// pixel further right in version 2, 8 in version 1.
     /// </summary>
-    public static (int Left, int Right) DrawActor(MaskedImage view, int version, Camera camera, ActorDrawing actor)
+    internal static (int Left, int Right) DrawActor(MaskedImage view, int version, Camera camera, ActorDrawing actor)
     {
         int x = actor.X * 8 - camera.Left;
         int y = (actor.Y - actor.Elevation) * 2;
@@ -123,7 +123,7 @@ public static class RoomView
     }
 
     /// <summary>The whole 320x200 screen with the room view in its place; the rest is black for now.</summary>
-    public static Surface8 Screen(MaskedImage view, ScreenLayout layout)
+    internal static Surface8 Screen(MaskedImage view, ScreenLayout layout)
     {
         var screen = new Surface8(ScreenLayout.Width, ScreenLayout.Height);
         int lines = Math.Min(layout.RoomHeight, view.Pixels.Height);

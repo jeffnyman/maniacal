@@ -12,7 +12,7 @@ namespace Maniacal.Scumm.Sound;
 /// For the speaker the sound's data starts at byte 6 of the resource, for the PCjr where the word
 /// at byte 4 says; its first byte is the priority, with bit 7 set when it may be resumed.
 /// </remarks>
-public sealed class PlayerV1 : SpeakerSynth
+internal sealed class PlayerV1 : SpeakerSynth
 {
     private const int TimerBase = 1193000;
 

@@ -106,10 +106,10 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         _initial = Capture();
     }
 
-    public ScriptEngine Engine { get; }
+    internal ScriptEngine Engine { get; }
 
     /// <summary>The music and sound effects.</summary>
-    public SoundSystem Sound { get; }
+    internal SoundSystem Sound { get; }
 
     /// <summary>
     /// How fast the game's clock runs, in quarter-frames a second: 1193182 / 5041 for version 2,
@@ -158,7 +158,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
     public Camera Camera { get; } = new();
 
-    public Actor[] Actors { get; }
+    internal Actor[] Actors { get; }
 
     public int Version => Engine.Version;
 
@@ -166,7 +166,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     public Room? CurrentRoom { get; private set; }
 
     /// <summary>The message lines above the room.</summary>
-    public MessageLine Messages { get; }
+    internal MessageLine Messages { get; }
 
     /// <summary>The world instructions with no subsystem yet, as the scripts ran them.</summary>
     public IReadOnlyList<string> Unhandled => _recorder.Calls;
@@ -358,7 +358,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         return screen;
     }
 
-    public int Execute(ScriptEngine engine, Instruction instruction, IReadOnlyList<int> arguments)
+    int IScriptHost.Execute(ScriptEngine engine, Instruction instruction, IReadOnlyList<int> arguments)
     {
         if (Version == 0 && ExecuteV0(engine, instruction, arguments, out int v0Result))
         {
@@ -714,7 +714,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// The camera follows an actor, going to its room first when it is elsewhere. Mirrors
     /// <c>actorFollowCamera</c> and <c>setCameraFollows</c>.
     /// </summary>
-    public void FollowActor(Actor actor)
+    internal void FollowActor(Actor actor)
     {
         if (!actor.InCurrentRoom)
         {
@@ -780,7 +780,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     }
 
     /// <summary>Where an object of the current room is, in pixels: where the room puts it, or where a script moved it.</summary>
-    public (int X, int Y) PositionOf(RoomObject obj) => _moved.TryGetValue(obj.Number, out var moved) ? moved : (obj.X, obj.Y);
+    internal (int X, int Y) PositionOf(RoomObject obj) => _moved.TryGetValue(obj.Number, out var moved) ? moved : (obj.X, obj.Y);
 
     /// <summary>
     /// Where an actor or object is, in actor units, or null when it is not in the current room. A

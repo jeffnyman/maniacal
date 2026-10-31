@@ -9,7 +9,7 @@ namespace Maniacal.Scumm.Resources;
 /// encoded as those are. Mirrors <c>ScummDiskImage</c> for Maniac Mansion, which builds the same
 /// files from the disks for the classic index reader and the resource loader.
 /// </summary>
-public sealed class C64DiskImage : IGameContainer
+internal sealed class C64DiskImage : IGameContainer
 {
     /// <summary>The names ScummVM looks for: the first disk, the second, and the demo's one disk.</summary>
     public const string Disk1Name = "maniac1.d64", Disk2Name = "maniac2.d64", DemoDiskName = "maniacdemo.d64";

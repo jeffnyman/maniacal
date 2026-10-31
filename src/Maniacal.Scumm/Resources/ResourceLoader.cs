@@ -16,13 +16,13 @@ public sealed class ResourceLoader
     private readonly IGameContainer _game;
     private readonly Dictionary<int, byte[]> _files = [];
 
-    public ResourceLoader(IGameContainer game, ResourceIndex index)
+    internal ResourceLoader(IGameContainer game, ResourceIndex index)
     {
         _game = game;
         Index = index;
     }
 
-    public ResourceIndex Index { get; }
+    internal ResourceIndex Index { get; }
 
     /// <summary>The files of the release.</summary>
     public IGameContainer Game => _game;
@@ -83,6 +83,6 @@ public sealed class ResourceLoader
         => Load(ResourceType.Costume, costume) is { } data ? Costume.Parse(costume, data) : null;
 
     /// <summary>Loads and parses a C64 costume, or returns null when the index has no such costume.</summary>
-    public V0Costume? LoadCostumeV0(int costume)
+    internal V0Costume? LoadCostumeV0(int costume)
         => Load(ResourceType.Costume, costume) is { } data ? V0Costume.Parse(costume, data) : null;
 }

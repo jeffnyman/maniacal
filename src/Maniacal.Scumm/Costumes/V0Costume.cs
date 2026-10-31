@@ -10,7 +10,7 @@ namespace Maniacal.Scumm.Costumes;
 /// <param name="MoveX">How many columns the running position moves for the next limb.</param>
 /// <param name="MoveY">How many lines the running position moves up for the next limb.</param>
 /// <param name="DataOffset">Where the cel's pixel bytes start in the costume.</param>
-public readonly record struct V0Cel(int Columns, int Height, int OffsetX, int OffsetY, int MoveX, int MoveY, int DataOffset);
+internal readonly record struct V0Cel(int Columns, int Height, int OffsetX, int OffsetY, int MoveX, int MoveY, int DataOffset);
 
 /// <summary>
 /// A costume of version 0, the C64: 8 limbs, each with its sequences of cels, and clips that each
@@ -24,7 +24,7 @@ public readonly record struct V0Cel(int Columns, int Height, int OffsetX, int Of
 /// its cel's number, which picks the cel's low and high offset bytes. A clip is 8 bytes, one a
 /// limb: the sequence, with bit 7 set to mirror it, or 0xFF to leave the limb as it is.
 /// </remarks>
-public sealed class V0Costume
+internal sealed class V0Costume
 {
     public const int Limbs = 8;
 

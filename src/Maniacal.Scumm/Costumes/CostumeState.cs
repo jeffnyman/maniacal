@@ -5,7 +5,7 @@ namespace Maniacal.Scumm.Costumes;
 /// <c>CostumeData</c>, with <c>ClassicCostumeLoader::costumeDecodeData</c> (starting an animation)
 /// and <c>increaseAnims</c> (one animation step).
 /// </summary>
-public sealed class CostumeState
+internal sealed class CostumeState
 {
     /// <summary>Mirrors the 0xFFFF of <c>CostumeData::reset</c>: no command, or no animation.</summary>
     public const int None = 0xFFFF;

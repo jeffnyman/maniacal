@@ -8,7 +8,7 @@ namespace Maniacal.Scumm.Sound;
 /// <c>isSoundRunning</c>). The player is version 1's or version 2's, on the PCjr by default, as
 /// ScummVM prefers it when a release supports both, or the C64's SID player.
 /// </summary>
-public sealed class SoundSystem
+internal sealed class SoundSystem
 {
     private readonly Func<int, byte[]?> _load;
     private readonly List<int> _queue = [];

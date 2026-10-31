@@ -4,7 +4,7 @@ using Maniacal.Scumm.View;
 namespace Maniacal.Scumm.Game;
 
 /// <summary>A frame of a room transition, and how many quarter-frames it shows for.</summary>
-public readonly record struct TransitionFrame(Surface8 Screen, int QuarterFrames);
+internal readonly record struct TransitionFrame(Surface8 Screen, int QuarterFrames);
 
 /// <summary>
 /// The transitions between rooms: leaving one, the room on screen goes black block by block (an
@@ -33,7 +33,7 @@ public sealed partial class GameWorld
     private Surface8? _display;
 
     /// <summary>The frames of the last step's room transitions, to show before its own screen; their length is in <see cref="StepLength"/>.</summary>
-    public IReadOnlyList<TransitionFrame> Transition => _transition;
+    internal IReadOnlyList<TransitionFrame> Transition => _transition;
 
     /// <summary>How many quarter-frames the last step's transitions last.</summary>
     private int TransitionQuarterFrames => _transition.Sum(f => f.QuarterFrames);

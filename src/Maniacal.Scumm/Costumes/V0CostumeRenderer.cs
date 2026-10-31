@@ -30,7 +30,7 @@ public static class V0CostumeRenderer
     /// actor's point: 12 pixels right of its column, on its line. A pixel is drawn 2 wide; colour 0
     /// is transparent. Mirrors <c>V0CostumeRenderer::drawLimb</c>.
     /// </summary>
-    public static CostumeFrame DrawLimbs(V0Costume costume, V0CostumeState state, byte[] palette)
+    internal static CostumeFrame DrawLimbs(V0Costume costume, V0CostumeState state, byte[] palette)
     {
         var data = costume.Data.Span;
         var parts = new List<(V0Cel Cel, bool Flipped, int Left, int Top)>();
@@ -102,7 +102,7 @@ public static class V0CostumeRenderer
     /// Draws the figure a clip shows, started on a fresh state and held, after
     /// <paramref name="step"/> more animation steps. For looking at a costume; actors keep their own state.
     /// </summary>
-    public static CostumeFrame DrawClip(V0Costume costume, int clip, int actor, int step = 0)
+    internal static CostumeFrame DrawClip(V0Costume costume, int clip, int actor, int step = 0)
     {
         var state = new V0CostumeState { NewClip = clip, Repeat = -1 };
         state.Decode(costume);
@@ -115,7 +115,7 @@ public static class V0CostumeRenderer
     }
 
     /// <summary>How many frames the longest of a clip's limb sequences has: the steps of its cycle.</summary>
-    public static int ClipLength(V0Costume costume, int clip)
+    internal static int ClipLength(V0Costume costume, int clip)
     {
         int longest = 1;
         for (int limb = 0; limb < V0Costume.Limbs; limb++)

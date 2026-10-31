@@ -21,7 +21,7 @@ namespace Maniacal.Scumm.Graphics;
 /// <para>An object image is one compressed layer holding three maps of the object's size, row by
 /// row: tiles, cell colours and mask tiles, drawn with the room's character sets.</para>
 /// </remarks>
-public sealed class V1Bitmap
+internal sealed class V1Bitmap
 {
     private const int TileSize = 8;
     private const int CharsetSize = 256 * TileSize;

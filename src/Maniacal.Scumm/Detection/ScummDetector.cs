@@ -7,7 +7,7 @@ namespace Maniacal.Scumm.Detection;
 /// <param name="Entry">The matching row of ScummVM's MD5 table.</param>
 /// <param name="Version">The SCUMM version: 0 for C64 and Apple II, 1 for DOS V1 and NES, 2 for V2.</param>
 /// <param name="IsDemo">True for the demo releases.</param>
-public sealed record ScummGame(Md5Entry Entry, int Version, bool IsDemo)
+internal sealed record ScummGame(Md5Entry Entry, int Version, bool IsDemo)
 {
     public string Variant => Entry.Variant;
 
@@ -22,7 +22,7 @@ public sealed record ScummGame(Md5Entry Entry, int Version, bool IsDemo)
 /// or for the C64 the 00.LFL that <see cref="C64DiskImage"/> builds from the disks, as ScummVM's
 /// <c>openDiskImage</c> does. The NES ROM needs its own reader first.
 /// </summary>
-public static class ScummDetector
+internal static class ScummDetector
 {
     /// <summary>ScummVM hashes at most this much of a detection file (<c>kMD5FileSizeLimit</c>).</summary>
     private const int Md5FileSizeLimit = 1024 * 1024;

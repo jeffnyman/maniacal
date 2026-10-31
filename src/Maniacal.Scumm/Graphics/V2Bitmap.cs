@@ -2,7 +2,7 @@
 namespace Maniacal.Scumm.Graphics;
 
 /// <summary>A decoded picture and its mask: in the mask, 1 marks a pixel drawn in front of actors.</summary>
-public sealed record MaskedImage(Surface8 Pixels, Surface8 Mask);
+internal sealed record MaskedImage(Surface8 Pixels, Surface8 Mask);
 
 /// <summary>
 /// The picture format of version 2 rooms and objects: one run-length encoded stream of 4-bit
@@ -19,7 +19,7 @@ public sealed record MaskedImage(Surface8 Pixels, Surface8 Mask);
 /// A length byte with bit 7 set repeats the following byte <c>length &amp; 0x7F</c> times; with
 /// bit 7 clear it is followed by that many literal bytes.</para>
 /// </remarks>
-public static class V2Bitmap
+internal static class V2Bitmap
 {
     /// <summary>Decodes a picture and its mask; <paramref name="end"/> is the offset just past the mask.</summary>
     public static MaskedImage Decode(ReadOnlySpan<byte> data, int width, int height, out int end)

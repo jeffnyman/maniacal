@@ -6,7 +6,7 @@ namespace Maniacal.Scumm.Scripts;
 /// <c>setupScummVars</c> sets and which stay 0xFF where a version leaves them out: version 0 has
 /// a handful, version 2 many more. The other numbers are the scripts' own.
 /// </summary>
-public sealed record EngineVariables
+internal sealed record EngineVariables
 {
     /// <summary>The number of a variable a version does not have.</summary>
     public const int None = -1;

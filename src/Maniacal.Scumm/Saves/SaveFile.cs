@@ -5,7 +5,7 @@ using System.Text;
 namespace Maniacal.Scumm.Saves;
 
 /// <summary>What a save says about itself: its name, format version, the time played and when it was made.</summary>
-public sealed record SaveInfo(string Name, int Version, TimeSpan PlayTime, DateTime? Saved);
+internal sealed record SaveInfo(string Name, int Version, TimeSpan PlayTime, DateTime? Saved);
 
 /// <summary>
 /// A ScummVM save file: gzip-compressed, a header naming it and giving its format version, then
@@ -29,7 +29,7 @@ public static class SaveFile
     public static string FileName(string target, int slot) => $"{target}.s{slot:D2}";
 
     /// <summary>Writes a save, compressed as ScummVM writes them.</summary>
-    public static byte[] Write(ScummState state, string name, TimeSpan playTime, DateTime saved, int version = CompatibleVersion)
+    internal static byte[] Write(ScummState state, string name, TimeSpan playTime, DateTime saved, int version = CompatibleVersion)
     {
         if (version is < ScummState.OldestVersion or > CurrentVersion)
         {
@@ -73,7 +73,7 @@ public static class SaveFile
     }
 
     /// <summary>Reads a save, compressed or not, into a state for a game with so many global objects, the C64's or not.</summary>
-    public static (SaveInfo Info, ScummState State) Read(byte[] file, int globalObjects, bool c64 = false)
+    internal static (SaveInfo Info, ScummState State) Read(byte[] file, int globalObjects, bool c64 = false)
     {
         var data = Decompress(file);
         var (info, start) = ReadHeader(data);
@@ -89,7 +89,7 @@ public static class SaveFile
     }
 
     /// <summary>A save's name, version, time played and date, without its state.</summary>
-    public static SaveInfo ReadInfo(byte[] file) => ReadHeader(Decompress(file)).Info;
+    internal static SaveInfo ReadInfo(byte[] file) => ReadHeader(Decompress(file)).Info;
 
     private static (SaveInfo Info, int StateStart) ReadHeader(byte[] data)
     {

@@ -8,7 +8,7 @@ namespace Maniacal.Scumm.View;
 /// for versions 1 and 2, whose corner curves are masks of half-resolution pixels, two screen pixels
 /// to a bit pair.
 /// </summary>
-public static class Flashlight
+internal static class Flashlight
 {
     // the light bits of VAR_CURRENT_LIGHTS (LIGHTMODE_*)
     public const int RoomLightsOn = 2, FlashlightOn = 4;
