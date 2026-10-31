@@ -1,10 +1,10 @@
-# Building an interpreter for Maniac Mansion
+# Building an interpreter for *Maniac Mansion*
 
-Maniac Mansion is two things: a game written in SCUMM scripts, and an engine that runs them. The
+*Maniac Mansion* is two things: a game written in SCUMM scripts, and an engine that runs them. The
 scripts, graphics, sounds and costumes are data; the engine (Lucasfilm called it SPUTM) is the
 program that loads that data, executes the scripts and turns them into pictures, sound and
 responses to the player. To play the game on new hardware you rewrite the engine and leave the
-data alone. That is what ScummVM does, and what [Maniacal](../README.md) does in C#.
+data alone. That's what ScummVM does, and what [Maniacal](../README.md) does in C#.
 
 This guide describes how such an interpreter is put together, layer by layer, and where each layer
 is documented in this resource: as the original C64 implementation in [`c64-engine/`](c64-engine/), as

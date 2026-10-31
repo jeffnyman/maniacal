@@ -19,7 +19,7 @@ frozen, invisible, strong, and so on).
 down, talking, and so on.
 
 **Costume.** A character's animation resource: limbs, cel sequences, cels and clips. A costume
-becomes an actor when it is in the current room. Scripts mostly refer to characters by costume
+becomes an actor when it's in the current room. Scripts mostly refer to characters by costume
 number.
 
 **Cutscene.** A stretch of script during which the player has no control and other scripts are
@@ -31,7 +31,7 @@ calls it `VAR_EGO`.
 **Entry script, exit script.** The scripts a room runs when the player enters and leaves it.
 
 **Global script.** A numbered script that can be started from anywhere. Script 1 is the intro and
-kid selection; script 3 gives the default responses for verbs an object does not handle.
+kid selection; script 3 gives the default responses for verbs an object doesn't handle.
 
 **Index.** The table, on the C64 part of the boot data and on DOS the file `00.LFL`, that says
 where every room, costume, script and sound is, and holds the initial owner and state of every
@@ -70,7 +70,7 @@ sounds. Also used for screens that are not places, such as the title and the sav
 
 **SCUMM.** The Script Creation Utility for Maniac Mansion: the script language and the tools
 Lucasfilm built for this game, used in its later adventures too. Version 0 is the C64 original;
-versions 1 and 2 are the DOS releases of Maniac Mansion and Zak McKracken.
+versions 1 and 2 are the DOS releases of *Maniac Mansion* and *Zak McKracken*.
 
 **Script slot.** See *task*.
 

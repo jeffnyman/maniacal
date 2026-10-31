@@ -1,6 +1,6 @@
 # The NES release: an expanded, editable ROM
 
-Maniac Mansion on the Nintendo Entertainment System (Jaleco, 1990) runs the same game as the
+*Maniac Mansion* on the Nintendo Entertainment System (Jaleco, 1990) runs the same game as the
 computer versions on a port of the SCUMM engine written for the NES. Its graphics and room layouts
 are stored run-length encoded (RLE) and packed tightly into the cartridge's banks. That makes them
 hard to read or change.
@@ -71,8 +71,8 @@ Always applied:
   removed.
 - The radioactive slime in the basement can be interacted with again.
 - The fence mask on the starting screen is fixed, so the kids are fully behind it.
-- The colours of the right-hand gargoyle on the stairs are corrected.
-- The border colour is fixed when selecting Michael on the character select screen.
+- The colors of the right-hand gargoyle on the stairs are corrected.
+- The border color is fixed when selecting Michael on the character select screen.
 - The meteor's sprite is fixed.
 - The Lucasfilm logo is centred vertically and its misplaced shine sprite is fixed.
 

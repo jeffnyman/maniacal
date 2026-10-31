@@ -1,6 +1,6 @@
 # The game's scripts
 
-Maniac Mansion is a program written in SCUMM, Lucasfilm's script language, running on an engine
+*Maniac Mansion* is a program written in SCUMM, Lucasfilm's script language, running on an engine
 that knows nothing about mansions, kids or tentacles. This folder holds that program: a commented
 disassembly of every script in the Commodore 64 release (SCUMM version 0) and in the C64 demo,
 plus tables that name the actors, rooms, scripts, variables, sounds, objects and codes the scripts
@@ -16,7 +16,8 @@ use.
 | [demo/tables/](demo/tables/) | The demo's tables, with [`maniac-mansion-demo.xlsx`](demo/tables/maniac-mansion-demo.xlsx) |
 | [c64-disk-layout.txt](c64-disk-layout.txt) | Where the index tables sit on the C64 disk, explained [below](#where-the-scripts-are-on-the-disk) |
 
-The `.c` extension is only there so editors colour the files. They are not C and do not compile.
+The `.c` extension is only there so editors color the files. They are not C and they most
+certainly do not compile.
 
 ## What a game script is
 
@@ -48,7 +49,7 @@ sentences, the engine starts only three global scripts by itself: script 1 when 
 verb. Everything else follows from script 1 and from the player's clicks.
 
 For an interpreter this means the engine can stay generic. It has to execute the opcodes faithfully;
-it does not have to know the game.
+it doesn't have to know the game.
 
 ## The three kinds of script
 

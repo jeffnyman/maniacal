@@ -1,14 +1,14 @@
 # The Commodore 64 engine
 
 This folder holds a commented reconstruction of the engine that runs the Commodore 64 version of
-Maniac Mansion (1987), the first SCUMM interpreter, now called SCUMM version 0. Once the loaders
+*Maniac Mansion* (1987), the first SCUMM interpreter, now called SCUMM version 0. Once the loaders
 have finished, the game is one monolithic block of 6502 code in memory, with more than 500
 routines. Here that block has been split into modules by subsystem, and every routine has been
 named and commented. The source uses KickAssembler syntax.
 
-It is a reading resource. The aim is to explain what the original code does, so that a
+This is a reading resource. The aim is to explain what the original code does, so that a
 reimplementation (such as Maniacal's `src/Maniacal.Scumm`) can be checked against the real
-behaviour of version 0, not only against another port.
+behavior of version 0, not only against another port.
 
 ## Does it reassemble?
 
@@ -158,7 +158,7 @@ voices have been allocated to it, and a script only runs once it has a task.
 | [walkbox_snap.asm](walkboxes/walkbox_snap.asm) | Finds the nearest walkbox to a point and snaps the point into it, including diagonal edges. |
 | [walkbox_dfs.asm](walkboxes/walkbox_dfs.asm) | Depth-first search over the walkbox adjacency lists. |
 | [walkbox_waypoint_planner.asm](walkboxes/walkbox_waypoint_planner.asm) | Turns a box path into the next waypoint, going straight or around a corner. |
-| [actor_walkbox_traversal.asm](walkboxes/actor_walkbox_traversal.asm) | Works out which box an actor is in after each step and runs box behaviours (ladders, slopes, foreground masking). |
+| [actor_walkbox_traversal.asm](walkboxes/actor_walkbox_traversal.asm) | Works out which box an actor is in after each step and runs box behaviors (ladders, slopes, foreground masking). |
 
 ### [interpreter/](interpreter/)
 
@@ -186,7 +186,7 @@ voices have been allocated to it, and a script only runs once it has a task.
 | [key_handler.asm](ui/key_handler.asm) | The game's keys: pause, restart, text speed, save/load, kid switching, skipping a cutscene. |
 | [cursor.asm](ui/cursor.asm) | Cursor movement with acceleration and drag. |
 | [ui_interaction.asm](ui/ui_interaction.asm) | Hotspots under the cursor: verbs, inventory, scroll arrows, highlighting and clicks. |
-| [ui_messages.asm](ui/ui_messages.asm) | The message bar at the top: staging, timed printing, speaker colours, mouth sync. |
+| [ui_messages.asm](ui/ui_messages.asm) | The message bar at the top: staging, timed printing, speaker colors, mouth sync. |
 | [sentence_text.asm](ui/sentence_text.asm) | Builds the sentence bar text and resolves object names and prepositions. |
 | [sentence_action.asm](ui/sentence_action.asm) | The sentence system: completing a sentence, the sentence stack, walking first, running verb handlers. |
 

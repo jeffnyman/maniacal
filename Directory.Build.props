@@ -19,8 +19,8 @@
 
   <PropertyGroup>
     <Product>Maniacal</Product>
-    <Authors>Maniacal contributors</Authors>
-    <Copyright>Copyright (c) Maniacal contributors. Portions derived from ScummVM, copyright the ScummVM Team, and from Daventry, copyright the Daventry contributors.</Copyright>
+    <Authors>Jeff Nyman</Authors>
+    <Copyright>Copyright (c) Jeff Nyman. Portions derived from ScummVM, copyright the ScummVM Team, and from Daventry, copyright Jeff Nyman.</Copyright>
     <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/jeffnyman/maniacal</RepositoryUrl>

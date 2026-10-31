@@ -1,6 +1,6 @@
-# How Maniac Mansion works
+# How *Maniac Mansion* works
 
-Maniac Mansion came out for the Commodore 64 in 1987. It had point-and-click verbs, three playable
+*Maniac Mansion* came out for the Commodore 64 in 1987. It had point-and-click verbs, three playable
 kids with different skills, characters who moved around the house on their own, cutscenes, and
 several endings, all running on a 1 MHz 6502 with 64 KB of memory and a floppy drive. This
 document explains how, from the top down. It describes the C64 original (SCUMM version 0), which
@@ -20,7 +20,7 @@ load rooms, draw them, move characters, play sounds, take input, and run scripts
 virtual machine, and the scripts are its programs.
 
 That split is what made the game portable. Lucasfilm wrote the scripts once, on Unix machines,
-and wrote a new engine for each computer. It is also what makes an interpreter possible today:
+and wrote a new engine for each computer. It's also what makes an interpreter possible today:
 reproduce the engine faithfully and the original scripts do the rest.
 
 The game's scripts are in [scripts/](scripts/README.md), disassembled and commented.
@@ -37,7 +37,7 @@ The engine manages five kinds of **resource**, the data loaded from disk:
 | Sound | A sound effect or a piece of music (the music is 6502 code) | 70 |
 | Object | Anything in a room the player can name: doors, the doormat, the key under it | stored inside rooms |
 
-On screen, these become a smaller set of live **representations**, because the C64 cannot run
+On screen, these become a smaller set of live **representations**, because the C64 can't run
 everything at once:
 
 | Representation | Of | Limit |
@@ -53,7 +53,7 @@ Read more: [c64-engine/README.md](c64-engine/README.md), [c64-engine/data-struct
 
 ## The screen
 
-The C64 screen is 40 by 25 character cells. Maniac Mansion splits it into bands, each drawn in a
+The C64 screen is 40 by 25 character cells. *Maniac Mansion* splits it into bands, each drawn in a
 different video mode by switching the video chip mid-frame from raster interrupts:
 
 | Rows | Band |
@@ -64,7 +64,7 @@ different video mode by switching the video chip mid-frame from raster interrupt
 | 19-21 | The 15 verbs, five to a row |
 | 22-23 | The inventory: four visible items, with arrows to scroll |
 
-The room is not a bitmap. It is drawn with characters, like text, but each room has its own
+The room is not a bitmap. It's drawn with characters, like text, but each room has its own
 character set of up to 256 tiles. A room is a matrix of tile numbers, a color layer giving each
 cell its fourth color, and a mask layer that marks which pixels are in front of characters.
 Rooms are 17 cells high and from 40 to 160 cells wide; wider rooms scroll.
@@ -84,7 +84,7 @@ room's start. A 4-byte header with a size and an XOR checksum guards each one; a
 disk error and retries.
 
 When the heap is full, the memory manager first compacts it, sliding blocks down and fixing every
-pointer to them (a running script recomputes its program counter afterwards). If that is not
+pointer to them (a running script recomputes its program counter afterwards). If that's not
 enough, it evicts something: the oldest unlocked room, a costume not in the current room, a
 script or sound nobody is using. Scripts can lock resources they will need soon, so a cutscene
 does not stall on the disk mid-scene.
@@ -98,7 +98,7 @@ Read more: [c64-engine/resources/](c64-engine/resources/), [c64-engine/disk/](c6
 ## Rooms and objects
 
 Loading a room unpacks its graphics. Each layer is compressed with a simple run-length scheme
-with a four-entry dictionary of common bytes. Decompressing a whole wide room would not fit, so on
+with a four-entry dictionary of common bytes. Decompressing a whole wide room wouldn't fit, so on
 load the engine decodes each layer once and records the decoder's state at the start of every
 17-byte column. When the view scrolls by one column, it restores the saved state for the new
 column and decodes only that.

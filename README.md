@@ -222,5 +222,5 @@ ported from. The ScummVM checkout lives next to this repository and is not part 
 ## Licence
 
 GPL-3.0-or-later, as ScummVM and Daventry are. See [LICENSE](LICENSE). The host layer is derived
-from Daventry's, copyright the Daventry contributors. The command line tools in `docs/nes/tools`
+from Daventry's, also by Jeff Nyman. The command line tools in `docs/nes/tools`
 carry their own licences next to them.
