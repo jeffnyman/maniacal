@@ -45,6 +45,28 @@ public class ManiacMansionTests
         Assert.Equal(53, game.Inspect().Rooms.Count);
     }
 
+    /// <summary>The palette can be kept and used later, in a lambda, where a span could not be.</summary>
+    [Theory]
+    [InlineData(WalkthroughTests.V2, 16)]
+    [InlineData(WalkthroughTests.C64, 17)]
+    public void The_palette_can_be_kept(string folder, int colours)
+    {
+        if (GameFolders.Find(folder) is not { } path)
+        {
+            return;
+        }
+
+        var game = ManiacMansion.Open(path);
+        var world = game.Play();
+        ReadOnlyMemory<Graphics.Rgb> kept = world.Palette;
+        Func<int, Graphics.Rgb> colour = n => kept.Span[n];
+
+        Assert.Equal(colours, kept.Length);
+        Assert.Equal(Graphics.Palettes.ForVersion(world.Version).ToArray(), kept.ToArray());
+        Assert.Equal(kept.ToArray(), game.Inspect().Palette.ToArray());
+        Assert.Equal(Graphics.Palettes.ForVersion(world.Version)[1], colour(1));
+    }
+
     /// <summary>A release a folder below the one given is found, as the player finds one.</summary>
     [Fact]
     public void A_release_a_folder_below_is_found()

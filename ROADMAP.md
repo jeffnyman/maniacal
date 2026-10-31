@@ -728,14 +728,18 @@ Where it comes from:
   way in (`ResourceLoader.Open`, `new GameWorld`, `new GameInspector`) stays, for hosts and tests;
   the README's examples use the front door.
 
+- **A palette that can be kept.** `GameWorld.Palette` and `GameInspector.Palette` give the
+  release's colours as a `ReadOnlyMemory<Rgb>`, which a program can keep in a field or a lambda,
+  where `Palettes.ForVersion`'s span (unchanged) could not be.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies
   a movement step apart from ScummVM's at one moment; right after a load, Syd and Razor turning
   to face left are drawn a strip apart for a second or two. Both are about how version 1 moves
   and animates actors, not about drawing them; the twinkling star differs too, being random.
-- The rest of what the programs used from outside found awkward: verbs come as numbers only;
-  `Palettes.ForVersion` is a span that cannot be kept.
+- Verb names: the programs used from outside found verbs only as numbers. The DOS releases' names
+  live in their own scripts (`verbOps` in the boot script), so this waits until it is wanted.
 - At 1.0, move `PublicAPI.Unshipped.txt` into `PublicAPI.Shipped.txt` and set package
   validation's baseline (`PackageValidationBaselineVersion`), so a breaking change fails the build.
 

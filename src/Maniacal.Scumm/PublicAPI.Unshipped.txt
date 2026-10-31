@@ -1,6 +1,7 @@
 #nullable enable
 Maniacal.Scumm.Game.GameWorld.ClickObject(int number) -> bool
 Maniacal.Scumm.Game.GameWorld.ObjectsHere() -> System.Collections.Generic.IReadOnlyList<Maniacal.Scumm.Game.RoomObjectInfo>!
+Maniacal.Scumm.Game.GameWorld.Palette.get -> System.ReadOnlyMemory<Maniacal.Scumm.Graphics.Rgb>
 Maniacal.Scumm.Game.GameWorld.ReadAudio() -> short[]!
 Maniacal.Scumm.Game.GameWorld.SampleRate.get -> int
 Maniacal.Scumm.Game.RoomObjectInfo
@@ -27,6 +28,7 @@ Maniacal.Scumm.Game.RoomObjectInfo.X.init -> void
 Maniacal.Scumm.Game.RoomObjectInfo.Y.get -> int
 Maniacal.Scumm.Game.RoomObjectInfo.Y.init -> void
 Maniacal.Scumm.Inspection.GameInspector.Costumes.get -> System.Collections.Generic.IReadOnlyList<int>!
+Maniacal.Scumm.Inspection.GameInspector.Palette.get -> System.ReadOnlyMemory<Maniacal.Scumm.Graphics.Rgb>
 Maniacal.Scumm.Inspection.GameInspector.Rooms.get -> System.Collections.Generic.IReadOnlyList<int>!
 Maniacal.Scumm.Inspection.GameInspector.Scripts.get -> System.Collections.Generic.IReadOnlyList<int>!
 Maniacal.Scumm.ManiacMansion

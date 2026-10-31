@@ -215,6 +215,9 @@ public sealed class GameInspector(ResourceLoader loader)
     /// <summary>The SCUMM version of the release: 0 for the C64, 1 and 2 for DOS.</summary>
     public int Version => loader.Index.Version;
 
+    /// <summary>The colours the pictures' colour numbers stand for, the release's palette, in a form that can be kept.</summary>
+    public ReadOnlyMemory<Rgb> Palette => Palettes.MemoryForVersion(Version);
+
     /// <summary>The numbers of the release's rooms, in order: those <see cref="Room"/> and <see cref="RoomScripts"/> answer.</summary>
     public IReadOnlyList<int> Rooms => _rooms ??= Numbers(ResourceType.Room, _ => true);
 

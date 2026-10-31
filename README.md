@@ -171,7 +171,7 @@ for (int i = 0; i < 600; i++)
 }
 
 using var file = File.Create("screen.png");
-PngWriter.Write(file, world.Screen(), Palettes.ForVersion(world.Version));
+PngWriter.Write(file, world.Screen(), world.Palette.Span);
 ```
 
 A missing folder, a folder with no release in it, and a release Maniacal does not play each

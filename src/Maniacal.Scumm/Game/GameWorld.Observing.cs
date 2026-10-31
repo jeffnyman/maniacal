@@ -111,6 +111,12 @@ public sealed partial class GameWorld
     /// </summary>
     public IAudioSource Audio => Sound.Output;
 
+    /// <summary>
+    /// The colours <see cref="Screen"/>'s colour numbers stand for, the release's palette, in a form
+    /// that can be kept: <c>PngWriter.Write(file, world.Screen(), world.Palette.Span)</c>.
+    /// </summary>
+    public ReadOnlyMemory<Rgb> Palette => Palettes.MemoryForVersion(Version);
+
     /// <summary>The rate the world makes its sound at, in frames a second: the one it was made with.</summary>
     public int SampleRate { get; }
 
