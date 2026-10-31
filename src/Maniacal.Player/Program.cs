@@ -273,6 +273,18 @@ internal static class Program
             Console.WriteLine(game);
         }
 
+        // a release Maniacal knows but does not play (another language or platform, a demo) is
+        // refused here, as opening it would, before any tool or window
+        try
+        {
+            ResourceLoader.Open(container);
+        }
+        catch (NotSupportedException ex)
+        {
+            Error(ex.Message);
+            return NotFound;
+        }
+
         try
         {
             if (listOnly)
@@ -316,7 +328,7 @@ internal static class Program
                 Scale = scale,
                 Fullscreen = fullscreen,
                 Log = log,
-                Saves = new FileSaveStore(Path.Combine(SavesFolder, detected[0].GameId)),
+                Saves = new FileSaveStore(SaveFolder(detected[0])),
             });
 
             using var engine = registry.Create(host, container, detected[0]);
@@ -331,16 +343,24 @@ internal static class Program
             host.Run(engine, frames);
             return Done;
         }
-        catch (Exception ex) when (ex is SdlException or InvalidDataException or FileNotFoundException or NotSupportedException or IOException)
+        catch (Exception ex) when (ex is SdlException or InvalidDataException or FileNotFoundException or IOException)
         {
             Error(ex.Message);
             return CannotRun;
         }
     }
 
-    /// <summary>Where the windowed player keeps saves, a folder for each game under it.</summary>
+    /// <summary>Where the windowed player keeps saves, a folder for each game and release under it.</summary>
     private static string SavesFolder
         => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Maniacal", "saves");
+
+    /// <summary>
+    /// A release's own save folder: <c>saves/maniac/v2</c>, <c>saves/maniac/v1</c>,
+    /// <c>saves/maniac/c64</c>. The releases' saves do not fit one another, and their files have
+    /// the same names (ScummVM's, <c>maniac.s01</c> and so on), so each release keeps its own.
+    /// </summary>
+    private static string SaveFolder(DetectedGame game)
+        => Path.Combine(SavesFolder, game.GameId, (game.Extra ?? "game").ToLowerInvariant().Replace(' ', '-'));
 
     /// <summary>The package version, without the commit Source Link adds after a '+'.</summary>
     private static string Version()
@@ -825,7 +845,8 @@ internal static class Program
               In the game: click a verb, then an object; click the object again, or the sentence
               line, to carry it out. Escape, F4 or the right button skips a cutscene, the period
               skips a line of speech, and F5 opens the game's save screen.
-              Saves go in {{SavesFolder}}, a folder for each game.
+              Saves go in {{SavesFolder}}, a folder for each release
+              (maniac/v2, maniac/v1, maniac/c64).
               They are ScummVM's own files, so they move between Maniacal and ScummVM 2.7 or later.
 
             Looking inside (a PNG is written to the current folder, or --output):
@@ -848,9 +869,14 @@ internal static class Program
                 --screenshot file.png    --wav file.wav    --zoom N
               --frames N            in the window, stop after N frames
 
-            Exit codes: 0 done; 1 not found (folder, release, room, costume or script);
-            2 a mistake on the command line; 3 the game's data could not be read or the
-            window could not open.
+            Maniacal plays the English releases for the Commodore 64 and DOS.
+
+            Exit codes:
+              0  done
+              1  not found: the folder, a release Maniacal plays, or the room, costume or script
+              2  a mistake on the command line
+              3  the game's data could not be read, a headless run stopped on an error, or
+                 the window could not open
             """);
     }
 }

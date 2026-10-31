@@ -38,8 +38,8 @@ public sealed class ScummEngine : Engine
 
     /// <summary>
     /// Opens the release, sets the display and the sound going, and boots the game. Throws
-    /// <see cref="FileNotFoundException"/> or <see cref="InvalidDataException"/> as
-    /// <see cref="ResourceLoader.Open"/> does.
+    /// <see cref="NotSupportedException"/>, <see cref="FileNotFoundException"/> or
+    /// <see cref="InvalidDataException"/> as <see cref="ResourceLoader.Open"/> does.
     /// </summary>
     public override void Initialize()
     {

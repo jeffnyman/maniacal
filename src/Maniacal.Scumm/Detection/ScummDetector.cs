@@ -5,15 +5,60 @@ namespace Maniacal.Scumm.Detection;
 
 /// <summary>A Maniac Mansion release identified in a game folder.</summary>
 /// <param name="Entry">The matching row of ScummVM's MD5 table.</param>
+/// <param name="Variant">The release, as <c>detection_tables.h</c> names it: "V1", "V2 Demo", "C64" and so on.</param>
 /// <param name="Version">The SCUMM version: 0 for C64 and Apple II, 1 for DOS V1 and NES, 2 for V2.</param>
 /// <param name="IsDemo">True for the demo releases.</param>
-internal sealed record ScummGame(Md5Entry Entry, int Version, bool IsDemo)
+internal sealed record ScummGame(Md5Entry Entry, string Variant, int Version, bool IsDemo)
 {
-    public string Variant => Entry.Variant;
-
     public string? Language => Entry.Language;
 
     public string? Platform => Entry.Platform;
+
+    /// <summary>
+    /// Whether Maniacal plays the release: the English releases for the Commodore 64 and DOS, the
+    /// ones it is tested on. Not the demos yet, nor other languages or platforms.
+    /// </summary>
+    public bool IsSupported => Unsupported is null;
+
+    /// <summary>Why Maniacal does not play the release, or null when it does.</summary>
+    public string? Unsupported
+        => IsDemo ? "the demos are not supported yet"
+        : Language != "en" ? "it plays only the English releases"
+        : !(Platform == "dos" && Version is 1 or 2) && !(Platform == "c64" && Version == 0) ? "it plays only the Commodore 64 and DOS releases"
+        : null;
+
+    /// <summary>The release in words: <c>Maniac Mansion (V2, German, DOS)</c>.</summary>
+    public string Description => $"Maniac Mansion ({Variant}, {LanguageName(Language)}, {PlatformName(Platform)})";
+
+    private static string LanguageName(string? code) => code switch
+    {
+        "en" => "English",
+        "de" => "German",
+        "fr" => "French",
+        "es" => "Spanish",
+        "it" => "Italian",
+        "ru" => "Russian",
+        "sv" => "Swedish",
+        "ca" => "Catalan",
+        "he" => "Hebrew",
+        "pt" => "Portuguese",
+        "nl" => "Dutch",
+        "ja" => "Japanese",
+        null => "language unknown",
+        _ => code,
+    };
+
+    private static string PlatformName(string? code) => code switch
+    {
+        "dos" => "DOS",
+        "c64" => "Commodore 64",
+        "amiga" => "Amiga",
+        "atari" => "Atari ST",
+        "nes" => "NES",
+        "apple2gs" => "Apple IIgs",
+        null => "platform unknown",
+        _ => code,
+    };
 }
 
 /// <summary>
@@ -77,9 +122,13 @@ internal static class ScummDetector
             var buffer = new byte[Math.Min(stream.Length, Md5FileSizeLimit)];
             stream.ReadExactly(buffer);
 
-            if (ScummMd5Table.Find(Md5.ComputeHex(buffer)) is { } entry && Variants.TryGetValue(entry.Variant, out var variant))
+            // the V1 demo's 00.MAN is the full release's 00.LFL: ScummVM tells them apart by the
+            // file names (detection_tables.h's "%02d.MAN" pattern, variant "V1 Demo")
+            if (ScummMd5Table.Find(Md5.ComputeHex(buffer)) is { } entry
+                && (name == "00.MAN" && entry.Variant == "V1" ? "V1 Demo" : entry.Variant) is var variantName
+                && Variants.TryGetValue(variantName, out var variant))
             {
-                return new ScummGame(entry, variant.Version, variant.Demo);
+                return new ScummGame(entry, variantName, variant.Version, variant.Demo);
             }
         }
 

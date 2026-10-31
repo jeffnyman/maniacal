@@ -647,8 +647,27 @@ Where it comes from:
   the tools and headless runs on all three releases give the same output, pictures, sound and
   exit codes as before (180 files), but for the messages on standard error.
 
+- **English only, and a save folder for each release.** Maniacal plays the English releases for
+  the Commodore 64 and DOS, the ones it is tested on, and refuses the rest by name: another
+  language, another platform (Amiga, Atari ST, NES, Apple IIgs), or a demo.
+  `ResourceLoader.Open`, which every way into the game goes through, throws a
+  `NotSupportedException` saying what the release is and why (`This is Maniac Mansion (V2,
+  German, DOS), which Maniacal does not play: it plays only the English releases.`); data
+  ScummVM's table does not know is still opened as it is. The player checks right after
+  detection, `--list` too, and exits with code 1. The 1987 demo, whose `00.MAN` is the full
+  release's `00.LFL` byte for byte, is now identified as ScummVM identifies it, by the file's
+  name ("V1 Demo"), rather than taken for the full release and failing on a missing `00.LFL`.
+  The windowed player keeps each release's saves in a folder of its own (`saves/maniac/c64`,
+  `v1`, `v2`): the files keep ScummVM's names, so they still copy to ScummVM as they are, and one
+  release's save can no longer overwrite or be offered to another. Checked against ScummVM
+  2026.4.0's detection of the two DOS demos ("V1 Demo/DOS/English", "V2 Demo/DOS/English").
+
 ### Next, before a 1.0
 
+- The 1987 and 1988 DOS demos: ScummVM boots them with script 9 (the demo mode) rather than 1,
+  reads the 1987 demo's rooms from `NN.MAN`, gives each demo actor the costume of its own
+  number, and fixes a palette and five talk colours for the 1988 demo's script
+  (`ScummEngine::runBootscript`, `resetScumm`). Checked against ScummVM 2026.4.0.
 - Use 0.2.0-alpha from outside the repository and fix what is awkward while that is still cheap.
 - At 1.0, move `PublicAPI.Unshipped.txt` into `PublicAPI.Shipped.txt` and set package
   validation's baseline (`PackageValidationBaselineVersion`), so a breaking change fails the build.

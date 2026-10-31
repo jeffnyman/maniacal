@@ -54,6 +54,11 @@ packages are an alpha: the engine works, but its public API is still to be settl
 | DOS, enhanced (1988) | 2 | `00.LFL` to `53.LFL`, XOR-encoded | Winnable, with sound and saves |
 | NES (1990) | 1 (NES dialect) | `.prg` extracted from the ROM | Not supported; later, if at all |
 
+These are the English releases, and only they are played: a release in another language, for
+another platform, or a demo is named and refused (`maniacal: this is Maniac Mansion (V2, German,
+DOS), which Maniacal does not play: it plays only the English releases.`), by the tool and by the
+library alike.
+
 What works, in every release:
 
 - **Detection.** Releases are identified by ScummVM's MD5 table; the C64's disk images by
@@ -80,8 +85,12 @@ for the PC speaker's sound and `--copy-protection` change how. A verb is clicked
 clicking the object again, or clicking the sentence line, carries the sentence out, as in the
 original. The right button, Escape or F4 skip a cutscene, the period key skips a line of speech,
 and F5 opens the game's save screen. Saves go in a `Maniacal/saves` folder under the user's
-application data (`%APPDATA%` on Windows, `~/.config` on Linux and macOS), a folder for each
-game. `maniacal --help` lists everything, and `maniacal --version` names the version.
+application data (`%APPDATA%` on Windows, `~/.config` on Linux and macOS), in a folder for each
+release, `maniac/c64`, `maniac/v1` and `maniac/v2`: the releases' saves do not fit one another,
+and their files have ScummVM's names (`maniac.s01` and so on), so each release keeps its own.
+Saves made with 0.1.0-alpha or 0.2.0-alpha are in `maniac` itself; a save does not say which
+release made it, so move them by hand into the release's folder. `maniacal --help` lists
+everything, and `maniacal --version` names the version.
 
 ### Looking inside
 
@@ -103,7 +112,8 @@ data could not be read, a headless run stopped on an error, or the window could 
 
 ### Not yet
 
-The NES release; the demos (there is no data here to test them); the Amiga and Atari ST releases.
+The demos (the 1987 and 1988 DOS demos are detected and refused for now; the C64's has no data
+here); the other languages; the NES release; the Amiga and Atari ST releases.
 [ROADMAP.md](ROADMAP.md) gives the order of work, done and to come.
 
 ## Layout

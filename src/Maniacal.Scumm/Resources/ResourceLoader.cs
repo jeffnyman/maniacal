@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using Maniacal.Scumm.Costumes;
+using Maniacal.Scumm.Detection;
 using Maniacal.Scumm.Rooms;
 using Maniacal.Scumm.Storage;
 
@@ -29,12 +30,20 @@ public sealed class ResourceLoader
 
     /// <summary>
     /// Reads the index from <c>00.LFL</c> (on the C64, from the disk images) and returns a loader
-    /// over it. Throws <see cref="FileNotFoundException"/> when the container has no such file and
+    /// over it. Throws <see cref="NotSupportedException"/> for a release Maniacal knows but does
+    /// not play (another language, platform, or a demo; the message says which),
+    /// <see cref="FileNotFoundException"/> when the container has no <c>00.LFL</c>, and
     /// <see cref="InvalidDataException"/> when its index is not Maniac Mansion's or ends early.
+    /// Data that is no release ScummVM knows is opened as it is.
     /// </summary>
     public static ResourceLoader Open(IGameContainer game)
     {
         game = C64DiskImage.Open(game) ?? game;
+        if (ScummDetector.Identify(game) is { Unsupported: { } reason } found)
+        {
+            throw new NotSupportedException($"This is {found.Description}, which Maniacal does not play: {reason}.");
+        }
+
         return new(game, ResourceIndex.Parse(LflFile.Read(game, 0)));
     }
 
