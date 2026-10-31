@@ -10,7 +10,7 @@ public sealed record CostumeFrame(Surface8 Pixels, int OriginX, int OriginY);
 /// nothing is drawn. Mirrors ScummVM's <c>ClassicCostumeRenderer</c>: <c>drawLimb</c>,
 /// <c>byleRLEDecode</c> (version 2), <c>byleRLEDecode_C64</c> (version 1) and <c>setPalette</c>.
 /// </summary>
-public static class CostumeRenderer
+internal static class CostumeRenderer
 {
     public const byte Transparent = 0xFF;
 

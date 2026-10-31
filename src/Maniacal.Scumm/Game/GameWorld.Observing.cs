@@ -4,14 +4,31 @@ using Maniacal.Scumm.Scripts;
 namespace Maniacal.Scumm.Game;
 
 /// <summary>An actor as it is at the moment it was looked at: its number, name, costume, position, facing (in degrees) and whether it is drawn.</summary>
-public readonly record struct ActorInfo(int Number, string Name, int Costume, int X, int Y, int Facing, bool Visible);
+public readonly record struct ActorInfo
+{
+    public int Number { get; init; }
+    public string Name { get; init; }
+    public int Costume { get; init; }
+    public int X { get; init; }
+    public int Y { get; init; }
+    public int Facing { get; init; }
+    public bool Visible { get; init; }
+}
 
 /// <summary>
 /// A script alive in a slot at the moment it was looked at: what its code belongs to, its number
 /// (a script's, or an object's for a verb script), where it is in its code, its
 /// <see cref="SlotStatus"/> and, while paused, its delay in ticks.
 /// </summary>
-public readonly record struct RunningScript(int Slot, ScriptKind Kind, int Number, int Offset, byte Status, int Delay);
+public readonly record struct RunningScript
+{
+    public int Slot { get; init; }
+    public ScriptKind Kind { get; init; }
+    public int Number { get; init; }
+    public int Offset { get; init; }
+    public byte Status { get; init; }
+    public int Delay { get; init; }
+}
 
 /// <summary>
 /// What a host, a recording or a tool needs of a running game beyond the screen and input: the
@@ -53,12 +70,12 @@ public sealed partial class GameWorld
     /// <summary>The scripts alive in their slots.</summary>
     public IReadOnlyList<RunningScript> RunningScripts()
         => Engine.Slots.Select((slot, i) => (slot, i)).Where(p => !p.slot.IsDead)
-            .Select(p => new RunningScript(p.i, p.slot.Kind, p.slot.Number, p.slot.Offset, p.slot.Status, p.slot.Delay))
+            .Select(p => new RunningScript { Slot = p.i, Kind = p.slot.Kind, Number = p.slot.Number, Offset = p.slot.Offset, Status = p.slot.Status, Delay = p.slot.Delay })
             .ToList();
 
     /// <summary>The actors in the room on screen.</summary>
     public IReadOnlyList<ActorInfo> ActorsHere()
         => Actors.Skip(1).Where(a => a.InCurrentRoom)
-            .Select(a => new ActorInfo(a.Number, a.Name, a.CostumeNumber, a.X, a.Y, a.Facing, a.Visible))
+            .Select(a => new ActorInfo { Number = a.Number, Name = a.Name, Costume = a.CostumeNumber, X = a.X, Y = a.Y, Facing = a.Facing, Visible = a.Visible })
             .ToList();
 }

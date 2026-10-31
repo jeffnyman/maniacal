@@ -81,19 +81,19 @@ public sealed class Room
     }
 
     /// <summary>Where the exit and entry scripts start in the room (<c>_EXCD_offs</c>, <c>_ENCD_offs</c>), 0 for none.</summary>
-    public int ExitScriptOffset { get; }
+    internal int ExitScriptOffset { get; }
 
-    public int EntryScriptOffset { get; }
+    internal int EntryScriptOffset { get; }
 
     /// <summary>Where the walkboxes start in the room: their count, the boxes, then the matrix (version 0: the boxes up to 0xFF, then their neighbours). 0 for none.</summary>
-    public int BoxOffset { get; }
+    internal int BoxOffset { get; }
 
     public int Number { get; }
 
     public int Version { get; }
 
     /// <summary>The room resource, from its size word.</summary>
-    public ReadOnlyMemory<byte> Data { get; }
+    internal ReadOnlyMemory<byte> Data { get; }
 
     /// <summary>Width in pixels.</summary>
     public int Width { get; }
@@ -102,26 +102,26 @@ public sealed class Room
     public int Height { get; }
 
     /// <summary>Version 2: offset of the background picture and its mask (<c>_IM00_offs</c>). Versions 0 and 1 keep their graphics elsewhere and leave this 0.</summary>
-    public int ImageOffset { get; }
+    internal int ImageOffset { get; }
 
     internal IReadOnlyList<RoomObject> Objects { get; }
 
-    public WalkBoxes WalkBoxes { get; }
+    internal WalkBoxes WalkBoxes { get; }
 
     /// <summary>Global sounds loaded with the room.</summary>
-    public IReadOnlyList<int> Sounds { get; }
+    internal IReadOnlyList<int> Sounds { get; }
 
     /// <summary>Global scripts loaded with the room. Versions 1 and 2 have no room-local scripts.</summary>
-    public IReadOnlyList<int> Scripts { get; }
+    internal IReadOnlyList<int> Scripts { get; }
 
-    public ReadOnlyMemory<byte> EntryScript { get; }
+    internal ReadOnlyMemory<byte> EntryScript { get; }
 
-    public ReadOnlyMemory<byte> ExitScript { get; }
+    internal ReadOnlyMemory<byte> ExitScript { get; }
 
     /// <summary>The object with a global number, or null when it is not in this room.</summary>
     internal RoomObject? FindObject(int number) => Objects.FirstOrDefault(o => o.Number == number);
 
-    public static Room Parse(int number, int version, ReadOnlyMemory<byte> data)
+    internal static Room Parse(int number, int version, ReadOnlyMemory<byte> data)
     {
         if (version is < 0 or > 2)
         {

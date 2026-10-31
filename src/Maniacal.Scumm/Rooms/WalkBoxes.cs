@@ -60,7 +60,7 @@ internal readonly record struct WalkBox(
 /// only each box's neighbours, a list ended by 0xFF, and finds its way with them itself. Mirrors
 /// the box loading of <c>ScummEngine_v3old::resetRoomSubBlocks</c> and <c>getNextBox</c>.
 /// </summary>
-public sealed class WalkBoxes
+internal sealed class WalkBoxes
 {
     // the list that ends a version 0 box list and each of its neighbour lists
     private const byte EndOfList = 0xFF;

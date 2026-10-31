@@ -22,7 +22,7 @@ namespace Maniacal.Scumm.Scripts;
 /// with bit 0x40 as no operand at all: the object the running sentence is about
 /// (<c>ScummEngine_v0::getActiveObject</c>). Its text is bytes up to a zero, without escapes.</para>
 /// </remarks>
-public sealed class ScriptDecoder(int version)
+internal sealed class ScriptDecoder(int version)
 {
     private const byte Param1 = 0x80, Param2 = 0x40, Param3 = 0x20;
 

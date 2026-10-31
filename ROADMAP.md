@@ -597,11 +597,28 @@ Where it comes from:
   with the speaker; the C64 with Escape) give the same output, screenshots and sound, byte for
   byte, before and after.
 
+- **The inspection API.** Looking inside a release is the library's, and promised as the rest is:
+  `GameInspector` (`Maniacal.Scumm.Inspection`), opened on a `ResourceLoader` as `GameWorld` is,
+  gives a room's picture, mask and objects (`Room`, with `RoomObjects` none, initial or all;
+  `RoomPicture`, `ObjectInfo`), a costume's standing and walking figures (`Costume`,
+  `CostumeFigures`), scripts decoded (`Script`, `RoomScripts`; `ScriptListing`, `ScriptLine`), and
+  a room's screen with figures standing in it (`View`, `StandingActor`, `Facing`; `RoomScreen`,
+  `PlacedActor`). What it gives back are plain records with init properties, not positional, so
+  that a property added later breaks nothing (the results `GameWorld` gives, `ActorInfo` and
+  `RunningScript`, follow the same rule). The player's `--room`, `--costume`, `--script`,
+  `--room-scripts` and `--view` are built on it, and the player no longer sees the engine's
+  internals. With that, what was public only for the player is internal: the renderers
+  (`RoomRenderer`, `RoomView`, `CostumeRenderer`, `V0CostumeRenderer`), `ScriptDecoder`,
+  `WalkBoxes`, `ActorDrawing`, `ScreenLayout`, `Costume` and `ResourceType`; `ResourceLoader`'s
+  loads (it keeps `Open`), `Room`'s data and offsets (it keeps its number, version and size), and
+  all of `Camera` but its centre. `InspectionTests` drives the API. Checked: on the C64 and both DOS
+  releases, every tool, on rooms, costumes and scripts that are there and some that are not, gives
+  the same output and the same PNGs, byte for byte, before and after (218 files), but for one
+  error: a view whose costume is missing now fails before it places any figure, so it no longer
+  lists the figures before it first.
+
 ### Next, before a 1.0
 
-- Decide what the player's inspection tools (`--room`, `--costume`, `--script`, `--view`) should
-  have as public API: a small inspection API, or the inspection code moved into the player. Then
-  the player needs no internals, and its `InternalsVisibleTo` goes.
 - The names (V0, V1 and V2 or the releases' names), sealing, read-only collections, the
   exceptions a bad game folder throws, and documentation comments required on what is public.
 - At 1.0, move `PublicAPI.Unshipped.txt` into `PublicAPI.Shipped.txt` and set package

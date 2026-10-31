@@ -7,7 +7,7 @@ namespace Maniacal.Scumm.View;
 /// Where the parts of the 320x200 screen are. Mirrors the <c>initScreens</c> calls of
 /// <c>ScummEngine::resetScumm</c>: the message lines above the room, the verbs and inventory below.
 /// </summary>
-public readonly record struct ScreenLayout(int RoomTop, int RoomBottom)
+internal readonly record struct ScreenLayout(int RoomTop, int RoomBottom)
 {
     public const int Width = 320;
     public const int Height = 200;
@@ -34,14 +34,14 @@ public readonly record struct ScreenLayout(int RoomTop, int RoomBottom)
 /// <param name="FacingLeft">Whether the actor faces left (270 degrees), which moves it right by 16 pixels.</param>
 /// <param name="BehindMask">Whether the room mask covers it: true when its walkbox's mask is not 0.</param>
 /// <param name="Elevation">Height above its position, in actor units.</param>
-public readonly record struct ActorDrawing(CostumeFrame Frame, int X, int Y, bool FacingLeft, bool BehindMask, int Elevation = 0);
+internal readonly record struct ActorDrawing(CostumeFrame Frame, int X, int Y, bool FacingLeft, bool BehindMask, int Elevation = 0);
 
 /// <summary>
 /// The room as the screen shows it: the part the camera looks at, with actors drawn on it.
 /// Mirrors <c>Actor_v2::prepareDrawActorCostume</c>, <c>BaseCostumeRenderer::drawCostume</c> and
 /// the mask test of the costume decoders for versions 1 and 2.
 /// </summary>
-public static class RoomView
+internal static class RoomView
 {
     /// <summary>The 320-pixel-wide part of a drawn room the camera shows, and its mask.</summary>
     internal static MaskedImage Window(MaskedImage room, Camera camera)

@@ -35,7 +35,7 @@ public sealed class ResourceLoader
     }
 
     /// <summary>The decoded contents of a room file.</summary>
-    public ReadOnlyMemory<byte> RoomFile(int room)
+    internal ReadOnlyMemory<byte> RoomFile(int room)
     {
         if (!_files.TryGetValue(room, out var data))
         {
@@ -51,7 +51,7 @@ public sealed class ResourceLoader
     /// for it or its room file is missing. Throws <see cref="InvalidDataException"/> when the entry
     /// points outside its file.
     /// </summary>
-    public ReadOnlyMemory<byte>? Load(ResourceType type, int index)
+    internal ReadOnlyMemory<byte>? Load(ResourceType type, int index)
     {
         var location = Index.Locate(type, index);
         if (!location.IsPresent || !LflFile.Exists(_game, location.Room))
@@ -75,11 +75,11 @@ public sealed class ResourceLoader
     }
 
     /// <summary>Loads and parses a room, or returns null when the index has no such room.</summary>
-    public Room? LoadRoom(int room)
+    internal Room? LoadRoom(int room)
         => Load(ResourceType.Room, room) is { } data ? Room.Parse(room, Index.Version, data) : null;
 
     /// <summary>Loads and parses a costume, or returns null when the index has no such costume.</summary>
-    public Costume? LoadCostume(int costume)
+    internal Costume? LoadCostume(int costume)
         => Load(ResourceType.Costume, costume) is { } data ? Costume.Parse(costume, data) : null;
 
     /// <summary>Loads and parses a C64 costume, or returns null when the index has no such costume.</summary>

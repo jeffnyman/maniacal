@@ -7,9 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Maniacal.Scumm.Tests" />
-    <!-- for now: the player's inspection tools (room, costume, script, view) still reach into the
-         engine; which of that becomes public API is decided before a 1.0 -->
-    <InternalsVisibleTo Include="maniacal" />
     <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
   </ItemGroup>
 </Project>

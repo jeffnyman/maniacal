@@ -6,7 +6,7 @@ namespace Maniacal.Scumm.Costumes;
 /// Draws a C64 actor's limbs in C64 colour numbers, with <see cref="CostumeRenderer.Transparent"/>
 /// where nothing is drawn. Mirrors ScummVM's <c>V0CostumeRenderer::drawLimb</c> and its palette.
 /// </summary>
-public static class V0CostumeRenderer
+internal static class V0CostumeRenderer
 {
     /// <summary>Half an actor's width, which a limb's offset counts from (<c>a->_width / 2</c>, of <c>initActor</c>'s 24).</summary>
     public const int HalfWidth = 12;

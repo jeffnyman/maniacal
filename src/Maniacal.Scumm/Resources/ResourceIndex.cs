@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 namespace Maniacal.Scumm.Resources;
 
 /// <summary>The resource types the index locates. Mirrors ScummVM's <c>rtRoom</c>, <c>rtCostume</c>, <c>rtScript</c> and <c>rtSound</c>.</summary>
-public enum ResourceType
+internal enum ResourceType
 {
     Room,
     Costume,

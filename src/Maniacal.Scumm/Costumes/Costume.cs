@@ -36,7 +36,7 @@ internal readonly record struct CostumeCel(int Width, int Height, int RelX, int 
 /// the limb's frame table; commands <see cref="Hide"/>, <see cref="Stop"/> and <see cref="Start"/>
 /// are not cels.</para>
 /// </remarks>
-public sealed class Costume
+internal sealed class Costume
 {
     public const int FormatV1 = 0x57;
 

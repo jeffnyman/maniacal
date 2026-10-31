@@ -6,7 +6,7 @@ namespace Maniacal.Scumm.Graphics;
 /// Draws rooms and their objects, in the colour numbers of <see cref="Palettes.ForVersion"/>: the
 /// C64's for version 0, EGA for versions 1 and 2.
 /// </summary>
-public static class RoomRenderer
+internal static class RoomRenderer
 {
     /// <summary>The state bit that makes an object draw its image. Mirrors ScummVM's <c>kObjectStateIntrinsic</c>.</summary>
     public const int ImageState = 8;

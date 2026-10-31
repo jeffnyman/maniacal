@@ -3,6 +3,7 @@ using Maniacal.Scumm;
 using Maniacal.Scumm.Costumes;
 using Maniacal.Scumm.Graphics;
 using Maniacal.Scumm.Hosting;
+using Maniacal.Scumm.Inspection;
 using Maniacal.Scumm.Resources;
 using Maniacal.Scumm.Scripts;
 using Maniacal.Scumm.Storage;
@@ -41,7 +42,7 @@ internal static class Program
         var skips = new List<int>();
         var inputs = new List<(int Step, Action<Maniacal.Scumm.Game.GameWorld> Give)>();
         int? cameraX = null;
-        var actors = new List<(int Costume, int X, int Y, int Direction)>();
+        var actors = new List<StandingActor>();
         string? text = null;
         bool mask = false;
         string objects = "initial";
@@ -276,28 +277,27 @@ internal static class Program
     {
         try
         {
-            var loader = ResourceLoader.Open(container);
-            if (loader.LoadRoom(number) is not { } room)
+            var inspector = new GameInspector(ResourceLoader.Open(container));
+            var which = objects switch
+            {
+                "none" => RoomObjects.None,
+                "all" => RoomObjects.All,
+                _ => RoomObjects.Initial,
+            };
+            if (inspector.Room(number, which) is not { } room)
             {
                 Console.Error.WriteLine($"There is no room {number}");
                 return 1;
             }
 
-            var states = loader.Index.ObjectStates;
-            var image = objects switch
-            {
-                "none" => RoomRenderer.DrawBackground(room),
-                "all" => RoomRenderer.RenderAll(room),
-                _ => RoomRenderer.Render(room, n => n < states.Count ? states[n] : 0),
-            };
             using var file = File.Create(path);
             if (mask)
             {
-                PngWriter.Write(file, image.Mask, [Rgb.Black, Rgb.White], zoom, zoom);
+                PngWriter.Write(file, room.Mask, [Rgb.Black, Rgb.White], zoom, zoom);
             }
             else
             {
-                PngWriter.Write(file, image.Pixels, Palettes.ForVersion(room.Version), zoom, zoom);
+                PngWriter.Write(file, room.Pixels, Palettes.ForVersion(inspector.Version), zoom, zoom);
             }
 
             Console.WriteLine($"Room {number}: {room.Width}x{room.Height}, {room.Objects.Count} objects, written to {path}");
@@ -322,39 +322,22 @@ internal static class Program
     {
         try
         {
-            var loader = ResourceLoader.Open(container);
-            if (loader.Index.Version == 0)
-            {
-                return WriteCostumeV0(loader, number, zoom, path);
-            }
-
-            if (loader.LoadCostume(number) is not { } costume)
+            var inspector = new GameInspector(ResourceLoader.Open(container));
+            if (inspector.Costume(number) is not { } costume)
             {
                 Console.Error.WriteLine($"There is no costume {number}");
                 return 1;
             }
 
-            int[] standing = [CostumeRenderer.InitFrame, CostumeRenderer.StandFrame];
-            int[] walking = [CostumeRenderer.InitFrame, CostumeRenderer.WalkFrame];
-            int walkSteps = costume.Animation(CostumeRenderer.WalkFrame * 4 + CostumeRenderer.Right)
-                .Where(l => l.Start is not null).Select(l => l.Length + 1).DefaultIfEmpty(1).Max();
-
-            var rows = new List<List<CostumeFrame>>
-            {
-                new[] { CostumeRenderer.Left, CostumeRenderer.Right, CostumeRenderer.Front, CostumeRenderer.Back }
-                    .Select(d => CostumeRenderer.DrawFrame(costume, d, standing, number)).ToList(),
-                Enumerable.Range(0, walkSteps)
-                    .Select(step => CostumeRenderer.DrawFrame(costume, CostumeRenderer.Right, walking, number, step)).ToList(),
-            };
-
-            var sheet = Sheet(rows);
             var palette = new Rgb[256];
-            Palettes.Ega.CopyTo(palette);
-            palette[CostumeRenderer.Transparent] = new Rgb(0x40, 0x40, 0x60);
+            Palettes.ForVersion(inspector.Version).CopyTo(palette);
+            palette[CostumeFigures.Transparent] = new Rgb(0x40, 0x40, 0x60);
 
             using var file = File.Create(path);
-            PngWriter.Write(file, sheet, palette, zoom, zoom);
-            Console.WriteLine($"Costume {number}: format 0x{costume.Format:X2}, {costume.AnimationCount} animations, {walkSteps} walk steps, written to {path}");
+            PngWriter.Write(file, Sheet([[.. costume.Standing], [.. costume.Walking]]), palette, zoom, zoom);
+            Console.WriteLine(costume.Format is { } format
+                ? $"Costume {number}: format 0x{format:X2}, {costume.Animations} animations, {costume.Walking.Count} walk steps, written to {path}"
+                : $"Costume {number}: {costume.Animations} clips, {costume.Walking.Count} walk steps, written to {path}");
             return 0;
         }
         catch (InvalidDataException ex)
@@ -363,35 +346,6 @@ internal static class Program
             return 3;
         }
     }
-
-    /// <summary>The C64's costume sheet: the standing clips facing left, right, front and back, then the walk to the right.</summary>
-    private static int WriteCostumeV0(ResourceLoader loader, int number, int zoom, string path)
-    {
-        if (loader.LoadCostumeV0(number) is not { } costume)
-        {
-            Console.Error.WriteLine($"There is no costume {number}");
-            return 1;
-        }
-
-        int walkSteps = V0CostumeRenderer.ClipLength(costume, V0WalkRight);
-        var rows = new List<List<CostumeFrame>>
-        {
-            Enumerable.Range(V0StandLeft, 4).Select(clip => V0CostumeRenderer.DrawClip(costume, clip, number)).ToList(),
-            Enumerable.Range(0, walkSteps).Select(step => V0CostumeRenderer.DrawClip(costume, V0WalkRight, number, step)).ToList(),
-        };
-
-        var palette = new Rgb[256];
-        Palettes.ForVersion(0).CopyTo(palette);
-        palette[CostumeRenderer.Transparent] = new Rgb(0x40, 0x40, 0x60);
-
-        using var file = File.Create(path);
-        PngWriter.Write(file, Sheet(rows), palette, zoom, zoom);
-        Console.WriteLine($"Costume {number}: {costume.ClipCount} clips, {walkSteps} walk steps, written to {path}");
-        return 0;
-    }
-
-    // the C64's clips: walking right, and standing facing left (then right, front and back)
-    private const int V0WalkRight = 1, V0StandLeft = 4;
 
     /// <summary>
     /// Runs the boot script headless, then the given number of main-loop steps: script delays count
@@ -546,41 +500,26 @@ internal static class Program
     /// </summary>
     private static int Disassemble(IGameContainer container, int? script, int? roomNumber)
     {
-        var loader = ResourceLoader.Open(container);
-        var decoder = new ScriptDecoder(loader.Index.Version);
+        var inspector = new GameInspector(ResourceLoader.Open(container));
 
-        static void Print(ScriptDecoder decoder, string title, ReadOnlyMemory<byte> code, int start, IReadOnlyList<Maniacal.Scumm.Rooms.VerbEntry>? verbs = null)
+        static void Print(ScriptListing listing)
         {
-            Console.WriteLine(title);
-            try
+            Console.WriteLine(listing.Title);
+            foreach (var line in listing.Lines)
             {
-                // only what execution can reach is decoded; the bytes between are shown as such
-                var entries = verbs?.Select(v => v.Offset).ToList() ?? [start];
-                int covered = start;
-                foreach (var instruction in decoder.DecodeReachable(code, entries).Values)
+                foreach (var verb in listing.Verbs.Where(v => v.Offset == line.Offset && line.Instruction is not null))
                 {
-                    if (instruction.Offset > covered)
-                    {
-                        Console.WriteLine($"    [{covered:X4}] {instruction.Offset - covered} unreachable bytes");
-                    }
-
-                    foreach (var verb in verbs?.Where(v => v.Offset == instruction.Offset) ?? [])
-                    {
-                        Console.WriteLine($"  verb {verb.Verb}:");
-                    }
-
-                    Console.WriteLine("    " + instruction);
-                    covered = Math.Max(covered, instruction.End);
+                    Console.WriteLine($"  verb {verb.Verb}:");
                 }
 
-                if (covered < code.Length)
-                {
-                    Console.WriteLine($"    [{covered:X4}] {code.Length - covered} unreachable bytes");
-                }
+                Console.WriteLine(line.Instruction is { } text
+                    ? $"    [{line.Offset:X4}] {text}"
+                    : $"    [{line.Offset:X4}] {line.Length} unreachable bytes");
             }
-            catch (InvalidDataException ex)
+
+            if (listing.Error is { } error)
             {
-                Console.WriteLine($"    {ex.Message}");
+                Console.WriteLine($"    {error}");
             }
 
             Console.WriteLine();
@@ -590,37 +529,26 @@ internal static class Program
         {
             if (script is { } number)
             {
-                if (loader.Load(ResourceType.Script, number) is not { } data)
+                if (inspector.Script(number) is not { } listing)
                 {
                     Console.Error.WriteLine($"There is no script {number}");
                     return 1;
                 }
 
-                // global script code starts after the 4-byte resource header (_resourceHeaderSize)
-                Print(decoder, $"Script {number} ({data.Length} bytes)", data, 4);
+                Print(listing);
             }
 
             if (roomNumber is { } n)
             {
-                if (loader.LoadRoom(n) is not { } room)
+                if (inspector.RoomScripts(n) is not { } listings)
                 {
                     Console.Error.WriteLine($"There is no room {n}");
                     return 1;
                 }
 
-                if (!room.EntryScript.IsEmpty)
+                foreach (var listing in listings)
                 {
-                    Print(decoder, $"Room {n} entry", room.EntryScript, 0);
-                }
-
-                if (!room.ExitScript.IsEmpty)
-                {
-                    Print(decoder, $"Room {n} exit", room.ExitScript, 0);
-                }
-
-                foreach (var obj in room.Objects.Where(o => o.Verbs.Count > 0))
-                {
-                    Print(decoder, $"Object {obj.Number} \"{obj.Name}\"", obj.Code, obj.Verbs.Min(v => v.Offset), obj.Verbs);
+                    Print(listing);
                 }
             }
 
@@ -634,7 +562,7 @@ internal static class Program
     }
 
     /// <summary>Parses "costume,x,y" or "costume,x,y,direction", the position in actor units and the direction left, right, front or back.</summary>
-    private static (int Costume, int X, int Y, int Direction)? ParseActor(string value)
+    private static StandingActor? ParseActor(string value)
     {
         var parts = value.Split(',');
         if (parts.Length is < 3 or > 4 || !int.TryParse(parts[0], out int costume)
@@ -643,16 +571,16 @@ internal static class Program
             return null;
         }
 
-        int direction = parts.Length == 3 ? CostumeRenderer.Front : parts[3] switch
+        Facing? facing = parts.Length == 3 ? Facing.Front : parts[3] switch
         {
-            "left" => CostumeRenderer.Left,
-            "right" => CostumeRenderer.Right,
-            "front" => CostumeRenderer.Front,
-            "back" => CostumeRenderer.Back,
-            _ => -1,
+            "left" => Facing.Left,
+            "right" => Facing.Right,
+            "front" => Facing.Front,
+            "back" => Facing.Back,
+            _ => null,
         };
 
-        return direction < 0 ? null : (costume, x, y, direction);
+        return facing is { } f ? new StandingActor(costume, x, y, f) : null;
     }
 
     /// <summary>
@@ -660,66 +588,36 @@ internal static class Program
     /// (or the room's left edge), and standing actors. Version 1 colours are those of the actor with
     /// the costume's number. An actor goes behind the room mask when the walkbox under it says so.
     /// </summary>
-    private static int WriteView(IGameContainer container, int number, int? cameraX, List<(int Costume, int X, int Y, int Direction)> actors, int zoom, string path)
+    private static int WriteView(IGameContainer container, int number, int? cameraX, List<StandingActor> actors, int zoom, string path)
     {
         try
         {
-            var loader = ResourceLoader.Open(container);
-            if (loader.LoadRoom(number) is not { } room)
+            var inspector = new GameInspector(ResourceLoader.Open(container));
+            if (inspector.View(number, cameraX, actors) is not { } view)
             {
                 Console.Error.WriteLine($"There is no room {number}");
                 return 1;
             }
 
-            var states = loader.Index.ObjectStates;
-            var camera = new Camera();
-            camera.SetRoom(room.Width);
-            camera.SetAtEx(cameraX ?? 0);
-            camera.Move();
-
-            var image = RoomView.Window(RoomRenderer.Render(room, n => n < states.Count ? states[n] : 0), camera);
-            foreach (var (costumeNumber, x, y, direction) in actors.OrderBy(a => a.Y))
+            foreach (var actor in view.Actors)
             {
-                CostumeFrame frame;
-                if (room.Version == 0)
-                {
-                    if (loader.LoadCostumeV0(costumeNumber) is not { } costumeV0)
-                    {
-                        Console.Error.WriteLine($"There is no costume {costumeNumber}");
-                        return 1;
-                    }
-
-                    frame = V0CostumeRenderer.DrawClip(costumeV0, V0StandLeft + direction, costumeNumber);
-                }
-                else
-                {
-                    if (loader.LoadCostume(costumeNumber) is not { } costume)
-                    {
-                        Console.Error.WriteLine($"There is no costume {costumeNumber}");
-                        return 1;
-                    }
-
-                    frame = CostumeRenderer.DrawFrame(costume, direction, [CostumeRenderer.InitFrame, CostumeRenderer.StandFrame], costumeNumber);
-                }
-
-                // version 0's layer is the mask's low 2 bits
-                int box = room.WalkBoxes.FindBox(x, y);
-                int mask = box >= 0 ? room.WalkBoxes.Boxes[box].Mask : 0;
-                bool behind = (room.Version == 0 ? mask & 3 : mask) != 0;
-                RoomView.DrawActor(image, room.Version, camera, new ActorDrawing(frame, x, y, direction == CostumeRenderer.Left, behind));
-                Console.WriteLine($"Costume {costumeNumber} at ({x}, {y}): walkbox {box}{(behind ? ", behind the mask" : "")}");
+                Console.WriteLine($"Costume {actor.Costume} at ({actor.X}, {actor.Y}): walkbox {actor.Box}{(actor.Behind ? ", behind the mask" : "")}");
             }
 
-            var screen = RoomView.Screen(image, ScreenLayout.ForVersion(room.Version));
             using var file = File.Create(path);
-            PngWriter.Write(file, screen, Palettes.ForVersion(room.Version), zoom, zoom);
-            Console.WriteLine($"Room {number}: camera at {camera.X}, view from x {camera.Left}, written to {path}");
+            PngWriter.Write(file, view.Screen, Palettes.ForVersion(inspector.Version), zoom, zoom);
+            Console.WriteLine($"Room {number}: camera at {view.CameraX}, view from x {view.ViewLeft}, written to {path}");
             return 0;
         }
         catch (InvalidDataException ex)
         {
             Console.Error.WriteLine(ex.Message);
             return 3;
+        }
+        catch (KeyNotFoundException ex)
+        {
+            Console.Error.WriteLine(ex.Message);
+            return 1;
         }
     }
 
@@ -773,7 +671,7 @@ internal static class Program
         int cellHeight = above + below + gap;
 
         var sheet = new Surface8(cellWidth * rows.Max(r => r.Count), cellHeight * rows.Count);
-        sheet.Fill(CostumeRenderer.Transparent);
+        sheet.Fill(CostumeFigures.Transparent);
         for (int row = 0; row < rows.Count; row++)
         {
             for (int column = 0; column < rows[row].Count; column++)
@@ -785,7 +683,7 @@ internal static class Program
                 {
                     for (int x = 0; x < frame.Pixels.Width; x++)
                     {
-                        if (frame.Pixels[x, y] != CostumeRenderer.Transparent)
+                        if (frame.Pixels[x, y] != CostumeFigures.Transparent)
                         {
                             sheet[x0 + x, y0 + y] = frame.Pixels[x, y];
                         }

@@ -151,6 +151,26 @@ using var file = File.Create("screen.png");
 PngWriter.Write(file, world.Screen(), Palettes.ForVersion(world.Version));
 ```
 
+It also looks inside a release without playing it, as the player's `--room`, `--costume`,
+`--script` and `--view` do: room pictures with their objects, costumes' figures, scripts decoded,
+and a room's screen with figures standing in it.
+
+```csharp
+using Maniacal.Scumm.Inspection;
+
+var inspector = new GameInspector(ResourceLoader.Open(new DirectoryGameContainer(folder)));
+var room = inspector.Room(12)!;
+foreach (var obj in room.Objects)
+{
+    Console.WriteLine($"{obj.Number} \"{obj.Name}\" at ({obj.X}, {obj.Y})");
+}
+
+foreach (var line in inspector.Script(4)!.Lines)
+{
+    Console.WriteLine($"[{line.Offset:X4}] {line.Instruction ?? $"{line.Length} unreachable bytes"}");
+}
+```
+
 `tools/PackageSmoke/run.ps1 -Game <folder> [-MoreGames <folder>,...]` packs the repository into
 `artifacts/packages` and checks the packages as a consumer would: a console app restores
 `Maniacal.Scumm` from that feed and plays each game headless, and the tool, installed from it,
