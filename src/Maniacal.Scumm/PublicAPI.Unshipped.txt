@@ -1,6 +1,36 @@
 #nullable enable
+Maniacal.Scumm.Game.GameWorld.ClickObject(int number) -> bool
+Maniacal.Scumm.Game.GameWorld.ObjectsHere() -> System.Collections.Generic.IReadOnlyList<Maniacal.Scumm.Game.RoomObjectInfo>!
 Maniacal.Scumm.Game.GameWorld.ReadAudio() -> short[]!
 Maniacal.Scumm.Game.GameWorld.SampleRate.get -> int
+Maniacal.Scumm.Game.RoomObjectInfo
+Maniacal.Scumm.Game.RoomObjectInfo.Equals(Maniacal.Scumm.Game.RoomObjectInfo other) -> bool
+Maniacal.Scumm.Game.RoomObjectInfo.Height.get -> int
+Maniacal.Scumm.Game.RoomObjectInfo.Height.init -> void
+Maniacal.Scumm.Game.RoomObjectInfo.Name.get -> string!
+Maniacal.Scumm.Game.RoomObjectInfo.Name.init -> void
+Maniacal.Scumm.Game.RoomObjectInfo.Number.get -> int
+Maniacal.Scumm.Game.RoomObjectInfo.Number.init -> void
+Maniacal.Scumm.Game.RoomObjectInfo.RoomObjectInfo() -> void
+Maniacal.Scumm.Game.RoomObjectInfo.ScreenX.get -> int?
+Maniacal.Scumm.Game.RoomObjectInfo.ScreenX.init -> void
+Maniacal.Scumm.Game.RoomObjectInfo.ScreenY.get -> int?
+Maniacal.Scumm.Game.RoomObjectInfo.ScreenY.init -> void
+Maniacal.Scumm.Game.RoomObjectInfo.State.get -> int
+Maniacal.Scumm.Game.RoomObjectInfo.State.init -> void
+Maniacal.Scumm.Game.RoomObjectInfo.Touchable.get -> bool
+Maniacal.Scumm.Game.RoomObjectInfo.Touchable.init -> void
+Maniacal.Scumm.Game.RoomObjectInfo.Width.get -> int
+Maniacal.Scumm.Game.RoomObjectInfo.Width.init -> void
+Maniacal.Scumm.Game.RoomObjectInfo.X.get -> int
+Maniacal.Scumm.Game.RoomObjectInfo.X.init -> void
+Maniacal.Scumm.Game.RoomObjectInfo.Y.get -> int
+Maniacal.Scumm.Game.RoomObjectInfo.Y.init -> void
 Maniacal.Scumm.Inspection.GameInspector.Costumes.get -> System.Collections.Generic.IReadOnlyList<int>!
 Maniacal.Scumm.Inspection.GameInspector.Rooms.get -> System.Collections.Generic.IReadOnlyList<int>!
 Maniacal.Scumm.Inspection.GameInspector.Scripts.get -> System.Collections.Generic.IReadOnlyList<int>!
+override Maniacal.Scumm.Game.RoomObjectInfo.GetHashCode() -> int
+static Maniacal.Scumm.Game.RoomObjectInfo.operator !=(Maniacal.Scumm.Game.RoomObjectInfo left, Maniacal.Scumm.Game.RoomObjectInfo right) -> bool
+static Maniacal.Scumm.Game.RoomObjectInfo.operator ==(Maniacal.Scumm.Game.RoomObjectInfo left, Maniacal.Scumm.Game.RoomObjectInfo right) -> bool
+~override Maniacal.Scumm.Game.RoomObjectInfo.Equals(object obj) -> bool
+~override Maniacal.Scumm.Game.RoomObjectInfo.ToString() -> string

@@ -1,5 +1,7 @@
+using Maniacal.Scumm.Graphics;
 using Maniacal.Scumm.Hosting;
 using Maniacal.Scumm.Scripts;
+using Maniacal.Scumm.View;
 
 namespace Maniacal.Scumm.Game;
 
@@ -26,6 +28,40 @@ public readonly record struct ActorInfo
 
     /// <summary>Whether the actor is drawn.</summary>
     public bool Visible { get; init; }
+}
+
+/// <summary>An object of the room on screen as it was at the moment it was looked at.</summary>
+public readonly record struct RoomObjectInfo
+{
+    /// <summary>The object's number.</summary>
+    public int Number { get; init; }
+
+    /// <summary>The object's name as the game shows it now; empty for the many objects without one.</summary>
+    public string Name { get; init; }
+
+    /// <summary>The left of its rectangle in the room, in pixels, where it is now.</summary>
+    public int X { get; init; }
+
+    /// <summary>The top of its rectangle in the room, in pixels, where it is now.</summary>
+    public int Y { get; init; }
+
+    /// <summary>Its rectangle's width, in pixels.</summary>
+    public int Width { get; init; }
+
+    /// <summary>Its rectangle's height, in pixels.</summary>
+    public int Height { get; init; }
+
+    /// <summary>Its state, as the scripts set it.</summary>
+    public int State { get; init; }
+
+    /// <summary>Whether a click on it finds it: it is not untouchable, and its parent objects let it be.</summary>
+    public bool Touchable { get; init; }
+
+    /// <summary>The column of its centre on the screen, or null when its centre is out of view.</summary>
+    public int? ScreenX { get; init; }
+
+    /// <summary>The row of its centre on the screen, or null when its centre is out of view.</summary>
+    public int? ScreenY { get; init; }
 }
 
 /// <summary>A script alive in a slot at the moment it was looked at.</summary>
@@ -118,6 +154,59 @@ public sealed partial class GameWorld
         => Engine.Slots.Select((slot, i) => (slot, i)).Where(p => !p.slot.IsDead)
             .Select(p => new RunningScript { Slot = p.i, Kind = p.slot.Kind, Number = p.slot.Number, Offset = p.slot.Offset, Status = p.slot.Status, Delay = p.slot.Delay })
             .ToList();
+
+    /// <summary>
+    /// The objects of the room on screen, in the order a click looks through them (the first one
+    /// a click's point is in, of those <see cref="RoomObjectInfo.Touchable"/>, is the one it finds).
+    /// Mirrors what <c>findObject</c> sees.
+    /// </summary>
+    public IReadOnlyList<RoomObjectInfo> ObjectsHere()
+    {
+        if (CurrentRoom is not { } room)
+        {
+            return [];
+        }
+
+        var layout = ScreenLayout.ForVersion(Version);
+        var objects = new List<RoomObjectInfo>();
+        foreach (var obj in room.Objects.Where(o => o.Number >= 1))
+        {
+            var (x, y) = PositionOf(obj);
+            int centreX = x + obj.Width / 2 - Camera.Left, centreY = y + obj.Height / 2 + layout.RoomTop;
+            bool inView = centreX is >= 0 and < ScreenLayout.Width && centreY >= layout.RoomTop && centreY < layout.RoomBottom;
+            objects.Add(new RoomObjectInfo
+            {
+                Number = obj.Number,
+                Name = NameOf(obj.Number),
+                X = x,
+                Y = y,
+                Width = obj.Width,
+                Height = obj.Height,
+                State = StateOf(obj.Number),
+                Touchable = (StateOf(obj.Number) & ScriptEngine.StateUntouchable) == 0 && RoomRenderer.ParentsAllow(room, obj, StateOf),
+                ScreenX = inView ? centreX : null,
+                ScreenY = inView ? centreY : null,
+            });
+        }
+
+        return objects;
+    }
+
+    /// <summary>
+    /// Clicks the centre of an object of the room on screen, as <see cref="Click"/> does at that
+    /// point. False, and no click, when the object is not in the room on screen or its centre is
+    /// out of view.
+    /// </summary>
+    public bool ClickObject(int number)
+    {
+        if (ObjectsHere().FirstOrDefault(o => o.Number == number) is not { ScreenX: { } x, ScreenY: { } y })
+        {
+            return false;
+        }
+
+        Click(x, y);
+        return true;
+    }
 
     /// <summary>The actors in the room on screen.</summary>
     public IReadOnlyList<ActorInfo> ActorsHere()

@@ -712,6 +712,13 @@ Where it comes from:
   game time that has passed holds, and `GameWorld.SampleRate` says at what rate; the player's
   `--wav` uses it, and writes the same file as before.
 
+- **The objects on screen.** `GameWorld.ObjectsHere()` gives the room's objects as a click sees
+  them (`RoomObjectInfo`: number, name, rectangle where the object is now, state, whether a click
+  finds it, and its centre on the screen when in view), in the order a click looks through them;
+  `ClickObject` clicks one. The kid selection's portraits have no names and other numbers in
+  every release, but they are the 40 by 48 objects left to right and START the 40 by 8 one, so a
+  program now picks the kids without knowing any place on the screen, the C64 too.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies
@@ -719,7 +726,6 @@ Where it comes from:
   to face left are drawn a strip apart for a second or two. Both are about how version 1 moves
   and animates actors, not about drawing them; the twinkling star differs too, being random.
 - The rest of what the programs used from outside found awkward: verbs come as numbers only;
-  picking the kids means knowing where they are on the screen (and on the C64 nothing says);
   opening a game takes four types and up to seven namespaces, where one entry point from a folder
   could detect, open and say what it found; `Palettes.ForVersion` is a span that cannot be kept.
 - At 1.0, move `PublicAPI.Unshipped.txt` into `PublicAPI.Shipped.txt` and set package

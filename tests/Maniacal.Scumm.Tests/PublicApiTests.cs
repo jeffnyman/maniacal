@@ -34,6 +34,61 @@ public class PublicApiTests
         }
     }
 
+    /// <summary>
+    /// The kids are picked by the objects on screen alone, with no place known beforehand, in
+    /// every release: the portraits are the 40 by 48 objects left to right (Dave, Syd, Michael,
+    /// Wendy, Bernard, Razor, Jeff), START the 40 by 8 one. Their numbers differ by release and
+    /// they have no names, so their places are what tells them apart.
+    /// </summary>
+    [Theory]
+    [InlineData(WalkthroughTests.V2)]
+    [InlineData(WalkthroughTests.V1)]
+    [InlineData(WalkthroughTests.C64)]
+    public void The_kids_are_picked_by_the_objects_on_screen(string folder)
+    {
+        if (GameFolders.Find(folder) is not { } path)
+        {
+            return;
+        }
+
+        var world = new GameWorld(ResourceLoader.Open(new DirectoryGameContainer(path)));
+        world.Boot();
+        int step = 0;
+        while (step < 2000 && !(world.CurrentRoom?.Number == 45 && step >= 300))
+        {
+            world.Step();
+            step++;
+        }
+
+        var here = world.ObjectsHere().Where(o => o.Touchable).ToList();
+        var portraits = here.Where(o => (o.Width, o.Height) == (40, 48)).GroupBy(o => o.X).Select(g => g.First()).OrderBy(o => o.X).ToList();
+        var start = Assert.Single(here, o => (o.Width, o.Height) == (40, 8));
+        Assert.Equal(7, portraits.Count);
+
+        foreach (var obj in new[] { portraits[1], portraits[4], start })
+        {
+            Assert.True(world.ClickObject(obj.Number));
+            for (int i = 0; i < 10; i++)
+            {
+                world.Step();
+            }
+        }
+
+        for (int i = 0; i < 3000 && world.ActorsHere().Count < 3; i++)
+        {
+            if (i % 50 == 0)
+            {
+                world.SkipCutscene();
+            }
+
+            world.Step();
+        }
+
+        Assert.NotEqual(45, world.CurrentRoom?.Number);
+        Assert.Contains(world.ActorsHere(), a => a.Name == "Syd");
+        Assert.Contains(world.ActorsHere(), a => a.Name == "Bernard");
+    }
+
     [Fact]
     public void A_headless_run_sees_the_kids_on_the_driveway()
     {
