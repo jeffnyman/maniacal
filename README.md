@@ -245,7 +245,8 @@ dotnet run --project src/Maniacal.Player -- --help
 Maniacal ships no game data. Point it at a folder holding a release. The tests look for the folders
 `maniac_mansion_original_DOS.com` (V1), `maniac_mansion_enhanced_DOS.com` (V2), `maniac_mansion_c64`
 (V0), and the demos' `maniac_mansion_demo_original_DOS`, `maniac_mansion_demo_enhanced_DOS` and
-`maniac_mansion_demo_C64`, and the NES's `maniac_mansion_NES`,
+`maniac_mansion_demo_C64`, the NES's `maniac_mansion_NES`, the Atari ST's `maniac_mansion_ST` and
+the Amiga's `maniac_mansion_AMIGA`,
 their names in any case, in the folder named by the `MANIACAL_GAMES` environment variable or in
 any folder above the test binary; a test whose folder is not there passes without checking. The
 `.gitignore` keeps game files out of the repository.
@@ -261,6 +262,8 @@ load in ScummVM and compare.
 The C64 release's disk images are found by ScummVM's names, `maniac1.d64` and `maniac2.d64`, or by
 the bytes each disk starts with. The NES cartridge is found by its contents, under any name ending
 in `.nes` (a dump with its iNES header) or `.prg` (the program data alone, as ScummVM wants it).
+The Atari ST's disk is read where it is, a `.st` image under any name; it is named, and refused
+until it is played (see [ROADMAP.md](ROADMAP.md)).
 
 ## Documentation
 

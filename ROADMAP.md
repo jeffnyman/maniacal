@@ -15,7 +15,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
 | 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
 | 7 | The NES | Done: the American cartridge winnable, with its title screens, sound and saves, opened by the library and the tool |
-| 8 | The Atari ST | Next, for the 1.0 |
+| 8 | The Atari ST | Under way, for the 1.0: its disk read, the release named |
 | 9 | The Amiga | For the 1.0, after the Atari ST |
 | Later | A browser player, Zak McKracken | Perhaps |
 
@@ -1006,10 +1006,22 @@ enhanced DOS game, version 2, on one 720 KB floppy: `00.LFL` to `54.LFL` (ScummV
 apart from DOS (`_game.platform == kPlatformAtariST`) is little, so most of the engine is reused.
 The steps:
 
-1. **The disk.** A reader for the `.st` image, an ordinary FAT12 floppy, giving its files as a
-   folder does, as the C64's `.d64` images are read (`GameImages.Unpack`); the room files found
-   under any case, and on the disk or copied off it. The release named as ScummVM names it
-   ("V2, English, Atari ST"), and refused until the steps below are done.
+1. **The disk (done).** `FatDiskImage` reads a `.st` image, the FAT12 floppy the Atari ST
+   shares with DOS, as the folder of files it holds, a folder's files under its name, by the
+   cluster chains of the file allocation table; `GameImages.Unpack` takes the one `.st` in a
+   folder that holds an `00.LFL`, after the C64's disks and the NES's cartridge. The release is
+   named as ScummVM names it, "Maniac Mansion (V2, English, Atari ST)" (index MD5 `0c331637...`),
+   and refused for now: "the Atari ST release is not supported yet".
+
+   The disk holds `00.LFL` to `53.LFL`, the rooms; its `54.LFL` is no room but the interpreter,
+   an Atari ST program (it starts with 0x601A) that `MANIAC.PRG` runs. Rooms 1 and 10 are DOS's
+   byte for byte; the index differs, and so do some rooms (53; 17 is 7,850 bytes against DOS's
+   10,342), for the steps below to look into. Every
+   room, script, sound and costume the index names reads as DOS's 1988 release's do (script 134
+   and sounds 1, 2, 47 to 49 and 53 point at nothing whole in both), but for sound 55, whose
+   length word, 10000, runs 2,232 bytes past the end of room 30: for step 3. Tested in
+   `FatDiskImageTests`: files read along their cluster chains (a label, a deleted file and a
+   folder among them), other disks not taken for the game, and the release's disk.
 2. **Pictures and the interface.** The Amiga's palette, which ScummVM gives the Atari ST too
    (`resetPalette`, `tableAmigaPalette`), through `tools/port_palettes.py`; the ST's cursor
    (`setBuiltinCursor`, `cursor.cpp`); anything else the ST's screens show differently. Checked

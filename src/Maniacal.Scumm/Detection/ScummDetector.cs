@@ -25,6 +25,7 @@ internal sealed record ScummGame(Md5Entry Entry, string Variant, int Version, bo
     public string? Unsupported
         => Language != "en" ? "it plays only the English releases"
         : Platform == "nes" ? (Entry.Md5 == AmericanNesIndex ? null : "of the NES releases it plays only the American cartridge")
+        : Platform == "atari" ? "the Atari ST release is not supported yet"
         : !(Platform == "dos" && Version is 1 or 2) && !(Platform == "c64" && Version == 0) ? "it plays only the Commodore 64, DOS and NES releases"
         : null;
 

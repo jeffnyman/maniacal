@@ -96,7 +96,7 @@ public class DetectionTests
     [InlineData("7f45ddd6dbfbf8f80c0c0efea4c295bc", "V1", null)]
     [InlineData("eea4d9ac2fb6f145945a308e8866915b", "C64", null)]
     [InlineData("183d7464902d40d00800e8ee1f04117c", "V2", "This is Maniac Mansion (V2, German, DOS), which Maniacal does not play: it plays only the English releases.")]
-    [InlineData("0c331637580950aea2346e012ef2a868", "V2", "This is Maniac Mansion (V2, English, Atari ST), which Maniacal does not play: it plays only the Commodore 64, DOS and NES releases.")]
+    [InlineData("0c331637580950aea2346e012ef2a868", "V2", "This is Maniac Mansion (V2, English, Atari ST), which Maniacal does not play: the Atari ST release is not supported yet.")]
     [InlineData("91d5db93187fab54d823f73bd6441cb6", "NES", null)]
     [InlineData("17f7296f63c78642724f057fd8e736a7", "NES", "This is Maniac Mansion (NES, English, NES), which Maniacal does not play: of the NES releases it plays only the American cartridge.")]
     [InlineData("40564ec47da48a67787d1f9bd043902a", "V2 Demo", null)]
