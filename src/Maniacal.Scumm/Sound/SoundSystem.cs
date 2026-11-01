@@ -6,22 +6,24 @@ namespace Maniacal.Scumm.Sound;
 /// ScummVM's <c>Sound</c> does for these versions (<c>startSound</c>, <c>addSoundToQueue</c>,
 /// <c>processSoundQueues</c>, <c>triggerSound</c>, <c>stopSound</c>, <c>stopAllSounds</c> and
 /// <c>isSoundRunning</c>). The player is version 1's or version 2's, on the PCjr by default, as
-/// ScummVM prefers it when a release supports both, the C64's SID player, or the NES's.
+/// ScummVM prefers it when a release supports both, the C64's SID player, the NES's, or the
+/// Amiga's.
 /// </summary>
 internal sealed class SoundSystem
 {
     private readonly Func<int, byte[]?> _load;
     private readonly List<int> _queue = [];
 
-    public SoundSystem(int version, Func<int, byte[]?> load, int sampleRate, bool pcjr = true, bool nes = false)
+    public SoundSystem(int version, Func<int, byte[]?> load, int sampleRate, bool pcjr = true, bool nes = false, bool amiga = false)
     {
         _load = load;
 
-        // ScummVM gives Player_V1 to version 1 of Maniac Mansion only, Player_SID to the C64, and
-        // Player_NES to the NES
+        // ScummVM gives Player_V1 to version 1 of Maniac Mansion only, Player_SID to the C64,
+        // Player_NES to the NES and Player_V2A to the Amiga's version 2
         Player = version switch
         {
             _ when nes => new PlayerNes(sampleRate),
+            2 when amiga => new PlayerV2a(sampleRate),
             0 => new PlayerSid(sampleRate),
             1 => new PlayerV1(sampleRate, pcjr),
             _ => new PlayerV2(sampleRate, pcjr),

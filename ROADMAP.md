@@ -16,7 +16,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
 | 7 | The NES | Done: the American cartridge winnable, with its title screens, sound and saves, opened by the library and the tool |
 | 8 | The Atari ST | Done: winnable every way, drawn and heard as in ScummVM, opened by the library and the tool |
-| 9 | The Amiga | Under way, for the 1.0: its disks read, drawn as ScummVM draws it |
+| 9 | The Amiga | Under way, for the 1.0: its disks read, drawn and heard as in ScummVM |
 | Later | A browser player, Zak McKracken | Perhaps |
 
 ## Design
@@ -1118,9 +1118,28 @@ The steps:
    to six. SDL's disk audio driver, which made the recording, runs about 1.2% slow by the wall
    clock (43,554 samples a second), so the recording cannot settle it; the ST keeps 236.7 until
    the Amiga's recording (step 3) shows which way the method leans.
-3. **Sound.** `Player_V2A`, the Amiga's own player (`players/player_v2a.cpp`, about 2,000 lines),
-   many of its sounds written one by one as their own classes, ported with its tables through a
-   generator and checked against ScummVM's own recorded output. Likely a few steps of its own.
+3. **Sound (done).** `PlayerV2a` plays the Amiga's sounds as ScummVM's `Player_V2A` does: each
+   known by the CRC of its data (from 0x0A, as long as the word at 0x08 says) and played by the
+   class ScummVM wrote for it, eight at once, stepped 60 times a second among the samples. The 16
+   classes Maniac Mansion's sounds use are ported (`V2aSounds`: single and looped waveforms, two
+   channels left and right, pitch bends and fades, the telephone, the typewriter, the sirens, the
+   exploding mansion, and the songs, played note by note on four channels with their instruments'
+   samples and volume envelopes); Zak McKracken's are left out. The table of 41 sounds (CRC, class,
+   arguments) comes from ScummVM's source through `tools/port_v2a_sounds.py`. Under them,
+   `AmigaMixer` is ScummVM's `Player_MOD`: up to 24 channels of signed 8-bit samples, each at its
+   own rate, volume and pan, a section looped or not, resampled linearly into stereo with
+   ScummVM's integer arithmetic, the update called at its rate among the samples. The Amiga's is
+   the one player that mixes its own two sides; the others still render mono, through an internal
+   hook in `MonoAudioSource` that leaves the public API as it was. 57 of the game's 58 sounds that
+   read whole are in the table (several share their data); the other, 70, is not, and ScummVM
+   does not play it either ("not recognized yet").
+
+   Checked against ScummVM 2026.4.0's own output, recorded through SDL's disk driver from a save
+   made as the intro begins, loaded in both: ours is ScummVM's sample for sample, on both
+   channels, at one offset, in every second checked from 20 to 57, the meteor on the right (57)
+   and the song over the hillside (58); every second from 10 to 63 as loud on each side. Tested in
+   `AmigaSoundTests` (the mixer's channels, loops and update, the CRC) and `AmigaTests` (the sounds
+   the table knows, and the intro's loudness on each side against ScummVM's).
 4. **The walkthrough and saves**, as for the Atari ST; then the refusal lifted.
 
 ## Later, perhaps

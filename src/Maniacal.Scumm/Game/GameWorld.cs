@@ -75,7 +75,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     {
         _loader = loader;
         SampleRate = sampleRate;
-        Sound = new SoundSystem(loader.Index.Version, LoadSound, sampleRate, pcjr, loader.Index.IsNes);
+        Sound = new SoundSystem(loader.Index.Version, LoadSound, sampleRate, pcjr, loader.Index.IsNes, loader.Platform == "amiga");
         Engine = new ScriptEngine(
             loader.Index.Version,
             LoadScript,

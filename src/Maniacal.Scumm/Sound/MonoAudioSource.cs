@@ -39,6 +39,27 @@ public abstract class MonoAudioSource : IAudioSource
     public void Read(Span<short> interleavedStereo)
     {
         int frames = interleavedStereo.Length / 2;
+        RenderStereo(interleavedStereo[..(frames * 2)]);
+
+        int gain = Volatile.Read(ref _gain);
+        if (gain != UnityGain)
+        {
+            for (int i = 0; i < frames * 2; i++)
+            {
+                interleavedStereo[i] = (short)((interleavedStereo[i] * gain) >> 8);
+            }
+        }
+
+        Interlocked.Add(ref _framesRendered, frames);
+    }
+
+    /// <summary>
+    /// Fills an interleaved stereo buffer: the mono samples on both sides, but for a source that
+    /// mixes its own two sides (the Amiga's).
+    /// </summary>
+    internal virtual void RenderStereo(Span<short> interleavedStereo)
+    {
+        int frames = interleavedStereo.Length / 2;
         if (_mono.Length < frames)
         {
             _mono = new short[frames];
@@ -46,16 +67,11 @@ public abstract class MonoAudioSource : IAudioSource
 
         var mono = _mono.AsSpan(0, frames);
         RenderMono(mono);
-
-        int gain = Volatile.Read(ref _gain);
         for (int i = 0; i < frames; i++)
         {
-            short sample = gain == UnityGain ? mono[i] : (short)((mono[i] * gain) >> 8);
-            interleavedStereo[2 * i] = sample;
-            interleavedStereo[2 * i + 1] = sample;
+            interleavedStereo[2 * i] = mono[i];
+            interleavedStereo[2 * i + 1] = mono[i];
         }
-
-        Interlocked.Add(ref _framesRendered, frames);
     }
 
     /// <summary>Fills the whole buffer with mono samples at <see cref="SampleRate"/>.</summary>

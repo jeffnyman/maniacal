@@ -2,6 +2,7 @@ using Maniacal.Scumm.Game;
 using Maniacal.Scumm.Graphics;
 using Maniacal.Scumm.Resources;
 using Maniacal.Scumm.Saves;
+using Maniacal.Scumm.Sound;
 using Maniacal.Scumm.Storage;
 
 namespace Maniacal.Scumm.Tests;
@@ -19,14 +20,14 @@ public class AmigaTests
     // the cursor: 15 by 15, its hotspot in the middle
     private const int CursorSize = 15, Hotspot = 7;
 
-    private static GameWorld? World()
+    private static GameWorld? World(int sampleRate = GameWorld.DefaultSampleRate)
         => GameFolders.Find(WalkthroughTests.Amiga) is { } path && AdfDiskImage.Open(new DirectoryGameContainer(path)) is { } disks
-            ? new GameWorld(new ResourceLoader(disks, ResourceIndex.Parse(LflFile.Read(disks, 0))))
+            ? new GameWorld(new ResourceLoader(disks, ResourceIndex.Parse(LflFile.Read(disks, 0))), sampleRate: sampleRate)
             : null;
 
-    private static GameWorld? Booted()
+    private static GameWorld? Booted(int sampleRate = GameWorld.DefaultSampleRate)
     {
-        if (World() is not { } world)
+        if (World(sampleRate) is not { } world)
         {
             return null;
         }
@@ -118,6 +119,84 @@ public class AmigaTests
         Assert.Equal((CursorSize, CursorSize, Hotspot, Hotspot), (state.CursorWidth, state.CursorHeight, state.CursorHotspotX, state.CursorHotspotY));
         Assert.Equal(36, state.GrabbedCursor.Count(b => b != 0xFF));
         Assert.Equal(Palettes.Amiga.ToArray().SelectMany(c => new[] { c.R, c.G, c.B }), state.CurrentPalette.Take(16 * 3));
+    }
+
+    /// <summary>
+    /// Every sound the index names is one <c>Player_V2A</c>'s table knows by its CRC, but sound 70,
+    /// which ScummVM does not play either ("not recognized yet"), and those that do not read whole.
+    /// </summary>
+    [Fact]
+    public void Its_sounds_are_known_to_the_player()
+    {
+        if (GameFolders.Find(WalkthroughTests.Amiga) is not { } path)
+        {
+            return;
+        }
+
+        var disks = AdfDiskImage.Open(new DirectoryGameContainer(path))!;
+        var loader = new ResourceLoader(disks, ResourceIndex.Parse(LflFile.Read(disks, 0)));
+        var unknown = Enumerable.Range(0, loader.Index.Count(ResourceType.Sound))
+            .Where(i => loader.IsReadable(ResourceType.Sound, i) && !PlayerV2a.Knows(loader.Load(ResourceType.Sound, i)!.Value.ToArray()))
+            .ToList();
+
+        Assert.Equal([70], unknown);
+        Assert.IsType<PlayerV2a>(World()!.Sound.Player);
+    }
+
+    /// <summary>
+    /// The intro's sound as ScummVM 2026.4.0 made it, sample for sample: the game saved as the intro
+    /// begins and loaded both here and in ScummVM, whose mixer's output, recorded through SDL's disk
+    /// driver, is ours on both channels at one offset, every sample of every second checked. Here, the
+    /// loudness of each side, second by second, as ScummVM's: the meteor on the right (57), then
+    /// the song over the hillside (58, played by its notes and instruments).
+    /// </summary>
+    [Fact]
+    public void The_intro_sounds_as_in_scummvm()
+    {
+        const int Rate = 44100;
+        if (Booted(Rate) is not { } world)
+        {
+            return;
+        }
+
+        Steps(world, 300);
+        foreach (var (x, y) in new[] { (82, 118), (202, 118) })
+        {
+            world.Click(x, y);
+            Steps(world, 100);
+        }
+
+        world.Click(290, 75);
+        Steps(world, 2);
+        var loaded = World(Rate)!;
+        loaded.Load(world.Save("intro", DateTime.Now));
+
+        var left = new List<short>();
+        var right = new List<short>();
+        while (loaded.Time.TotalSeconds < 64)
+        {
+            loaded.Step();
+            var stereo = loaded.ReadAudio();
+            for (int i = 0; i < stereo.Length; i += 2)
+            {
+                left.Add(stereo[i]);
+                right.Add(stereo[i + 1]);
+            }
+        }
+
+        double Loudness(List<short> side, int second)
+        {
+            var part = side.Skip(second * Rate).Take(Rate).ToArray();
+            double mean = part.Average(s => (double)s);
+            return part.Average(s => Math.Abs(s - mean));
+        }
+
+        // ScummVM's loudness on the left and on the right in those seconds
+        foreach (var (second, theirsLeft, theirsRight) in new[] { (12, 0, 323), (15, 0, 997), (18, 0, 1044), (19, 1747, 722), (23, 3741, 1032), (26, 5483, 1207), (30, 3487, 1006), (36, 1783, 772), (41, 2399, 1265), (46, 4543, 760), (51, 3736, 912), (57, 3505, 1197), (63, 1422, 502) })
+        {
+            Assert.Equal(theirsLeft, Loudness(left, second), 0.5);
+            Assert.Equal(theirsRight, Loudness(right, second), 0.5);
+        }
     }
 
     /// <summary>
