@@ -22,15 +22,15 @@ public sealed partial class GameWorld
 
     // the shape of the version 2 cursor (ScummVM's _cursor for setBuiltinCursor)
     // the cursor's picture as setBuiltinCursor makes it: version 2's crosshair, or the Atari ST's
-    private int CursorWidth => IsAtariSt ? AtariStCursorSize : 23;
+    private int CursorWidth => IsAtariSt ? AtariStCursorSize : IsAmiga ? AmigaCursorSize : 23;
 
-    private int CursorHeight => IsAtariSt ? AtariStCursorSize : 21;
+    private int CursorHeight => IsAtariSt ? AtariStCursorSize : IsAmiga ? AmigaCursorSize : 21;
 
-    private int CursorHotspotX => IsAtariSt ? AtariStCursorHotspot : 11;
+    private int CursorHotspotX => IsAtariSt ? AtariStCursorHotspot : IsAmiga ? AmigaCursorHotspot : 11;
 
-    private int CursorHotspotY => IsAtariSt ? AtariStCursorHotspot : 10;
+    private int CursorHotspotY => IsAtariSt ? AtariStCursorHotspot : IsAmiga ? AmigaCursorHotspot : 10;
 
-    private const int AtariStCursorSize = 16, AtariStCursorHotspot = 8;
+    private const int AtariStCursorSize = 16, AtariStCursorHotspot = 8, AmigaCursorSize = 15, AmigaCursorHotspot = 7;
 
     // the NES's: its cursor, and its room view's bounds (initScreens(16, 144))
     private const int NesCursorSize = 8, NesScreenB = 16, NesScreenH = 144;

@@ -16,7 +16,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
 | 7 | The NES | Done: the American cartridge winnable, with its title screens, sound and saves, opened by the library and the tool |
 | 8 | The Atari ST | Done: winnable every way, drawn and heard as in ScummVM, opened by the library and the tool |
-| 9 | The Amiga | Under way, for the 1.0: its disks read, the release named |
+| 9 | The Amiga | Under way, for the 1.0: its disks read, drawn as ScummVM draws it |
 | Later | A browser player, Zak McKracken | Perhaps |
 
 ## Design
@@ -1096,10 +1096,28 @@ The steps:
    nonsense (step 3). Tested in `AdfDiskImageTests`: two disks, one of each file system, read as
    one folder (a hash chain, an extension list, a file on both), other disks not taken for the
    game, and the release's disks.
-2. **Pictures and the interface.** The Amiga palette (shared with the Atari ST in Phase 8), and
-   what ScummVM does only for the Amiga's Maniac Mansion: room changes without the fade-in
-   (`gfx.cpp`'s `transitionEffect` and `fadeIn` branches), its verb colours (`vars.cpp`), its
-   cursor, and anything else its screens show differently. Checked against ScummVM's window.
+2. **Pictures and the interface (done).** The release draws in the Amiga palette (Phase 8's).
+   Its rooms change at once, with no transition, both ways: ScummVM's `fadeIn` and `fadeOut` do
+   nothing for the Amiga's Maniac Mansion ("verified on WinUAE"), where DOS shows 16 frames going
+   into the hall. Its cursor is a cross, 15 by 15 with its hotspot in the middle, its arms 3 to 7
+   pixels out, each with an arrowhead pointing in (`setBuiltinCursor`), and a save keeps it so. Its
+   clock runs at 240 quarter-frames a second, NTSC's 60 frames (`setTimerAndShakeFrequency`,
+   ScummVM's default, `amiga_pal_system` off), where DOS's version 2 runs at 236.7. The verb
+   colours of `vars.cpp` are version 5's (`VAR_VIDEOMODE`, which version 2 does not have), so
+   nothing else in version 2 treats the Amiga apart.
+
+   Checked against ScummVM 2026.4.0's window, from the files copied off the two disks (its
+   detection wants them in a folder of their own, the `rooms` one): the copyright and the kid
+   selection to the pixel, and saves made here in the driveway, on the porch and in the hall
+   loaded there, the screens the same to the pixel, cursor and all. Tested in `AmigaTests`: the
+   colours and the clock, those screens, the cursor and what a save keeps of it, and Dave going
+   into the house with no transition, every instruction handled.
+
+   Left open for the Atari ST: ScummVM's code gives it 240 too, falling through to the default,
+   but its recorded sound (Phase 8, step 3) matched version 2's 236.7 to half a percent and 240
+   to six. SDL's disk audio driver, which made the recording, runs about 1.2% slow by the wall
+   clock (43,554 samples a second), so the recording cannot settle it; the ST keeps 236.7 until
+   the Amiga's recording (step 3) shows which way the method leans.
 3. **Sound.** `Player_V2A`, the Amiga's own player (`players/player_v2a.cpp`, about 2,000 lines),
    many of its sounds written one by one as their own classes, ported with its tables through a
    generator and checked against ScummVM's own recorded output. Likely a few steps of its own.

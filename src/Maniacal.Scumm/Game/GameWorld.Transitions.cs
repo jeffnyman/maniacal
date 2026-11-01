@@ -49,6 +49,14 @@ public sealed partial class GameWorld
     /// </summary>
     private void FadeOut(int effect)
     {
+        // the Amiga's Maniac Mansion changes rooms without effects (fadeOut, "verified on WinUAE")
+        if (IsAmiga)
+        {
+            _doEffect = false;
+            _screenEffectFlag = false;
+            return;
+        }
+
         if (_screenEffectFlag && effect != 0)
         {
             var display = Displayed();
@@ -85,6 +93,13 @@ public sealed partial class GameWorld
     /// <summary>The new room's first frame shows with an effect. Mirrors <c>fadeIn</c> for effects 0 to 6 and 129, run by <c>scummLoop_handleEffects</c>.</summary>
     private void FadeIn(int effect, Surface8 screen)
     {
+        if (IsAmiga)
+        {
+            _doEffect = false;
+            _screenEffectFlag = true;
+            return;
+        }
+
         if (effect is >= 1 and <= 6)
         {
             TransitionEffect(effect - 1, screen);

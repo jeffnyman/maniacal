@@ -36,6 +36,9 @@ public sealed partial class GameWorld
     /// <summary>Key codes the input takes besides characters: the function keys are 315 to 323, as in ScummVM.</summary>
     public const int KeyEscape = 27, KeyF1 = 315, KeyF4 = 318, KeyF9 = 323;
 
+    // the Amiga's cross: its arms' first pixel from the hotspot, and their length
+    private const int AmigaCursorGap = 3, AmigaCursorArm = 5;
+
     // the pixels of a cursor picture that take the cursor's colour
     private const byte AtariStCursorMarked = 0x0F;
 
@@ -137,6 +140,32 @@ public sealed partial class GameWorld
 
         byte color = (Version == 0 ? CursorColorsV0 : CursorColors)[(_cursorFrame >> 1) & 3];
         var (x, y) = Mouse;
+
+        // the Amiga's is a cross, its arms 3 to 7 pixels from the hotspot, each with an arrowhead
+        // pointing in (setBuiltinCursor)
+        if (IsAmiga)
+        {
+            for (int i = AmigaCursorGap; i < AmigaCursorGap + AmigaCursorArm; i++)
+            {
+                Plot(-i, 0);
+                Plot(i, 0);
+                Plot(0, -i);
+                Plot(0, i);
+            }
+
+            for (int i = 1; i <= 2; i++)
+            {
+                foreach (int side in new[] { -1, 1 })
+                {
+                    Plot(side * (AmigaCursorGap + i), -i);
+                    Plot(side * (AmigaCursorGap + i), i);
+                    Plot(-i, side * (AmigaCursorGap + i));
+                    Plot(i, side * (AmigaCursorGap + i));
+                }
+            }
+
+            return;
+        }
 
         // the Atari ST's is a picture of its own, its marked pixels in the colour (atari_main_cursor)
         if (IsAtariSt)

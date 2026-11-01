@@ -146,10 +146,12 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
     /// <summary>
     /// How fast the game's clock runs, in quarter-frames a second: 1193182 / 5041 for version 2,
-    /// and for version 1 twelve a tick of the PC's 18.2 Hz timer; the NES, as the C64, at 240, four
-    /// a frame of its 60. Mirrors <c>setTimerAndShakeFrequency</c>, whose PC rates are for DOS only.
+    /// and for version 1 twelve a tick of the PC's 18.2 Hz timer; the NES and the Amiga, as the C64,
+    /// at 240, four a frame of their 60. Mirrors <c>setTimerAndShakeFrequency</c>, whose PC rates
+    /// are for DOS only. The Atari ST keeps version 2's: ScummVM's code gives it 240 too, but its
+    /// recorded sound matched this rate, and the recording's own pacing leaves the question open.
     /// </summary>
-    internal double TimerFrequency => IsNes ? C64NtscTimerRate : Version switch
+    internal double TimerFrequency => IsNes || IsAmiga ? C64NtscTimerRate : Version switch
     {
         0 => C64NtscTimerRate,
         1 => 1193182.0 / 65536 * 12,
@@ -365,6 +367,9 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
     /// <summary>Whether the release is the Atari ST's: the 1988 game with the Amiga's colours and a cursor of its own.</summary>
     internal bool IsAtariSt => _loader.Platform == "atari";
+
+    /// <summary>Whether the release is the Amiga's: the 1988 game in its colours, with a cursor of its own and no room transitions.</summary>
+    internal bool IsAmiga => _loader.Platform == "amiga";
 
     /// <summary>Whether the release is the NES's: version 1, with its own resources, screen and a few rules of its own.</summary>
     internal bool IsNes => Engine.IsNes;
