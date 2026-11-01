@@ -113,9 +113,11 @@ public class AtariStTests
     /// <summary>
     /// The intro's sounds as loud as ScummVM 2026.4.0 made them, second by second: the game saved as
     /// the intro begins, with the kids picked, and loaded both here and in ScummVM, whose mixer's
-    /// output was recorded through SDL's disk driver and aligned on ours (670 milliseconds later).
+    /// output was recorded through SDL's disk driver and aligned on ours (820 milliseconds later).
     /// The ST plays the 1988 DOS release's sounds, byte for byte, on the PCjr's voices by default
-    /// (<c>Player_V2</c>): the meteor (57, 58) and the music over the driveway (38).
+    /// (<c>Player_V2</c>): the meteor (57, 58) and the music over the driveway (38). The seconds the
+    /// music carries agree within about 1%; where the game's own sounds come in, some differ by up to
+    /// 6%, the recording's pacing (SDL's disk driver runs about 1.2% off the wall clock) not the game's.
     /// </summary>
     [Fact]
     public void The_intro_sounds_as_loud_as_in_scummvm()
@@ -150,7 +152,7 @@ public class AtariStTests
         }
 
         // ScummVM's loudness in those seconds (the mean distance from the mean)
-        foreach (var (second, theirs) in new[] { (11, 516), (13, 533), (15, 1445), (19, 1895), (22, 2229), (26, 2777), (30, 1908), (35, 1779), (40, 1946), (43, 1696) })
+        foreach (var (second, theirs) in new[] { (11, 514), (13, 542), (15, 1482), (19, 1765), (22, 2131), (26, 2714), (30, 2079), (36, 1966), (40, 1879) })
         {
             var part = left.Skip(second * Rate).Take(Rate).ToArray();
             double mean = part.Average(s => (double)s);

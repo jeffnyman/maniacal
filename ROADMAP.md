@@ -1050,10 +1050,11 @@ The steps:
    music (step 4).
 
    Checked against ScummVM 2026.4.0's own output, recorded through SDL's disk driver from a save
-   made as the intro begins, loaded in both and aligned (ScummVM 670 milliseconds later): from the
-   meteor (57, 58) through the music over the driveway (38), every second from 10 to 44 within
-   1.6% as loud, most within half a percent; after that the game's timing drifts against the
-   sound by a few steps. The title is silent in both. Tested in `AtariStTests`: the intro's
+   made as the intro begins, loaded in both and aligned (ScummVM 820 milliseconds later): from the
+   meteor (57, 58) through the music over the driveway (38), the seconds the music carries within
+   about 1% as loud; where the game's own sounds come in, some differ by up to 6%. The title is
+   silent in both. (Played first on DOS's PC timer rate, 236.7, the ST's sound had matched the
+   recording more closely; Phase 9 put it on 240, below.) Tested in `AtariStTests`: the intro's
    loudness against ScummVM's, and the ending music on the speaker and on the PCjr.
 4. **The walkthrough and saves (done).** The game is won in the ST release every way it can be,
    as on DOS (Syd's contract, Bernard's call, Wendy's memoirs, Michael's photographs), the
@@ -1113,11 +1114,11 @@ The steps:
    colours and the clock, those screens, the cursor and what a save keeps of it, and Dave going
    into the house with no transition, every instruction handled.
 
-   Left open for the Atari ST: ScummVM's code gives it 240 too, falling through to the default,
-   but its recorded sound (Phase 8, step 3) matched version 2's 236.7 to half a percent and 240
-   to six. SDL's disk audio driver, which made the recording, runs about 1.2% slow by the wall
-   clock (43,554 samples a second), so the recording cannot settle it; the ST keeps 236.7 until
-   the Amiga's recording (step 3) shows which way the method leans.
+   The Atari ST runs at 240 too. ScummVM's code gives it 240, falling through to the default, and
+   DOS's 236.7 is the PC's timer chip, which an ST does not have; the ST's interpreter, as the
+   Amiga's, counts its 60 frames a second. Its recorded sound (Phase 8, step 3) had matched 236.7
+   more closely, but SDL's disk audio driver, which made the recording, runs about 1.2% off the
+   wall clock (43,554 samples a second), so the recording does not settle a 1.4% question.
 3. **Sound (done).** `PlayerV2a` plays the Amiga's sounds as ScummVM's `Player_V2A` does: each
    known by the CRC of its data (from 0x0A, as long as the word at 0x08 says) and played by the
    class ScummVM wrote for it, eight at once, stepped 60 times a second among the samples. The 16
