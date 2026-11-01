@@ -21,7 +21,16 @@ public sealed partial class GameWorld
     private const int VarTalkActor = 41;
 
     // the shape of the version 2 cursor (ScummVM's _cursor for setBuiltinCursor)
-    private const int CursorWidth = 23, CursorHeight = 21, CursorHotspotX = 11, CursorHotspotY = 10;
+    // the cursor's picture as setBuiltinCursor makes it: version 2's crosshair, or the Atari ST's
+    private int CursorWidth => IsAtariSt ? AtariStCursorSize : 23;
+
+    private int CursorHeight => IsAtariSt ? AtariStCursorSize : 21;
+
+    private int CursorHotspotX => IsAtariSt ? AtariStCursorHotspot : 11;
+
+    private int CursorHotspotY => IsAtariSt ? AtariStCursorHotspot : 10;
+
+    private const int AtariStCursorSize = 16, AtariStCursorHotspot = 8;
 
     // the NES's: its cursor, and its room view's bounds (initScreens(16, 144))
     private const int NesCursorSize = 8, NesScreenB = 16, NesScreenH = 144;
@@ -216,7 +225,7 @@ public sealed partial class GameWorld
 
         // the palette resetPalette set: the EGA's on DOS, the C64's own; the NES's 64 colours,
         // which leave the darkened copy empty and the shadow palette whole
-        var palette = Palettes.MemoryForVersion(Version, IsNes).Span;
+        var palette = Palette.Span;
         for (int i = 0; i < palette.Length; i++)
         {
             s.CurrentPalette[i * 3] = palette[i].R;

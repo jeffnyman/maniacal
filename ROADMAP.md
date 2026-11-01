@@ -15,7 +15,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
 | 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
 | 7 | The NES | Done: the American cartridge winnable, with its title screens, sound and saves, opened by the library and the tool |
-| 8 | The Atari ST | Under way, for the 1.0: its disk read, the release named |
+| 8 | The Atari ST | Under way, for the 1.0: its disk read, drawn as ScummVM draws it |
 | 9 | The Amiga | For the 1.0, after the Atari ST |
 | Later | A browser player, Zak McKracken | Perhaps |
 
@@ -1022,10 +1022,21 @@ The steps:
    length word, 10000, runs 2,232 bytes past the end of room 30: for step 3. Tested in
    `FatDiskImageTests`: files read along their cluster chains (a label, a deleted file and a
    folder among them), other disks not taken for the game, and the release's disk.
-2. **Pictures and the interface.** The Amiga's palette, which ScummVM gives the Atari ST too
-   (`resetPalette`, `tableAmigaPalette`), through `tools/port_palettes.py`; the ST's cursor
-   (`setBuiltinCursor`, `cursor.cpp`); anything else the ST's screens show differently. Checked
-   against ScummVM's window, the intro, the kid selection and rooms to the pixel.
+2. **Pictures and the interface (done).** The release draws in the Amiga's 16 colours, which
+   ScummVM gives the Atari ST too (`resetPalette`, `tableAmigaPalette`, through
+   `tools/port_palettes.py`), and public as `Palettes.Amiga`; the world's palette, the
+   inspector's and a save's are those. The cursor is the ST's own picture, 16 by 16 with its
+   hotspot in the middle, its marked pixels in the colour the animation is at (`setBuiltinCursor`,
+   `atari_main_cursor` through `tools/port_cursors.py`), and a save keeps it so. ScummVM's busy
+   cursor (`atari_snail_cursor`) shows only on its own banners, which Maniacal has none of. The
+   platform comes from detection: `ResourceLoader.Platform`, ScummVM's table's, found once.
+   Nothing else in ScummVM's version 2 treats the ST apart.
+
+   Checked against ScummVM 2026.4.0's window: the copyright and the kid selection to the pixel,
+   and saves made here in the driveway, on the porch and in the hall loaded there, the screens
+   the same to the pixel, cursor and all (drawn where ScummVM's mouse was). Tested in
+   `AtariStTests`: the colours, those screens, the cursor and what a save keeps of it, and Dave
+   going into the house as on DOS.
 3. **Sound.** ScummVM plays the ST's sounds with version 2's player (`Player_V2`), which
    Maniacal has, the sound resources lacking DOS's AdLib part (the resource reading of `sound.cpp`). Checked
    against ScummVM's own output, recorded as the NES's was.

@@ -41,4 +41,5 @@ override Maniacal.Scumm.Hosting.DetectedGame.ToString() -> string!
 *REMOVED*virtual Maniacal.Scumm.Hosting.DetectedGame.PrintMembers(System.Text.StringBuilder! builder) -> bool
 *REMOVED*~override Maniacal.Scumm.Input.MouseState.Equals(object obj) -> bool
 *REMOVED*~override Maniacal.Scumm.Input.MouseState.ToString() -> string
+static Maniacal.Scumm.Graphics.Palettes.Amiga.get -> System.ReadOnlySpan<Maniacal.Scumm.Graphics.Rgb>
 static Maniacal.Scumm.Graphics.Palettes.Nes.get -> System.ReadOnlySpan<Maniacal.Scumm.Graphics.Rgb>

@@ -220,7 +220,7 @@ public sealed class GameInspector(ResourceLoader loader)
     public int Version => loader.Index.Version;
 
     /// <summary>The colours the pictures' colour numbers stand for, the release's palette, in a form that can be kept.</summary>
-    public ReadOnlyMemory<Rgb> Palette => Palettes.MemoryForVersion(Version, loader.Index.IsNes);
+    public ReadOnlyMemory<Rgb> Palette => Palettes.MemoryForVersion(Version, loader.Index.IsNes, loader.HasAmigaColors);
 
     /// <summary>The numbers of the release's rooms, in order: those <see cref="Room"/> and <see cref="RoomScripts"/> answer.</summary>
     public IReadOnlyList<int> Rooms => _rooms ??= Numbers(ResourceType.Room, _ => true);

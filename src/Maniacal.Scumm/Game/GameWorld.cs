@@ -363,6 +363,9 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// <summary>Whether the release is a demo, which boots and colours some things differently.</summary>
     internal bool IsDemo { get; }
 
+    /// <summary>Whether the release is the Atari ST's: the 1988 game with the Amiga's colours and a cursor of its own.</summary>
+    internal bool IsAtariSt => _loader.Platform == "atari";
+
     /// <summary>Whether the release is the NES's: version 1, with its own resources, screen and a few rules of its own.</summary>
     internal bool IsNes => Engine.IsNes;
 

@@ -36,6 +36,9 @@ public sealed partial class GameWorld
     /// <summary>Key codes the input takes besides characters: the function keys are 315 to 323, as in ScummVM.</summary>
     public const int KeyEscape = 27, KeyF1 = 315, KeyF4 = 318, KeyF9 = 323;
 
+    // the pixels of a cursor picture that take the cursor's colour
+    private const byte AtariStCursorMarked = 0x0F;
+
     // the NES's save screen's script (processKeyboard's runScript(163))
     private const int NesSaveMenuScript = 163;
 
@@ -115,7 +118,8 @@ public sealed partial class GameWorld
 
     /// <summary>
     /// Draws the cursor on a screen: the version 2 crosshair, its hotspot at the mouse, in the
-    /// colour its animation is at; the NES's is a tile of its costume set. Mirrors
+    /// colour its animation is at; the Atari ST's is a picture of its own, the NES's a tile of its
+    /// costume set. Mirrors
     /// <c>ScummEngine_v2::setBuiltinCursor</c>.
     /// </summary>
     public void DrawCursor(Surface8 screen)
@@ -133,6 +137,22 @@ public sealed partial class GameWorld
 
         byte color = (Version == 0 ? CursorColorsV0 : CursorColors)[(_cursorFrame >> 1) & 3];
         var (x, y) = Mouse;
+
+        // the Atari ST's is a picture of its own, its marked pixels in the colour (atari_main_cursor)
+        if (IsAtariSt)
+        {
+            for (int i = 0; i < CursorImages.AtariSt.Length; i++)
+            {
+                int px = x - AtariStCursorHotspot + i % AtariStCursorSize, py = y - AtariStCursorHotspot + i / AtariStCursorSize;
+                if (CursorImages.AtariSt[i] == AtariStCursorMarked && px >= 0 && px < screen.Width && py >= 0 && py < screen.Height)
+                {
+                    screen[px, py] = color;
+                }
+            }
+
+            return;
+        }
+
         void Plot(int dx, int dy)
         {
             int px = x + dx, py = y + dy;

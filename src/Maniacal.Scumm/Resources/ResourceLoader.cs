@@ -35,6 +35,17 @@ public sealed class ResourceLoader
     public IGameContainer Game => _game;
 
     /// <summary>
+    /// The platform ScummVM's table gives the release ("dos", "c64", "nes", "atari", "amiga"...), or
+    /// an empty string for data it does not know: found once, when first asked.
+    /// </summary>
+    internal string Platform => _platform ??= Detection.ScummDetector.Identify(_game)?.Platform ?? string.Empty;
+
+    private string? _platform;
+
+    /// <summary>Whether the release draws in the Amiga's 16 colours, as the Amiga's and the Atari ST's do (<c>resetPalette</c>).</summary>
+    internal bool HasAmigaColors => Platform is "atari" or "amiga";
+
+    /// <summary>
     /// Reads the index from <c>00.LFL</c> (on the C64 and the NES, from the disk images or the
     /// cartridge) and returns a loader
     /// over it. Throws <see cref="NotSupportedException"/> for a release Maniacal knows but does

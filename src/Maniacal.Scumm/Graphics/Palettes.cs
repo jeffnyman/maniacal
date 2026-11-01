@@ -22,11 +22,15 @@ public static partial class Palettes
     /// <summary>The NES's 64 colours, which its rooms and costumes name directly. Mirrors <c>tableNESNTSCPalette</c>.</summary>
     public static ReadOnlySpan<Rgb> Nes => NesRgb;
 
+    /// <summary>The 16 colours the Amiga and Atari ST releases draw with, in place of EGA's. Mirrors <c>tableAmigaPalette</c>.</summary>
+    public static ReadOnlySpan<Rgb> Amiga => AmigaRgb;
+
     /// <summary>The palette a version draws with: the C64's for version 0, EGA for the DOS releases.</summary>
     public static ReadOnlySpan<Rgb> ForVersion(int version) => version == 0 ? C64 : Ega;
 
     /// <summary>The palette a version draws with, in a form that can be kept: its <c>Span</c> is <see cref="ForVersion"/>.</summary>
-    internal static ReadOnlyMemory<Rgb> MemoryForVersion(int version, bool nes = false) => nes ? NesRgb : version == 0 ? C64Rgb : EgaColors;
+    internal static ReadOnlyMemory<Rgb> MemoryForVersion(int version, bool nes = false, bool amiga = false)
+        => nes ? NesRgb : amiga ? AmigaRgb : version == 0 ? C64Rgb : EgaColors;
 
     /// <summary>How a version shows the C64 colour numbers of its room pictures (<c>setV1ColorTable</c>).</summary>
     public static ReadOnlySpan<byte> RoomColorMap(int version) => version == 0 ? C64Identity : ManiacV1ToEga;
