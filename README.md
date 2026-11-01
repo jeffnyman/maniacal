@@ -54,10 +54,10 @@ release.
 
 ## Status
 
-All five releases play from the title screen to "You won the game!". The walkthrough tests win
+All six releases play from the title screen to "You won the game!". The walkthrough tests win
 the game every way it can be won (Syd's recording contract, Bernard's call to the Meteor Police,
-Wendy's memoirs and Michael's photographs) in the C64, DOS and Atari ST releases, and Syd's way on
-the NES, and the saves they make along the way, loaded in ScummVM, show the same screen but for
+Wendy's memoirs and Michael's photographs) in the C64, DOS, Atari ST and Amiga releases, and Syd's
+way on the NES, and the saves they make along the way, loaded in ScummVM, show the same screen but for
 the cursor and what the mouse is over there. (ScummVM itself stops at the Atari ST's ending, on
 its ending music's length; Maniacal plays it through.) The
 packages are an alpha: the engine works, but its public API is still to be settled before a 1.0.
@@ -72,6 +72,7 @@ packages are an alpha: the engine works, but its public API is still to be settl
 | Commodore 64 demo (1987) | 0 | `maniacdemo.d64`, one disk image | Its menu, the self-running demo and the hands-on one |
 | NES (1990) | 1 (NES dialect) | The American cartridge, a `.nes` dump or its `.prg` | Winnable, with its title screens, sound and saves |
 | Atari ST (1988) | 2 | Its disk image, a `.st` file | Winnable, in the Amiga's colours, with sound and saves |
+| Amiga (1988) | 2 | Its two disk images, `.adf` files | Winnable, with its own sound in stereo, and saves |
 
 These are the English releases, and only they are played (of the NES's, the American cartridge,
 and of the Atari ST's, the one tested): a release in another language or for another platform is named and refused (`maniacal: this is Maniac Mansion (V2, German, DOS), which
@@ -93,7 +94,8 @@ What works, in every release:
   and the keys.
 - **Sound.** The DOS music and effects as the PCjr made them, or as the PC speaker did with
   `--speaker`; the C64's through an emulated SID; the NES's through its emulated sound chip. The
-  Atari ST plays the 1988 DOS release's sounds, as ScummVM does.
+  Atari ST plays the 1988 DOS release's sounds, as ScummVM does; the Amiga its own, sampled, in
+  stereo, ScummVM's output to the sample.
 - **Saves.** ScummVM's own files (`maniac.s01` for Game A, and so on), so saves move between
   Maniacal and ScummVM 2.7 or later. F5 opens the game's save screen (on the NES, Space too);
   `--load` loads one through the game's save room, as ScummVM's launcher does.
@@ -110,7 +112,7 @@ and F5 opens the game's save screen. The NES plays as it did: its two title scre
 click or Escape skips each), a click on an object carries the sentence out at once, Shift-B also
 skips a cutscene, and Space or F5 opens its own save screen. Saves go in a `Maniacal/saves` folder
 under the user's application data (`%APPDATA%` on Windows, `~/.config` on Linux and macOS), in a
-folder for each release, `maniac/c64`, `maniac/v1`, `maniac/v2`, `maniac/nes` and `maniac/atari`: the releases'
+folder for each release, `maniac/c64`, `maniac/v1`, `maniac/v2`, `maniac/nes`, `maniac/atari` and `maniac/amiga`: the releases'
 saves do not fit one another,
 and their files have ScummVM's names (`maniac.s01` and so on), so each release keeps its own.
 Saves made with 0.1.0-alpha or 0.2.0-alpha are in `maniac` itself; a save does not say which
@@ -137,9 +139,8 @@ data could not be read, a headless run stopped on an error, or the window could 
 
 ### Not yet
 
-The other languages, the European NES cartridge, the other Atari ST release ScummVM knows, and
-the Amiga release (being ported, see [ROADMAP.md](ROADMAP.md)); the NES's costumes in the
-inspector.
+The other languages, the European NES cartridge, and the other Atari ST release ScummVM knows;
+the NES's costumes in the inspector.
 [ROADMAP.md](ROADMAP.md) gives the order of work, done and to come.
 
 ## Layout
@@ -267,8 +268,7 @@ The C64 release's disk images are found by ScummVM's names, `maniac1.d64` and `m
 the bytes each disk starts with. The NES cartridge is found by its contents, under any name ending
 in `.nes` (a dump with its iNES header) or `.prg` (the program data alone, as ScummVM wants it).
 The Atari ST's disk is read where it is, a `.st` image under any name, and the Amiga's two, `.adf`
-images under any names (ScummVM wants their files copied off them); the Amiga release is named,
-and refused until it is played.
+images under any names (ScummVM wants their files copied off them).
 
 ## Documentation
 

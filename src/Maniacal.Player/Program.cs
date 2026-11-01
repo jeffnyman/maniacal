@@ -356,7 +356,8 @@ internal static class Program
 
     /// <summary>
     /// A release's own save folder: <c>saves/maniac/v2</c>, <c>saves/maniac/v1</c>,
-    /// <c>saves/maniac/c64</c>, <c>saves/maniac/nes</c>, <c>saves/maniac/atari</c>. The releases'
+    /// <c>saves/maniac/c64</c>, <c>saves/maniac/nes</c>, <c>saves/maniac/atari</c>,
+    /// <c>saves/maniac/amiga</c>. The releases'
     /// saves do not fit one another, and their files have the same names (ScummVM's,
     /// <c>maniac.s01</c> and so on), so each release keeps its own: named by the release, or by the
     /// platform for the Atari ST and Amiga, whose releases are named as DOS's (V2).
@@ -822,7 +823,7 @@ internal static class Program
     {
         Console.WriteLine($$"""
             maniacal {{Version()}}: Maniac Mansion from the game's own files, the Commodore 64 release,
-            the DOS releases of 1987 and 1988, the NES release and the Atari ST release.
+            the DOS releases of 1987 and 1988, the NES release, and the Atari ST and Amiga releases.
 
             Usage:
               maniacal <game folder> [options]     play in a window
@@ -830,8 +831,9 @@ internal static class Program
               maniacal --help | --version
 
             The game folder holds a release's files (00.LFL and the rest, the C64's two .d64
-            disk images, the NES cartridge as a .nes or .prg file, or the Atari ST's .st disk
-            image), or holds them in a folder below it. No game files come with Maniacal.
+            disk images, the NES cartridge as a .nes or .prg file, the Atari ST's .st disk image,
+            or the Amiga's two .adf disk images), or holds them in a folder below it. No game files
+            come with Maniacal.
 
             Playing:
               --fullscreen          start in full screen
@@ -847,7 +849,7 @@ internal static class Program
               carries the sentence out at once, Shift-B also skips a cutscene, Space or F5 opens
               its save screen, and a click or Escape skips its title screens.
               Saves go in {{SavesFolder}}, a folder for each release
-              (maniac/v2, maniac/v1, maniac/c64, maniac/nes, maniac/atari).
+              (maniac/v2, maniac/v1, maniac/c64, maniac/nes, maniac/atari, maniac/amiga).
               They are ScummVM's own files, so they move between Maniacal and ScummVM 2.7 or later.
 
             Looking inside (a PNG is written to the current folder, or --output):
@@ -870,8 +872,8 @@ internal static class Program
                 --screenshot file.png    --wav file.wav    --zoom N
               --frames N            in the window, stop after N frames
 
-            Maniacal plays the English releases for the Commodore 64, DOS and the Atari ST, and the
-            American NES cartridge.
+            Maniacal plays the English releases for the Commodore 64, DOS, the Atari ST and the
+            Amiga, and the American NES cartridge.
 
             Exit codes:
               0  done

@@ -99,7 +99,7 @@ public class WalkthroughTests
     /// <summary>
     /// Where a section ends, the game is saved into the folder <c>MANIACAL_CHECKPOINTS</c> names, if
     /// any, as ScummVM's slot file for the release's target (<c>maniac64</c>, <c>maniac1</c>,
-    /// <c>maniac2</c>, <c>maniacnes</c>), for loading in ScummVM to compare.
+    /// <c>maniac2</c>, <c>maniacnes</c>, <c>maniacst</c>, <c>maniacamiga</c>), for loading in ScummVM to compare.
     /// </summary>
     internal static void Checkpoint(Player p, string folder, int slot)
     {
@@ -108,7 +108,7 @@ public class WalkthroughTests
             return;
         }
 
-        string target = folder switch { C64 => "maniac64", V1 => "maniac1", Nes => "maniacnes", AtariSt => "maniacst", _ => "maniac2" };
+        string target = folder switch { C64 => "maniac64", V1 => "maniac1", Nes => "maniacnes", AtariSt => "maniacst", Amiga => "maniacamiga", _ => "maniac2" };
         File.WriteAllBytes(Path.Combine(checkpoints, $"{target}.s{slot:D2}"), p.World.Save($"Walkthrough {slot}", DateTime.Now));
     }
 
@@ -1059,6 +1059,7 @@ public class WalkthroughTests
     [InlineData(V1)]
     [InlineData(V2)]
     [InlineData(AtariSt)]
+    [InlineData(Amiga)]
     [InlineData(Nes)]
     public void The_route_plays(string folder)
     {
@@ -1083,5 +1084,14 @@ public class WalkthroughTests
         p.Begin("Use", "yellow key", "weird edsel");
         p.Hear("You won the game!", TimeSpan.FromMinutes(5));
         Assert.Empty(p.Unhandled);
+
+        // the Amiga changes rooms without fading out, so its ending's room 0 leaves the last room
+        // showing under the message, the porch, as ScummVM 2026.4.0 showed it to the pixel
+        if (folder == Amiga)
+        {
+            var layout = p.World.Layout;
+            Assert.Null(p.World.CurrentRoom);
+            Assert.Contains(p.World.Screen().Pixels.AsSpan(layout.RoomTop * 320, (layout.RoomBottom - layout.RoomTop) * 320).ToArray(), b => b != 0);
+        }
     }
 }

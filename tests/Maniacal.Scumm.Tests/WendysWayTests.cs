@@ -93,6 +93,7 @@ public class WendysWayTests
     [InlineData(V1)]
     [InlineData(V2)]
     [InlineData(AtariSt)]
+    [InlineData(Amiga)]
     public void Wendy_has_the_memoirs_published(string folder)
     {
         if (Start(folder, "Wendy", "Michael") is not { } p)

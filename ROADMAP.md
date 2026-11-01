@@ -16,7 +16,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
 | 7 | The NES | Done: the American cartridge winnable, with its title screens, sound and saves, opened by the library and the tool |
 | 8 | The Atari ST | Done: winnable every way, drawn and heard as in ScummVM, opened by the library and the tool |
-| 9 | The Amiga | Under way, for the 1.0: its disks read, drawn and heard as in ScummVM |
+| 9 | The Amiga | Done: winnable every way, drawn and heard as in ScummVM, opened by the library and the tool |
 | Later | A browser player, Zak McKracken | Perhaps |
 
 ## Design
@@ -1140,7 +1140,19 @@ The steps:
    and the song over the hillside (58); every second from 10 to 63 as loud on each side. Tested in
    `AmigaSoundTests` (the mixer's channels, loops and update, the CRC) and `AmigaTests` (the sounds
    the table knows, and the intro's loudness on each side against ScummVM's).
-4. **The walkthrough and saves**, as for the Atari ST; then the refusal lifted.
+4. **The walkthrough and saves (done).** The game is won in the Amiga release every way it can
+   be, the routes unchanged. Its checkpoints (`maniacamiga.s31` to `s58`), loaded in ScummVM
+   2026.4.0, show the same screens to the pixel, cursor and all; a save ScummVM made itself loads
+   here; a game saved here and restored plays on as the original. Its ending plays the intro's
+   song (58), not sound 55, whose odd entry is never loaded, and ScummVM plays it through. With no
+   fade-out, the ending's room 0 leaves the last room showing: "Congratulations! You won the
+   game!" over the porch, as ScummVM showed it, to the pixel; Maniacal had drawn room 0 black, as
+   DOS's fade leaves it, and now keeps the last room's picture there on the Amiga.
+
+   The refusal is lifted: ScummVM knows one English Amiga release, this one. `ManiacMansion.Open`,
+   `ResourceLoader.Open` and the tool open it from its two disk images, its saves in
+   `maniac/amiga`. Tested in the walkthrough tests (the ending's screen in `WalkthroughTests`),
+   `SaveGameTests`, `DetectionTests` and `ManiacMansionTests`.
 
 ## Later, perhaps
 

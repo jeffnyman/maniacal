@@ -157,8 +157,8 @@ public class AdfDiskImageTests
     /// with 45, room 44 on both and the same; together the rooms 1 to 53, the index
     /// ScummVM's for the English Amiga release; the scripts and costumes reading whole but where
     /// DOS's 1988 release's do not either (script 134), and the sounds but where DOS's do not
-    /// (1, 2, 47 to 49, 53) and sound 55, whose entry is two bytes before the next resource. Named,
-    /// and refused for now.
+    /// (1, 2, 47 to 49, 53) and sound 55, whose entry is two bytes before the next resource (the
+    /// Amiga's ending plays the intro's song, 58, instead). Opened as the release.
     /// </summary>
     [Fact]
     public void The_amiga_disks_hold_the_release()
@@ -181,8 +181,7 @@ public class AdfDiskImageTests
         var game = ScummDetector.Identify(folder);
         Assert.Equal("Maniac Mansion (V2, English, Amiga)", game?.Description);
         Assert.Equal("e781230da44a44e2f0770edb2b3b3633", game?.Entry.Md5);
-        var error = Assert.Throws<NotSupportedException>(() => ResourceLoader.Open(folder));
-        Assert.Equal("This is Maniac Mansion (V2, English, Amiga), which Maniacal does not play: the Amiga release is not supported yet.", error.Message);
+        Assert.IsType<AdfDiskImage>(ResourceLoader.Open(folder).Game);
 
         var index = ResourceIndex.Parse(LflFile.Read(disks, 0));
         var loader = new ResourceLoader(disks, index);

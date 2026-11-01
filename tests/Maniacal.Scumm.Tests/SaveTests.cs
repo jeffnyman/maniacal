@@ -113,6 +113,7 @@ public class SaveGameTests
     [InlineData(V2Folder, SaveFile.CompatibleVersion)]
     [InlineData(V2Folder, SaveFile.CurrentVersion)]
     [InlineData(WalkthroughTests.AtariSt, SaveFile.CompatibleVersion)]
+    [InlineData(WalkthroughTests.Amiga, SaveFile.CompatibleVersion)]
     public void A_game_loaded_from_its_save_plays_on_as_the_original(string folder, int version)
     {
         if (GameFolders.Find(folder) is not { } path || PlayingTests.SelectedKids(folder) is not { } world)

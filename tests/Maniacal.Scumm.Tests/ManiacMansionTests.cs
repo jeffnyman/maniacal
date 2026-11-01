@@ -12,6 +12,7 @@ public class ManiacMansionTests
     [InlineData(WalkthroughTests.C64Demo, "Maniac Mansion (C64 Demo, English, Commodore 64)", 0, true)]
     [InlineData(WalkthroughTests.Nes, "Maniac Mansion (NES, English, NES)", 1, false)]
     [InlineData(WalkthroughTests.AtariSt, "Maniac Mansion (V2, English, Atari ST)", 2, false)]
+    [InlineData(WalkthroughTests.Amiga, "Maniac Mansion (V2, English, Amiga)", 2, false)]
     public void A_folder_opens_as_its_release(string folder, string description, int version, bool demo)
     {
         if (GameFolders.Find(folder) is not { } path)
@@ -110,6 +111,7 @@ public class ManiacMansionTests
     [InlineData(WalkthroughTests.Nes, WalkthroughTests.V1, "This save was made with Maniac Mansion (NES, English, NES), not this release, Maniac Mansion (V1, English, DOS)")]
     [InlineData(WalkthroughTests.V1, WalkthroughTests.Nes, "This save was made with Maniac Mansion (V1, English, DOS), not this release, Maniac Mansion (NES, English, NES)")]
     [InlineData(WalkthroughTests.AtariSt, WalkthroughTests.V2, "This save was made with Maniac Mansion (V2, English, Atari ST), not this release, Maniac Mansion (V2, English, DOS)")]
+    [InlineData(WalkthroughTests.Amiga, WalkthroughTests.AtariSt, "This save was made with Maniac Mansion (V2, English, Amiga), not this release, Maniac Mansion (V2, English, Atari ST)")]
     public void A_save_from_another_release_is_refused(string from, string into, string message)
     {
         if (GameFolders.Find(from) is not { } fromPath || GameFolders.Find(into) is not { } intoPath)

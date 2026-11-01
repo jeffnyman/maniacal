@@ -9,9 +9,9 @@ namespace Maniacal.Scumm.Tests;
 
 /// <summary>
 /// The Amiga release played: the 1988 game in its colours, with a cursor of its own and no room
-/// transitions, on a clock of 240 quarter-frames a second. Maniacal refuses the release for now,
-/// so the world is made from its disks directly. The tests pass without checking when their
-/// folder is absent.
+/// transitions, on a clock of 240 quarter-frames a second. The world is made from the disks
+/// directly, as <see cref="ResourceLoader.Open"/> makes it. The tests pass without checking when
+/// their folder is absent.
 /// </summary>
 public class AmigaTests
 {

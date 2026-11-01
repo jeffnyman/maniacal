@@ -1027,6 +1027,16 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
                 blank.Fill(NesBitmap.Black);
             }
 
+            // the Amiga changes rooms without fading the last one out, so with no room its picture
+            // stays, as ScummVM leaves it under the ending's message
+            if (IsAmiga && _lastRoomFrame is { } last)
+            {
+                for (int y = layout.RoomTop; y < layout.RoomBottom; y++)
+                {
+                    last.Row(y).CopyTo(blank.Row(y));
+                }
+            }
+
             for (int y = 0; y < MessageLine.Height; y++)
             {
                 Messages.Text.Row(y).CopyTo(blank.Row(TextTop + y));
@@ -1121,8 +1131,12 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             Messages.Text.Row(y).CopyTo(screen.Row(TextTop + y));
         }
 
+        _lastRoomFrame = screen;
         return screen;
     }
+
+    // the last frame drawn with a room, which the Amiga's room 0 leaves showing
+    private Surface8? _lastRoomFrame;
 
     /// <summary>To an object's walk-to point in a walkbox, to face the way the object says. Mirrors <c>ScummEngine_v2::walkActorToObject</c>.</summary>
     private void WalkActorToObject(Actor actor, int obj)

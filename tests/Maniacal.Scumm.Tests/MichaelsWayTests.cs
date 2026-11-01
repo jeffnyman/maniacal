@@ -162,6 +162,7 @@ public class MichaelsWayTests
     [InlineData(V1)]
     [InlineData(V2)]
     [InlineData(AtariSt)]
+    [InlineData(Amiga)]
     public void Michael_develops_Eds_plans(string folder)
     {
         if (Start(folder, "Wendy", "Michael") is not { } p)

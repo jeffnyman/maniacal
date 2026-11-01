@@ -16,7 +16,7 @@ internal sealed record ScummGame(Md5Entry Entry, string Variant, int Version, bo
 
     /// <summary>
     /// Whether Maniacal plays the release: the English releases for the Commodore 64 and DOS and
-    /// their demos, the American NES cartridge, and the Atari ST release, the ones it is tested on.
+    /// their demos, the American NES cartridge, and the Atari ST and Amiga releases, the ones it is tested on.
     /// Not other languages or platforms, nor the European NES cartridge or the other Atari ST
     /// release ScummVM knows.
     /// </summary>
@@ -27,8 +27,7 @@ internal sealed record ScummGame(Md5Entry Entry, string Variant, int Version, bo
         => Language != "en" ? "it plays only the English releases"
         : Platform == "nes" ? (Entry.Md5 == AmericanNesIndex ? null : "of the NES releases it plays only the American cartridge")
         : Platform == "atari" ? (Entry.Md5 == TestedAtariStIndex ? null : "of the Atari ST releases it plays only the one tested")
-        : Platform == "amiga" ? "the Amiga release is not supported yet"
-        : !(Platform == "dos" && Version is 1 or 2) && !(Platform == "c64" && Version == 0) ? "it plays only the Commodore 64, DOS, NES and Atari ST releases"
+        : !(Platform is "dos" or "amiga" && Version is 1 or 2) && !(Platform == "c64" && Version == 0) ? "it plays only the Commodore 64, DOS, NES, Atari ST and Amiga releases"
         : null;
 
     // the MD5 of the Atari ST release's index that Maniacal is tested on (ScummVM knows another)
