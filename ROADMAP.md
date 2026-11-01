@@ -15,7 +15,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
 | 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
 | 7 | The NES | Done: the American cartridge winnable, with its title screens, sound and saves, opened by the library and the tool |
-| 8 | The Atari ST | Under way, for the 1.0: its disk read, drawn and heard as in ScummVM |
+| 8 | The Atari ST | Done: winnable every way, drawn and heard as in ScummVM, opened by the library and the tool |
 | 9 | The Amiga | For the 1.0, after the Atari ST |
 | Later | A browser player, Zak McKracken | Perhaps |
 
@@ -1044,8 +1044,10 @@ The steps:
    bytes, its PC speaker part a tune of its own and its PCjr part absent. Its scripts (62, 63, 124,
    three of the eight the ST changed) load it at the end. ScummVM's loader reads the 10000 bytes
    and treats the short read as an error ("Cannot read resource"); Maniacal reads what is there,
-   so the ending music plays with `--speaker` and is silent on the PCjr's voices. Whether
-   ScummVM stops there is for step 4's saves to show.
+   so the ending music plays with `--speaker` and is silent on the PCjr's voices. ScummVM
+   2026.4.0 does stop there: loaded from a save made as the car leaves the garage, it ends in its
+   debugger, "ERROR: (0:63:0x2D): Cannot read resource!", script 63 just past its load of the
+   music (step 4).
 
    Checked against ScummVM 2026.4.0's own output, recorded through SDL's disk driver from a save
    made as the intro begins, loaded in both and aligned (ScummVM 670 milliseconds later): from the
@@ -1053,9 +1055,20 @@ The steps:
    1.6% as loud, most within half a percent; after that the game's timing drifts against the
    sound by a few steps. The title is silent in both. Tested in `AtariStTests`: the intro's
    loudness against ScummVM's, and the ending music on the speaker and on the PCjr.
-4. **The walkthrough and saves**, won in the ST release, the checkpoints loaded in ScummVM and
-   ScummVM's own ST saves loaded here; then the refusal lifted, `ManiacMansion.Open` and the tool
-   playing the ST, its saves in a folder of their own.
+4. **The walkthrough and saves (done).** The game is won in the ST release every way it can be,
+   as on DOS (Syd's contract, Bernard's call, Wendy's memoirs, Michael's photographs), the
+   routes unchanged, though the ST changed eight scripts, two costumes and seven rooms. Its
+   checkpoints (`maniacst.s31` to `s58`), loaded in ScummVM 2026.4.0, show
+   the same screens to the pixel, the cursor drawn where ScummVM's mouse is; a save ScummVM made
+   itself loads here; a game saved here and restored plays on as the original. ScummVM cannot
+   play the ST's ending (step 3); Maniacal reaches "You won the game!".
+
+   The refusal is lifted for the release tested (index `0c331637...`); the other English Atari ST
+   release ScummVM knows (`a570381b...`) is refused by name as untested. `ManiacMansion.Open`,
+   `ResourceLoader.Open` and the tool open the ST from its disk image, its saves in `maniac/atari`
+   (named by the platform, its release being named "V2" as DOS's is). Tested in the walkthrough
+   tests (`WalkthroughTests`, `BernardsWayTests`, `WendysWayTests`, `MichaelsWayTests`),
+   `SaveGameTests`, `DetectionTests` and `ManiacMansionTests`.
 
 ## Phase 9: the Amiga
 

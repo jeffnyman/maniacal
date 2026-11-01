@@ -8,8 +8,8 @@ namespace Maniacal.Scumm.Tests;
 
 /// <summary>
 /// The Atari ST release played: the 1988 game in the Amiga's colours, with a cursor of its own.
-/// Maniacal refuses the release for now, so the world is made from its disk directly. The tests
-/// pass without checking when its folder is absent.
+/// The world is made from the disk directly, as <see cref="ResourceLoader.Open"/> makes it. The
+/// tests pass without checking when its folder is absent.
 /// </summary>
 public class AtariStTests
 {

@@ -80,6 +80,7 @@ public class BernardsWayTests
     [InlineData(C64)]
     [InlineData(V1)]
     [InlineData(V2)]
+    [InlineData(AtariSt)]
     public void Bernard_calls_the_Meteor_Police(string folder)
     {
         if (Start(folder, third: "Bernard") is not { } p)

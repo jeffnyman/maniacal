@@ -111,7 +111,7 @@ public class FatDiskImageTests
     /// reading whole but where DOS's 1988 release's do not either (script 134, sounds 1, 2, 47 to 49
     /// and 53, whose entries point at nothing whole; and the index names room slots to 60 with no
     /// files behind them), and sound 55, whose length word, 10000, runs past the end of room 30;
-    /// and named and refused, as the release is not played yet. Its <c>54.LFL</c> is no room but
+    /// and opened as the release. Its <c>54.LFL</c> is no room but
     /// the interpreter, an Atari ST program (it starts with 0x601A), which <c>MANIAC.PRG</c> runs.
     /// </summary>
     [Fact]
@@ -129,8 +129,7 @@ public class FatDiskImageTests
         var game = ScummDetector.Identify(folder);
         Assert.Equal("Maniac Mansion (V2, English, Atari ST)", game?.Description);
         Assert.Equal("0c331637580950aea2346e012ef2a868", game?.Entry.Md5);
-        var error = Assert.Throws<NotSupportedException>(() => ResourceLoader.Open(folder));
-        Assert.Equal("This is Maniac Mansion (V2, English, Atari ST), which Maniacal does not play: the Atari ST release is not supported yet.", error.Message);
+        Assert.IsType<FatDiskImage>(ResourceLoader.Open(folder).Game);
 
         var index = ResourceIndex.Parse(LflFile.Read(disk, 0));
         var loader = new ResourceLoader(disk, index);

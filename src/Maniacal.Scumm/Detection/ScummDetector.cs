@@ -16,8 +16,9 @@ internal sealed record ScummGame(Md5Entry Entry, string Variant, int Version, bo
 
     /// <summary>
     /// Whether Maniacal plays the release: the English releases for the Commodore 64 and DOS and
-    /// their demos, and the American NES cartridge, the ones it is tested on. Not other languages
-    /// or platforms, nor the European NES cartridge.
+    /// their demos, the American NES cartridge, and the Atari ST release, the ones it is tested on.
+    /// Not other languages or platforms, nor the European NES cartridge or the other Atari ST
+    /// release ScummVM knows.
     /// </summary>
     public bool IsSupported => Unsupported is null;
 
@@ -25,9 +26,12 @@ internal sealed record ScummGame(Md5Entry Entry, string Variant, int Version, bo
     public string? Unsupported
         => Language != "en" ? "it plays only the English releases"
         : Platform == "nes" ? (Entry.Md5 == AmericanNesIndex ? null : "of the NES releases it plays only the American cartridge")
-        : Platform == "atari" ? "the Atari ST release is not supported yet"
-        : !(Platform == "dos" && Version is 1 or 2) && !(Platform == "c64" && Version == 0) ? "it plays only the Commodore 64, DOS and NES releases"
+        : Platform == "atari" ? (Entry.Md5 == TestedAtariStIndex ? null : "of the Atari ST releases it plays only the one tested")
+        : !(Platform == "dos" && Version is 1 or 2) && !(Platform == "c64" && Version == 0) ? "it plays only the Commodore 64, DOS, NES and Atari ST releases"
         : null;
+
+    // the MD5 of the Atari ST release's index that Maniacal is tested on (ScummVM knows another)
+    private const string TestedAtariStIndex = "0c331637580950aea2346e012ef2a868";
 
     // the MD5 of the index built from the American NES cartridge
     private const string AmericanNesIndex = "91d5db93187fab54d823f73bd6441cb6";

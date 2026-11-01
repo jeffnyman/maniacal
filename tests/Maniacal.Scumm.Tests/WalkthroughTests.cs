@@ -108,7 +108,7 @@ public class WalkthroughTests
             return;
         }
 
-        string target = folder switch { C64 => "maniac64", V1 => "maniac1", Nes => "maniacnes", _ => "maniac2" };
+        string target = folder switch { C64 => "maniac64", V1 => "maniac1", Nes => "maniacnes", AtariSt => "maniacst", _ => "maniac2" };
         File.WriteAllBytes(Path.Combine(checkpoints, $"{target}.s{slot:D2}"), p.World.Save($"Walkthrough {slot}", DateTime.Now));
     }
 
@@ -1058,6 +1058,7 @@ public class WalkthroughTests
     [InlineData(C64)]
     [InlineData(V1)]
     [InlineData(V2)]
+    [InlineData(AtariSt)]
     [InlineData(Nes)]
     public void The_route_plays(string folder)
     {
