@@ -222,8 +222,10 @@ dotnet run --project src/Maniacal.Player -- --help
 ## Game data
 
 Maniacal ships no game data. Point it at a folder holding a release. The tests look for the folders
-`maniac_mansion_original_DOS.com` (V1), `maniac_mansion_enhanced_DOS.com` (V2) and `maniac_mansion_c64` (V0), in the folder
-named by the `MANIACAL_GAMES` environment variable or in any folder above the test binary. The
+`maniac_mansion_original_DOS.com` (V1), `maniac_mansion_enhanced_DOS.com` (V2), `maniac_mansion_c64`
+(V0), and the DOS demos' `maniac_mansion_demo_original_DOS` and `maniac_mansion_demo_enhanced_DOS`,
+their names in any case, in the folder named by the `MANIACAL_GAMES` environment variable or in
+any folder above the test binary; a test whose folder is not there passes without checking. The
 `.gitignore` keeps game files out of the repository.
 
 The walkthrough tests play the game's winning route, a section at a time, in every release, to

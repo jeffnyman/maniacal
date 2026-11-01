@@ -71,8 +71,8 @@ public class DetectionTests
     /// file's name makes it the demo.
     /// </summary>
     [Theory]
-    [InlineData("maniac_mansion_demo_ega_dos", "V1 Demo", 1)]
-    [InlineData("maniac_mansion_demo_vga_dos", "V2 Demo", 2)]
+    [InlineData(WalkthroughTests.V1Demo, "V1 Demo", 1)]
+    [InlineData(WalkthroughTests.V2Demo, "V2 Demo", 2)]
     public void Identifies_the_demos(string folder, string variant, int version)
     {
         if (GameFolders.Find(folder) is not { } path)
@@ -122,18 +122,21 @@ public class DetectionTests
 
 internal static class GameFolders
 {
+    /// <summary>
+    /// The game folder of that name, its case aside (maniac_mansion_C64 is maniac_mansion_c64 on
+    /// any system), in MANIACAL_GAMES or a folder above the test binary; null when there is none.
+    /// </summary>
     public static string? Find(string folder)
     {
         var fromEnv = Environment.GetEnvironmentVariable("MANIACAL_GAMES");
-        if (!string.IsNullOrEmpty(fromEnv) && Directory.Exists(Path.Combine(fromEnv, folder)))
+        if (!string.IsNullOrEmpty(fromEnv) && In(fromEnv, folder) is { } found)
         {
-            return Path.Combine(fromEnv, folder);
+            return found;
         }
 
         for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
         {
-            var candidate = Path.Combine(dir.FullName, folder);
-            if (Directory.Exists(candidate))
+            if (In(dir.FullName, folder) is { } candidate)
             {
                 return candidate;
             }
@@ -141,4 +144,9 @@ internal static class GameFolders
 
         return null;
     }
+
+    private static string? In(string parent, string folder)
+        => Directory.Exists(parent)
+            ? Directory.EnumerateDirectories(parent).FirstOrDefault(d => string.Equals(Path.GetFileName(d), folder, StringComparison.OrdinalIgnoreCase))
+            : null;
 }

@@ -13,7 +13,7 @@ namespace Maniacal.Scumm.Tests;
 /// </summary>
 public class DemoTests
 {
-    private const string V1Demo = "maniac_mansion_demo_ega_dos", V2Demo = "maniac_mansion_demo_vga_dos";
+    private const string V1Demo = WalkthroughTests.V1Demo, V2Demo = WalkthroughTests.V2Demo;
 
     private static GameWorld? Open(string folder)
         => GameFolders.Find(folder) is { } path ? new GameWorld(ResourceLoader.Open(new DirectoryGameContainer(path))) : null;

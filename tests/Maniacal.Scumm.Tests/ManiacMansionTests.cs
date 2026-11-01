@@ -7,8 +7,8 @@ public class ManiacMansionTests
     [InlineData(WalkthroughTests.V2, "Maniac Mansion (V2, English, DOS)", 2, false)]
     [InlineData(WalkthroughTests.V1, "Maniac Mansion (V1, English, DOS)", 1, false)]
     [InlineData(WalkthroughTests.C64, "Maniac Mansion (C64, English, Commodore 64)", 0, false)]
-    [InlineData("maniac_mansion_demo_ega_dos", "Maniac Mansion (V1 Demo, English, DOS)", 1, true)]
-    [InlineData("maniac_mansion_demo_vga_dos", "Maniac Mansion (V2 Demo, English, DOS)", 2, true)]
+    [InlineData(WalkthroughTests.V1Demo, "Maniac Mansion (V1 Demo, English, DOS)", 1, true)]
+    [InlineData(WalkthroughTests.V2Demo, "Maniac Mansion (V2 Demo, English, DOS)", 2, true)]
     public void A_folder_opens_as_its_release(string folder, string description, int version, bool demo)
     {
         if (GameFolders.Find(folder) is not { } path)
