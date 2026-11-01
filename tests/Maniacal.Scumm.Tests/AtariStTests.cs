@@ -18,17 +18,21 @@ public class AtariStTests
     // the cursor's picture: 16 by 16, its hotspot in the middle (atari_main_cursor)
     private const int CursorSize = 16, Hotspot = 8;
 
-    private static GameWorld? Booted()
+    private static GameWorld? Booted(int sampleRate = GameWorld.DefaultSampleRate, bool pcjr = true)
     {
-        if (GameFolders.Find(WalkthroughTests.AtariSt) is not { } path || FatDiskImage.Open(new DirectoryGameContainer(path)) is not { } disk)
+        if (World(sampleRate, pcjr) is not { } world)
         {
             return null;
         }
 
-        var world = new GameWorld(new ResourceLoader(disk, ResourceIndex.Parse(LflFile.Read(disk, 0))));
         world.Boot();
         return world;
     }
+
+    private static GameWorld? World(int sampleRate = GameWorld.DefaultSampleRate, bool pcjr = true)
+        => GameFolders.Find(WalkthroughTests.AtariSt) is { } path && FatDiskImage.Open(new DirectoryGameContainer(path)) is { } disk
+            ? new GameWorld(new ResourceLoader(disk, ResourceIndex.Parse(LflFile.Read(disk, 0))), sampleRate: sampleRate, pcjr: pcjr)
+            : null;
 
     private static void Steps(GameWorld world, int count)
     {
@@ -105,6 +109,84 @@ public class AtariStTests
         Assert.Equal(33, state.GrabbedCursor.Count(b => b != 0xFF));
         Assert.Equal(Palettes.Amiga.ToArray().SelectMany(c => new[] { c.R, c.G, c.B }), state.CurrentPalette.Take(16 * 3));
     }
+
+    /// <summary>
+    /// The intro's sounds as loud as ScummVM 2026.4.0 made them, second by second: the game saved as
+    /// the intro begins, with the kids picked, and loaded both here and in ScummVM, whose mixer's
+    /// output was recorded through SDL's disk driver and aligned on ours (670 milliseconds later).
+    /// The ST plays the 1988 DOS release's sounds, byte for byte, on the PCjr's voices by default
+    /// (<c>Player_V2</c>): the meteor (57, 58) and the music over the driveway (38).
+    /// </summary>
+    [Fact]
+    public void The_intro_sounds_as_loud_as_in_scummvm()
+    {
+        const int Rate = 44100;
+        if (Booted(Rate) is not { } world)
+        {
+            return;
+        }
+
+        Steps(world, 300);
+        foreach (var (x, y) in new[] { (82, 118), (202, 118) })
+        {
+            world.Click(x, y);
+            Steps(world, 100);
+        }
+
+        world.Click(290, 75);
+        Steps(world, 2);
+        var loaded = World(Rate)!;
+        loaded.Load(world.Save("intro", DateTime.Now));
+
+        var left = new List<short>();
+        while (loaded.Time.TotalSeconds < 45)
+        {
+            loaded.Step();
+            var stereo = loaded.ReadAudio();
+            for (int i = 0; i < stereo.Length; i += 2)
+            {
+                left.Add(stereo[i]);
+            }
+        }
+
+        // ScummVM's loudness in those seconds (the mean distance from the mean)
+        foreach (var (second, theirs) in new[] { (11, 516), (13, 533), (15, 1445), (19, 1895), (22, 2229), (26, 2777), (30, 1908), (35, 1779), (40, 1946), (43, 1696) })
+        {
+            var part = left.Skip(second * Rate).Take(Rate).ToArray();
+            double mean = part.Average(s => (double)s);
+            Assert.InRange(part.Average(s => Math.Abs(s - mean)), theirs * 0.97, theirs * 1.03);
+        }
+    }
+
+    /// <summary>
+    /// The ST's ending music (55) says it is 10000 bytes long, more than is left of room 30, and
+    /// has only its PC speaker part: what is there is read, so with the PC speaker it plays and
+    /// with the PCjr's voices, as by default, it is silent. (ScummVM's loader reads past the file's
+    /// end, which it treats as an error, "Cannot read resource".)
+    /// </summary>
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void The_ending_music_plays_on_the_speaker(bool pcjr, bool heard)
+    {
+        if (World(22050, pcjr) is not { } world)
+        {
+            return;
+        }
+
+        world.Sound.Trigger(EndingMusic);
+        Assert.True(world.Sound.IsRunning(EndingMusic));
+        var samples = new List<short>();
+        for (int i = 0; i < 60; i++)
+        {
+            world.Step();
+            samples.AddRange(world.ReadAudio());
+        }
+
+        Assert.Equal(heard, samples.Distinct().Count() > 1);
+    }
+
+    private const int EndingMusic = 55;
 
     /// <summary>Syd and Bernard picked by clicking, the game starts in the driveway, and Dave goes into the house as on DOS, every instruction handled.</summary>
     [Fact]

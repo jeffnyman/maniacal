@@ -108,6 +108,23 @@ public sealed class ResourceLoader
     }
 
     /// <summary>
+    /// A resource's bytes from its place to the end of its room file, whatever its length word
+    /// says, or null when its entry or file is missing or the place is past the file's end: for a
+    /// resource whose length word runs past the file (the Atari ST's ending music).
+    /// </summary>
+    internal ReadOnlyMemory<byte>? LoadToFileEnd(ResourceType type, int index)
+    {
+        var location = Index.Locate(type, index);
+        if (!location.IsPresent || !LflFile.Exists(_game, location.Room, _extension))
+        {
+            return null;
+        }
+
+        var file = RoomFile(location.Room);
+        return location.Offset + 2 <= file.Length ? file[location.Offset..] : null;
+    }
+
+    /// <summary>
     /// Whether an index entry names a resource that can be read: one in a room file (an entry in
     /// room 0 is how the index keeps an empty slot, and to ScummVM's <c>loadResource</c> it means the
     /// room on screen, which these releases never ask for out of play) that fits in that file. The

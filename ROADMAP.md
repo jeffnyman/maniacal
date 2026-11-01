@@ -15,7 +15,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
 | 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
 | 7 | The NES | Done: the American cartridge winnable, with its title screens, sound and saves, opened by the library and the tool |
-| 8 | The Atari ST | Under way, for the 1.0: its disk read, drawn as ScummVM draws it |
+| 8 | The Atari ST | Under way, for the 1.0: its disk read, drawn and heard as in ScummVM |
 | 9 | The Amiga | For the 1.0, after the Atari ST |
 | Later | A browser player, Zak McKracken | Perhaps |
 
@@ -1037,9 +1037,22 @@ The steps:
    the same to the pixel, cursor and all (drawn where ScummVM's mouse was). Tested in
    `AtariStTests`: the colours, those screens, the cursor and what a save keeps of it, and Dave
    going into the house as on DOS.
-3. **Sound.** ScummVM plays the ST's sounds with version 2's player (`Player_V2`), which
-   Maniacal has, the sound resources lacking DOS's AdLib part (the resource reading of `sound.cpp`). Checked
-   against ScummVM's own output, recorded as the NES's was.
+3. **Sound (done).** ScummVM plays the ST's sounds with version 2's player (`Player_V2`), on the
+   PCjr's voices by default, and so does Maniacal: the ST's sounds are the 1988 DOS release's,
+   byte for byte, all but one. That one is the ending music (55): its length word says 10000 bytes,
+   more than is left of room 30's file, and it is a shortened copy padded to 3 KB with `1A`
+   bytes, its PC speaker part a tune of its own and its PCjr part absent. Its scripts (62, 63, 124,
+   three of the eight the ST changed) load it at the end. ScummVM's loader reads the 10000 bytes
+   and treats the short read as an error ("Cannot read resource"); Maniacal reads what is there,
+   so the ending music plays with `--speaker` and is silent on the PCjr's voices. Whether
+   ScummVM stops there is for step 4's saves to show.
+
+   Checked against ScummVM 2026.4.0's own output, recorded through SDL's disk driver from a save
+   made as the intro begins, loaded in both and aligned (ScummVM 670 milliseconds later): from the
+   meteor (57, 58) through the music over the driveway (38), every second from 10 to 44 within
+   1.6% as loud, most within half a percent; after that the game's timing drifts against the
+   sound by a few steps. The title is silent in both. Tested in `AtariStTests`: the intro's
+   loudness against ScummVM's, and the ending music on the speaker and on the PCjr.
 4. **The walkthrough and saves**, won in the ST release, the checkpoints loaded in ScummVM and
    ScummVM's own ST saves loaded here; then the refusal lifted, `ManiacMansion.Open` and the tool
    playing the ST, its saves in a folder of their own.

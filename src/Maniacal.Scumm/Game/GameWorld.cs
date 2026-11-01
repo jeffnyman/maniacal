@@ -1251,7 +1251,11 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             }
             catch (InvalidDataException)
             {
-                data = null;
+                // the Atari ST's ending music (55) says it is 10000 bytes long, more than is left of
+                // its room file: what is there is read, its PC speaker part whole, its PCjr part
+                // absent (ScummVM's loader reads past the file's end, which it treats as an error,
+                // "Cannot read resource")
+                data = IsAtariSt ? _loader.LoadToFileEnd(ResourceType.Sound, number)?.ToArray() : null;
             }
 
             _sounds[number] = data;
