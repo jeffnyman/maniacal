@@ -14,7 +14,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 4 | Sound, saves and options (V2 and V1) | Done |
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
 | 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
-| 7 | The NES | Under way: the cartridge read, its scripts run, its rooms, actors and text drawn |
+| 7 | The NES | Under way: playable by its own interface, all but its sound and saves |
 | Later | A browser player, Amiga and Atari ST, Zak McKracken | Perhaps |
 
 ## Design
@@ -899,7 +899,31 @@ and sound. `docs/nes` documents its data. The steps:
    over the hillside, matched to the pixel, and the kid selection with its line of text but for
    ScummVM's cursor. Tested in `NesDrawingTests` (those screens, and the NES's animation) and
    `NesPlayTests` (the kids drawn in the driveway in their set).
-5. **The interface.** The NES's verbs, inventory and cursor, and its input.
+5. **The interface (done).** The verb area is the NES's, from line 160 to 240 on its black,
+   drawn in its font as `CharsetRendererNES` draws (whole characters, not cut at the right):
+   - its twelve verbs, a column in, in colour 1 with nothing highlighted;
+   - the sentence line, while any of the interface shows, from 16 pixels in, 60 characters in
+     two lines of 30 (the break `drawSentence` puts after the 30th, fillers counted);
+   - the inventory 48 lines down, two names a row at 16 and 152, cut at 13 characters, the last
+     picked up first, the arrows the font's characters 0x7E and 0x7F between them, the down
+     arrow when more than two are below (`initNESMouseOver`, `redrawV2Inventory`,
+     `checkV2Inventory`);
+   - the cursor, tile 0xFA of the costume set in its colours, its corner's colour left out
+     (`setBuiltinCursor`).
+
+   The NES's scripts make the object under the mouse the sentence's as the mouse passes over it
+   (script 7, with `findObject`, which on the NES falls back on the inventory box under the
+   mouse, its list the other way round); a click carries the sentence out. So a click somewhere
+   the mouse was not is handled a step later, once the mouse has been there a step, as a
+   player's mouse always is before it clicks; `Click` and `ClickObject` play the NES that way.
+   Shift-B skips a cutscene, as F4 does elsewhere.
+
+   Checked against ScummVM 2026.4.0's window: the copyright and the credits the intro spells out
+   in the verb area, and the kid selection with the cursor, to the pixel (ScummVM's room wipe
+   between them shows frames this does not, as with version 1's). Tested in `NesInterfaceTests`
+   (the verb area, the cursor, and Dave pulling the door mat, getting the key, unlocking the
+   front door with it from the inventory, opening it and going into the hall) and
+   `NesDrawingTests` (those screens).
 6. **Sound.** `player_nes.cpp`, the NES's sound chip (APU) and its music.
 7. **The walkthrough**, won in the NES release, and saves checked against ScummVM.
 

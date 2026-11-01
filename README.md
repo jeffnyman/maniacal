@@ -61,7 +61,7 @@ packages are an alpha: the engine works, but its public API is still to be settl
 | DOS demo (1987) | 1 | `00.MAN` to `49.MAN`, the full release's rooms renamed | Plays its demo through |
 | DOS demo (1988) | 2 | `00.LFL` to `53.LFL`, rooms of the 1988 release | Plays its demo through |
 | Commodore 64 demo (1987) | 0 | `maniacdemo.d64`, one disk image | Its menu, the self-running demo and the hands-on one |
-| NES (1990) | 1 (NES dialect) | The cartridge, a `.nes` dump or its `.prg` | Being ported: its scripts run, its rooms, actors and text drawn |
+| NES (1990) | 1 (NES dialect) | The cartridge, a `.nes` dump or its `.prg` | Being ported: playable by its interface, without sound or saves yet |
 
 These are the English releases, and only they are played: a release in another language or for
 another platform is named and refused (`maniacal: this is Maniac Mansion (V2, German, DOS), which

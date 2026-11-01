@@ -126,7 +126,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             ? NesFont.Load(translation, () => CurrentRoom)
             : Font.English(Version, IsDemo);
         Messages = new MessageLine(font, Engine, n => n is > 0 and < ActorCount ? Actors[n] : null, NameOf, VerbName);
-        Verbs = new VerbArea(font, Layout.RoomBottom, () => Engine.Interface, c64: Version == 0, demo: IsDemo);
+        Verbs = new VerbArea(font, Layout.RoomBottom, () => Engine.Interface, c64: Version == 0, demo: IsDemo, nes: IsNes);
 
         // ScummEngine_v0::resetScumm: the C64's engine makes its verbs itself, and resetScummVars
         // resets the sentence and starts it with Dave as the kid
@@ -445,8 +445,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     {
         var screen = _frame ?? Draw();
 
-        // the NES's verbs and inventory are its own, not drawn yet
-        for (int y = 0; y < Verbs.Pixels.Height && !IsNes; y++)
+        for (int y = 0; y < Verbs.Pixels.Height; y++)
         {
             Verbs.Pixels.Row(y).CopyTo(screen.Row(Verbs.Top + y));
         }

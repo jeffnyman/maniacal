@@ -80,13 +80,23 @@ public sealed partial class GameWorld
     /// <summary>Moves the mouse to a screen point.</summary>
     public void MoveMouse(int x, int y) => Mouse = (Math.Clamp(x, 0, Layout.Width - 1), Math.Clamp(y, 0, Layout.Height - 1));
 
-    /// <summary>A mouse click for the next step to handle; the right button skips cutscenes, as Escape does.</summary>
+    /// <summary>
+    /// A mouse click for the next step to handle; the right button skips cutscenes, as Escape does.
+    /// On the NES, whose scripts make what is under the mouse the sentence's object as it passes
+    /// over (script 7, by <c>findObject</c>), a click somewhere the mouse was not is handled a step
+    /// later, once the mouse has been there for a step, as a player's mouse is before it clicks.
+    /// </summary>
     public void Click(int x, int y, bool right = false)
     {
+        var before = Mouse;
         MoveMouse(x, y);
         if (right)
         {
             _rightClicked = true;
+        }
+        else if (IsNes && Mouse != before)
+        {
+            _clickAfterHover = true;
         }
         else
         {
@@ -94,17 +104,27 @@ public sealed partial class GameWorld
         }
     }
 
+    // the NES: a click waiting a step for the scripts to see the mouse where it is
+    private bool _clickAfterHover;
+
     /// <summary>A key for the next step to handle: a character, <see cref="KeyEscape"/>, or a function key from <see cref="KeyF1"/>.</summary>
     public void PressKey(int key) => _key = key;
 
     /// <summary>
     /// Draws the cursor on a screen: the version 2 crosshair, its hotspot at the mouse, in the
-    /// colour its animation is at. Mirrors <c>ScummEngine_v2::setBuiltinCursor</c> for DOS and the C64.
+    /// colour its animation is at; the NES's is a tile of its costume set. Mirrors
+    /// <c>ScummEngine_v2::setBuiltinCursor</c>.
     /// </summary>
     public void DrawCursor(Surface8 screen)
     {
         if (!CursorShown)
         {
+            return;
+        }
+
+        if (IsNes)
+        {
+            DrawNesCursor(screen);
             return;
         }
 
@@ -151,6 +171,43 @@ public sealed partial class GameWorld
         Plot(1, -5);
         Plot(-1, 5);
         Plot(1, 5);
+    }
+
+    // the NES's cursor tile in its costume sets' tiles (setBuiltinCursor)
+    private const int NesCursorTile = 0xFA;
+
+    /// <summary>
+    /// The NES's cursor: tile 0xFA of the costume set, 8 by 8 from the mouse, in the set's first
+    /// sub-palette, its second at the animation's fourth step; the colour of its last pixel is
+    /// not drawn (<c>transColor</c>). Nothing shows before the scripts choose a set.
+    /// </summary>
+    private void DrawNesCursor(Surface8 screen)
+    {
+        if (CurrentNesCostumeSet is not { } set)
+        {
+            return;
+        }
+
+        int subPalette = ((_cursorFrame >> 1) & 3) == 3 ? 4 : 0;
+        var image = new byte[64];
+        for (int row = 0; row < 8; row++)
+        {
+            byte plane0 = set.Patterns[NesCursorTile * 16 + row], plane1 = set.Patterns[NesCursorTile * 16 + row + 8];
+            for (int bit = 0; bit < 8; bit++)
+            {
+                image[row * 8 + bit] = set.Palette[((plane0 >> (7 - bit)) & 1) | (((plane1 >> (7 - bit)) & 1) << 1) | subPalette];
+            }
+        }
+
+        var (x, y) = Mouse;
+        for (int i = 0; i < 64; i++)
+        {
+            int px = x + i % 8, py = y + i / 8;
+            if (image[i] != image[63] && px < screen.Width && py < screen.Height)
+            {
+                screen[px, py] = image[i];
+            }
+        }
     }
 
     /// <summary>
@@ -297,6 +354,15 @@ public sealed partial class GameWorld
             // o2_findObject and o2_actorFromPos take actor units
             case "o2_findObject":
                 result = FindObject(arguments[0] * 8, arguments[1] * 2);
+
+                // the NES finds an object in its inventory by the box under the mouse, its list
+                // the other way round (o2_findObject's "simulate inverse order")
+                if (result == 0 && IsNes && (Engine.Interface & VerbArea.ShowInventory) != 0 && Verbs.MouseOverBox is >= 0 and < 4)
+                {
+                    int ego = Engine.Variables[ScriptEngine.VarEgo];
+                    result = FindInventory(ego, InventoryCount(ego) - Verbs.InventoryOffset - Verbs.MouseOverBox);
+                }
+
                 return true;
             case "o2_actorFromPos":
                 result = ActorFromPos(arguments[0] * 8, arguments[1] * 2);
@@ -667,6 +733,8 @@ public sealed partial class GameWorld
     {
         _input = 0;
         int key = _key;
+        bool hovered = _clickAfterHover;
+        _clickAfterHover = false;
         if (_rightClicked)
         {
             key = KeyEscape;
@@ -676,14 +744,16 @@ public sealed partial class GameWorld
             _input = LeftClick;
         }
 
-        _clicked = _rightClicked = false;
+        _clicked = hovered;
+        _rightClicked = false;
         _key = 0;
         if (key == 0)
         {
             return;
         }
 
-        if (key == KeyF4)
+        // F4 skips a cutscene, as Escape does; on the NES, Shift-B (processKeyboard)
+        if (key == (IsNes ? 'B' : KeyF4))
         {
             key = KeyEscape;
         }
@@ -812,7 +882,7 @@ public sealed partial class GameWorld
         {
             RunInputScript(SentenceClickArea, 0);
         }
-        else if (inVerbs && y >= Verbs.Top + VerbArea.InventoryTop)
+        else if (inVerbs && y >= Verbs.Top + Verbs.InventoryLine)
         {
             int ego = Engine.Variables[ScriptEngine.VarEgo];
             int place = Verbs.ClickInventory(x, y, InventoryCount(ego));

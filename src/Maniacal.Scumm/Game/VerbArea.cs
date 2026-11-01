@@ -82,6 +82,22 @@ internal sealed class VerbArea
     // the NES draws its verbs in one colour, highlighted or not
     private const int NesVerbColor = 1;
 
+    // the NES's (initNESMouseOver, redrawV2Inventory, drawSentence): its boxes and text in colour
+    // 0, which nothing highlights; its inventory 48 lines down; its sentences 60 characters long,
+    // in two lines of 30; its inventory names 13 characters long
+    private const int NesInventoryTop = 48, NesSentenceChars = 60, NesSentenceLine = 30, NesInventoryChars = 13, NesTextLeft = 16;
+
+    private static (Rect Rect, int Color)[] NesBoxes() =>
+    [
+        (new Rect(16, 48, 104, 8), 0),
+        (new Rect(152, 48, 104, 8), 0),
+        (new Rect(16, 56, 104, 8), 0),
+        (new Rect(152, 56, 104, 8), 0),
+        (new Rect(128, 48, 8, 8), 0),
+        (new Rect(136, 48, 8, 8), 0),
+        (new Rect(16, 0, 240, 8), 0),
+    ];
+
     private static (Rect Rect, int Color)[] MakeBoxes(int text, int arrow, int offset) =>
     [
         (new Rect(0 + offset, 32 + offset, 144, 8), text),
@@ -108,17 +124,23 @@ internal sealed class VerbArea
     /// <param name="userState">The user state, whose interface bits say what shows (<c>_userState</c>).</param>
     /// <param name="c64">Whether this is the C64's: its colours, and the sentence line and inventory a pixel right and down.</param>
     /// <param name="demo">Whether this is a demo's, whose verbs are drawn in another colour.</param>
-    public VerbArea(IGlyphs font, int top, Func<int> userState, bool c64 = false, bool demo = false)
+    /// <param name="nes">Whether this is the NES's: 256 wide down to its screen's line 240, on its black, laid out its own way.</param>
+    public VerbArea(IGlyphs font, int top, Func<int> userState, bool c64 = false, bool demo = false, bool nes = false)
     {
         _font = font;
         _demo = demo;
+        _nes = nes;
         _userState = userState;
         _offset = c64 ? 1 : 0;
-        _textColor = c64 ? C64TextColor : TextColor;
-        _highlightColor = c64 ? C64HighlightColor : HighlightColor;
-        _boxes = MakeBoxes(_textColor, c64 ? C64ArrowColor : ArrowColor, _offset);
+        _textColor = nes ? 0 : c64 ? C64TextColor : TextColor;
+        _highlightColor = nes ? 0 : c64 ? C64HighlightColor : HighlightColor;
+        _boxes = nes ? NesBoxes() : MakeBoxes(_textColor, c64 ? C64ArrowColor : ArrowColor, _offset);
+        _width = nes ? NesWidth : Width;
+        _black = nes ? NesBitmap.Black : (byte)0;
+        InventoryLine = nes ? NesInventoryTop : InventoryTop;
         Top = top;
-        Pixels = new Surface8(Width, ScreenHeight - top);
+        Pixels = new Surface8(_width, (nes ? NesScreenHeight : ScreenHeight) - top);
+        Pixels.Fill(_black);
         for (int i = 0; i < SlotCount; i++)
         {
             Slots[i] = new VerbSlot();
@@ -127,7 +149,14 @@ internal sealed class VerbArea
 
     public const int Width = 320;
 
-    private const int ScreenHeight = 200;
+    private const int ScreenHeight = 200, NesWidth = 256, NesScreenHeight = 240;
+
+    private readonly bool _nes;
+    private readonly int _width;
+    private readonly byte _black;
+
+    /// <summary>Where the inventory starts in the area: <see cref="InventoryTop"/>, or the NES's 48.</summary>
+    public int InventoryLine { get; }
 
     /// <summary>The screen line the area starts at: the sentence line. Mirrors the verb screen's <c>topline</c>.</summary>
     public int Top { get; }
@@ -241,8 +270,8 @@ internal sealed class VerbArea
 
         // the C64 draws a verb a pixel right and down, and its area reaches a pixel further
         int color = verb.Mode == 2 ? verb.DimColor : highlighted && verb.HiColor != 0 ? verb.HiColor : verb.Color;
-        var drawn = DrawString(verb.Name, verb.X + _offset, verb.Y + _offset, Width - 1 + _offset, color);
-        verb.Right = _offset + Math.Min(verb.X + verb.Name.Length * 8, Width);
+        var drawn = DrawString(verb.Name, verb.X + _offset, verb.Y + _offset, _width - 1 + _offset, color);
+        verb.Right = _offset + Math.Min(verb.X + verb.Name.Length * 8, _width);
         verb.Bottom = drawn.Bottom + _offset;
         verb.Drawn = drawn;
     }
@@ -265,7 +294,7 @@ internal sealed class VerbArea
     /// <summary>Clears the whole area. Mirrors the <c>restoreBackground</c> of <c>ScummEngine_v2::setUserState</c>.</summary>
     public void Clear()
     {
-        Pixels.Fill(0);
+        Pixels.Fill(_black);
         foreach (var verb in Slots)
         {
             verb.Drawn = null;
@@ -316,16 +345,23 @@ internal sealed class VerbArea
     {
         for (int i = 0; i < lines.Count; i++)
         {
-            DrawString(System.Text.Encoding.Latin1.GetBytes(lines[i].Text), _offset, Top + 8 * i + _offset, Width - 1 + _offset, lines[i].Color);
+            DrawString(System.Text.Encoding.Latin1.GetBytes(lines[i].Text), _offset, Top + 8 * i + _offset, _width - 1 + _offset, lines[i].Color);
         }
     }
 
     /// <summary>
     /// Shows a sentence on the sentence line, up to 40 characters not counting fillers, while the
-    /// sentence line is on. Mirrors the drawing half of <c>ScummEngine_v2::drawSentence</c>.
+    /// sentence line is on. The NES shows 60, in two lines of 30 from 16 pixels in, while any of
+    /// the interface is on. Mirrors the drawing half of <c>ScummEngine_v2::drawSentence</c>.
     /// </summary>
     public void DrawSentence(ReadOnlySpan<byte> sentence)
     {
+        if (_nes)
+        {
+            DrawNesSentence(sentence);
+            return;
+        }
+
         if ((_userState() & ShowSentence) == 0)
         {
             return;
@@ -346,9 +382,45 @@ internal sealed class VerbArea
         DrawString(sentence[..end], _offset, Top + _offset, Width - 1 + _offset, _textColor);
     }
 
+    // the NES's sentence line: on with any of the interface, two lines from 16 pixels in, a break after 30 characters
+    private void DrawNesSentence(ReadOnlySpan<byte> sentence)
+    {
+        if ((_userState() & (ShowSentence | ShowInventory | ShowVerbs)) == 0)
+        {
+            return;
+        }
+
+        var text = new List<byte>();
+        int length = 0;
+        foreach (byte c in sentence)
+        {
+            if (c == 0)
+            {
+                break;
+            }
+
+            if (c != '@' && ++length > NesSentenceChars)
+            {
+                break;
+            }
+
+            // after each character while the count stands at 30, fillers too (drawSentence)
+            text.Add(c);
+            if (length == NesSentenceLine)
+            {
+                text.Add(0xFF);
+                text.Add(8);
+            }
+        }
+
+        Pixels.FillRect(new Rect(NesTextLeft, 0, _width - NesTextLeft, 16), _black);
+        DrawString([.. text], NesTextLeft, Top, _width - 1, _textColor);
+    }
+
     /// <summary>
     /// Shows the carried objects from <see cref="InventoryOffset"/>, four at most, with arrows when
-    /// there are more either way. Mirrors <c>redrawV2Inventory</c> for DOS.
+    /// there are more either way. Mirrors <c>redrawV2Inventory</c>; the NES lists the last picked
+    /// up first, its names cut at 13 characters, its arrows two characters of its font.
     /// </summary>
     public void DrawInventory(IReadOnlyList<string> names)
     {
@@ -358,25 +430,25 @@ internal sealed class VerbArea
             return;
         }
 
-        Pixels.FillRect(new Rect(_offset, InventoryTop + _offset, Width - _offset, Pixels.Height - InventoryTop - _offset), 0);
+        Pixels.FillRect(new Rect(_offset, InventoryLine + _offset, _width - _offset, Pixels.Height - InventoryLine - _offset), _black);
         int shown = Math.Min(names.Count - InventoryOffset, 4);
         for (int i = 0; i < shown; i++)
         {
             var box = _boxes[i];
-            var name = System.Text.Encoding.Latin1.GetBytes(names[InventoryOffset + i]);
-            DrawString(name.AsSpan(0, Math.Min(name.Length, InventoryChars)), box.Rect.Left, Top + box.Rect.Top, box.Rect.Right - 1, box.Color);
+            var name = System.Text.Encoding.Latin1.GetBytes(names[_nes ? names.Count - 1 - InventoryOffset - i : InventoryOffset + i]);
+            DrawString(name.AsSpan(0, Math.Min(name.Length, _nes ? NesInventoryChars : InventoryChars)), box.Rect.Left, Top + box.Rect.Top, box.Rect.Right - 1, box.Color);
         }
 
         if (InventoryOffset > 0)
         {
             var box = _boxes[UpArrow];
-            DrawString(" \x01\x02"u8, box.Rect.Left, Top + box.Rect.Top, box.Rect.Right - 1, box.Color);
+            DrawString(_nes ? "\x7E"u8 : " \x01\x02"u8, box.Rect.Left, Top + box.Rect.Top, box.Rect.Right - 1, box.Color);
         }
 
-        if (InventoryOffset + 4 < names.Count)
+        if (InventoryOffset + (_nes ? 2 : 4) < names.Count)
         {
             var box = _boxes[DownArrow];
-            DrawString(" \x03\x04"u8, box.Rect.Left, Top + box.Rect.Top, box.Rect.Right - 1, box.Color);
+            DrawString(_nes ? "\x7F"u8 : " \x03\x04"u8, box.Rect.Left, Top + box.Rect.Top, box.Rect.Right - 1, box.Color);
         }
     }
 
@@ -423,7 +495,7 @@ internal sealed class VerbArea
     public int ClickInventory(int x, int y, int carried)
     {
         y -= Top;
-        if (y < InventoryTop)
+        if (y < InventoryLine)
         {
             return -1;
         }
@@ -438,7 +510,7 @@ internal sealed class VerbArea
         }
         else if (_boxes[DownArrow].Rect.Contains(x, y))
         {
-            if (InventoryOffset + 4 < carried)
+            if (InventoryOffset + (_nes ? 2 : 4) < carried)
             {
                 InventoryOffset += 2;
                 return -2;
@@ -526,7 +598,7 @@ internal sealed class VerbArea
             }
         }
 
-        Pixels.Fill(0);
+        Pixels.Fill(_black);
     }
 
     private VerbSlot Slot(int slot)
@@ -536,7 +608,7 @@ internal sealed class VerbArea
     {
         if (verb.Drawn is { } drawn)
         {
-            Pixels.FillRect(drawn with { Y = drawn.Y - Top }, 0);
+            Pixels.FillRect(drawn with { Y = drawn.Y - Top }, _black);
             verb.Drawn = null;
         }
     }
@@ -545,7 +617,7 @@ internal sealed class VerbArea
     {
         for (int y = rect.Top; y < rect.Bottom && y < Pixels.Height; y++)
         {
-            var row = Pixels.Row(y).Slice(rect.Left, Math.Min(rect.Width, Width - rect.Left));
+            var row = Pixels.Row(y).Slice(rect.Left, Math.Min(rect.Width, _width - rect.Left));
             foreach (ref byte pixel in row)
             {
                 if (pixel == from)
@@ -559,31 +631,43 @@ internal sealed class VerbArea
     /// <summary>
     /// Draws text at a screen point and returns the rectangle its characters cover, in screen
     /// pixels. Fillers (@) take no room, and a character that would pass <paramref name="right"/>
-    /// is left out. Mirrors <c>drawString</c> with <c>CharsetRendererV3::printChar</c>.
+    /// is left out, but on the NES, whose <c>printChar</c> does not check; escape 1 or 8 goes on a
+    /// line down from the start. Mirrors <c>drawString</c> with <c>CharsetRendererV3::printChar</c>
+    /// and <c>CharsetRendererNES::printChar</c>.
     /// </summary>
     private Rect DrawString(ReadOnlySpan<byte> text, int x, int y, int right, int color)
     {
-        int left = x;
-        foreach (byte c in text)
+        int left = x, top = y, end = x;
+        for (int i = 0; i < text.Length; i++)
         {
+            byte c = text[i];
             if (c == 0)
             {
                 break;
             }
 
-            if (c == '@' || x + Font.CharWidth > right + 1)
+            if (c == 0xFF && i + 1 < text.Length && text[i + 1] is 1 or 8)
+            {
+                i++;
+                x = left;
+                y += Font.Height;
+                continue;
+            }
+
+            if (c == '@' || (!_nes && x + Font.CharWidth > right + 1))
             {
                 continue;
             }
 
-            if (c < Font.GlyphCount)
+            if (c < Font.GlyphCount || _nes)
             {
                 _font.DrawGlyph(Pixels, c, x, y - Top, (byte)color);
             }
 
             x += Font.CharWidth;
+            end = Math.Max(end, x);
         }
 
-        return Rect.FromBounds(left, y, x, y + Font.Height);
+        return Rect.FromBounds(left, top, end, y + Font.Height);
     }
 }

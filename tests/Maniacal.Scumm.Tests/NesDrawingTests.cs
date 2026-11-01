@@ -78,11 +78,14 @@ public class NesDrawingTests
     /// <summary>
     /// Whole screens as ScummVM 2026.4.0 showed them in its window, to the pixel: the meteor (an
     /// actor in the NES's costume set 1) flying over the hillside, the credits in the NES's font
-    /// over it, and the kid selection under its line of text (ScummVM's cursor aside).
+    /// over it, the copyright and the credits the NES spells out in its verb area, and the kid
+    /// selection under its line of text.
     /// </summary>
     [Theory]
     [InlineData(82, 33, "41d98a4421e196add4d9a517fbff339f846095b41b57532b2b24fdf475099862")]
     [InlineData(228, 33, "4535aff331557e21c532386cfa716746d49058547d29f9be8fc5df4f2a15276c")]
+    [InlineData(320, 33, "3553bf944b5164c400e61514a1fdcd4e742727493b30b012e40ce20cce4f3da9")]
+    [InlineData(362, 33, "9abd51936c7d4407c04e8eb919151ae256e21dbe796939702e6025569f1507b1")]
     [InlineData(682, SelectionRoom, "e789327d8495caf0aa605cf22ea9f796ca53433edf5712a87113f0bc123dc73a")]
     public void Screens_are_drawn_as_scummvm_draws_them(int steps, int room, string hash)
     {
@@ -100,6 +103,30 @@ public class NesDrawingTests
 
         Assert.Equal(room, world.CurrentRoom?.Number);
         Assert.Equal(hash, Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(world.Screen().Pixels)));
+    }
+
+    /// <summary>The kid selection with the NES's cursor where ScummVM's mouse rests, at the top left, as its window showed it.</summary>
+    [Fact]
+    public void The_selection_shows_the_cursor_as_scummvm_does()
+    {
+        if (Loader() is not { } loader)
+        {
+            return;
+        }
+
+        var world = new GameWorld(loader);
+        world.Boot();
+        world.MoveMouse(0, 0);
+        for (int step = 0; step < 682; step++)
+        {
+            world.Step();
+        }
+
+        var screen = new Surface8(ScreenWidth, ScreenHeight);
+        screen.CopyFrom(world.Screen());
+        world.DrawCursor(screen);
+
+        Assert.Equal("a0443d4d80d95e9a321c56d881434e724d79c86a9fbd42c0eb41c43b7c668e8e", Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(screen.Pixels)));
     }
 
     /// <summary>
