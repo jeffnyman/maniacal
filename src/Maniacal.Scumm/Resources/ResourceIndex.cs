@@ -48,6 +48,9 @@ internal sealed class ResourceIndex
     /// <summary>First word of a version 0 index, as <see cref="C64DiskImage"/> builds it. Mirrors the <c>0x132</c> case of <c>readIndexFile</c>.</summary>
     public const ushort C64Magic = 0x0132;
 
+    /// <summary>First word of the NES's index, as <see cref="NesRom"/> builds it. Mirrors the <c>0x4643</c> case of <c>readIndexFile</c>.</summary>
+    public const ushort NesMagic = NesRom.IndexSignature;
+
     /// <summary>Mirrors ScummVM's <c>OF_OWNER_MASK</c>.</summary>
     private const byte OwnerMask = 0x0F;
 
@@ -68,6 +71,11 @@ internal sealed class ResourceIndex
     private const int C64Sounds = 70, C64DemoSounds = 40;
     private const int C64DemoIndexLength = 783;
 
+    // the NES's (readClassicIndexFile, the NES branch): its costume table also holds the costume
+    // parts (25 to 36), the rooms' graphics (37 to 76), the font's translation (77) and the
+    // prepositions (78)
+    private const int NesGlobalObjects = 775, NesCostumes = 80;
+
     private readonly ResourceLocation[][] _locations;
 
     private ResourceIndex(int version, byte[] owners, byte[] states, ResourceLocation[][] locations)
@@ -78,8 +86,11 @@ internal sealed class ResourceIndex
         _locations = locations;
     }
 
-    /// <summary>The SCUMM version the index format belongs to: 1 or 2.</summary>
+    /// <summary>The SCUMM version the index format belongs to: 0, 1 or 2.</summary>
     public int Version { get; }
+
+    /// <summary>Whether the index is the NES's, a version 1 index with its own tables.</summary>
+    public bool IsNes { get; private init; }
 
     /// <summary>The initial owner of each global object: a kid, or 0x0F for "in its room".</summary>
     public IReadOnlyList<byte> ObjectOwners { get; }
@@ -108,7 +119,8 @@ internal sealed class ResourceIndex
             ClassicMagic => ParseClassic(ref reader),
             EnhancedMagic => ParseEnhanced(ref reader),
             C64Magic => ParseC64(ref reader, demo: data.Length == C64DemoIndexLength),
-            _ => throw new InvalidDataException($"Unknown index magic 0x{magic:X4}; only Maniac Mansion's DOS and C64 releases are supported."),
+            NesMagic => ParseNes(ref reader),
+            _ => throw new InvalidDataException($"Unknown index magic 0x{magic:X4}; only Maniac Mansion's DOS, C64 and NES releases are known."),
         };
     }
 
@@ -137,6 +149,23 @@ internal sealed class ResourceIndex
             ReadResourceList(ref reader, ResourceType.Sound, demo ? C64DemoSounds : C64Sounds),
         };
         return new ResourceIndex(0, owners, states, locations);
+    }
+
+    /// <summary>
+    /// The NES: version 1, as the DOS release, with its own table sizes. An empty entry is room 0
+    /// at offset 0 (<c>generateIndex</c> starts from zeros), not "none".
+    /// </summary>
+    private static ResourceIndex ParseNes(ref IndexReader reader)
+    {
+        var (owners, states) = ReadGlobalObjects(ref reader, NesGlobalObjects);
+        var locations = new[]
+        {
+            ReadResourceList(ref reader, ResourceType.Room, ClassicRooms),
+            ReadResourceList(ref reader, ResourceType.Costume, NesCostumes),
+            ReadResourceList(ref reader, ResourceType.Script, ClassicScripts),
+            ReadResourceList(ref reader, ResourceType.Sound, ClassicSounds),
+        };
+        return new ResourceIndex(1, owners, states, locations) { IsNes = true };
     }
 
     /// <summary>Version 2: each table is preceded by its count. Mirrors <c>readGlobalObjects</c> and <c>ScummEngine_v3old::readResTypeList</c>.</summary>

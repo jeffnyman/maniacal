@@ -14,6 +14,9 @@ public class WalkthroughTests
     // the C64 demo's folder, its one disk maniacdemo.d64
     internal const string C64Demo = "maniac_mansion_demo_C64";
 
+    // the NES release's folder: its cartridge, as a .nes file or a .prg
+    internal const string Nes = "maniac_mansion_NES";
+
     // the rooms on the way
     internal const int Driveway = 44, FrontOfTheHouse = 1, Hall = 10, Cellar = 8, LivingRoom = 3, Library = 5,
         Kitchen = 7, DiningRoom = 37, StorageRoom = 36, Pool = 6, Landing = 11, PaintingRoom = 14, MusicRoom = 17,

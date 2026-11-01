@@ -24,9 +24,9 @@ public class ResourceIndexTests
     [Fact]
     public void Unknown_magic_is_rejected()
     {
-        // the NES index, which needs its own reader
-        var ex = Assert.Throws<InvalidDataException>(() => ResourceIndex.Parse([0x43, 0x46, 0, 0]));
-        Assert.Contains("0x4643", ex.Message);
+        // the Apple II's index, a release Maniacal has no reader for
+        var ex = Assert.Throws<InvalidDataException>(() => ResourceIndex.Parse([0x32, 0x00, 0, 0]));
+        Assert.Contains("0x0032", ex.Message);
     }
 
     [Fact]

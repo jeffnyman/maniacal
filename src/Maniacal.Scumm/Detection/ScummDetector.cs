@@ -23,6 +23,7 @@ internal sealed record ScummGame(Md5Entry Entry, string Variant, int Version, bo
     /// <summary>Why Maniacal does not play the release, or null when it does.</summary>
     public string? Unsupported
         => Language != "en" ? "it plays only the English releases"
+        : Platform == "nes" ? "the NES release is not supported yet"
         : !(Platform == "dos" && Version is 1 or 2) && !(Platform == "c64" && Version == 0) ? "it plays only the Commodore 64 and DOS releases"
         : null;
 
@@ -63,8 +64,8 @@ internal sealed record ScummGame(Md5Entry Entry, string Variant, int Version, bo
 /// <summary>
 /// Identifies Maniac Mansion releases the way ScummVM's <c>detection_internal.h</c> does: by the
 /// MD5 of the first megabyte of the room-0 index file: a loose 00.LFL (or 00.MAN for the V1 demo),
-/// or for the C64 the 00.LFL that <see cref="C64DiskImage"/> builds from the disks, as ScummVM's
-/// <c>openDiskImage</c> does. The NES ROM needs its own reader first.
+/// or for the C64 and the NES the 00.LFL that <see cref="C64DiskImage"/> builds from the disks and
+/// <see cref="NesRom"/> from the cartridge, as ScummVM's <c>openDiskImage</c> does.
 /// </summary>
 internal static class ScummDetector
 {
@@ -92,7 +93,7 @@ internal static class ScummDetector
     /// <summary>The MD5 of the index file ScummVM detects a release by, as the bytes ScummVM keeps in its saves (<c>_gameMD5</c>).</summary>
     public static byte[] IndexMd5(IGameContainer container)
     {
-        container = C64DiskImage.Open(container) ?? container;
+        container = GameImages.Unpack(container);
         foreach (var name in IndexFiles)
         {
             if (container.Exists(name))
@@ -115,7 +116,7 @@ internal static class ScummDetector
 
     public static ScummGame? Identify(IGameContainer container)
     {
-        container = C64DiskImage.Open(container) ?? container;
+        container = GameImages.Unpack(container);
         foreach (var name in IndexFiles)
         {
             if (!container.Exists(name))

@@ -35,16 +35,17 @@ public sealed class ResourceLoader
     public IGameContainer Game => _game;
 
     /// <summary>
-    /// Reads the index from <c>00.LFL</c> (on the C64, from the disk images) and returns a loader
+    /// Reads the index from <c>00.LFL</c> (on the C64 and the NES, from the disk images or the
+    /// cartridge) and returns a loader
     /// over it. Throws <see cref="NotSupportedException"/> for a release Maniacal knows but does
-    /// not play (another language or platform, or the C64's demo; the message says which),
+    /// not play (another language or platform; the message says which),
     /// <see cref="FileNotFoundException"/> when the container has no <c>00.LFL</c>, and
     /// <see cref="InvalidDataException"/> when its index is not Maniac Mansion's or ends early.
     /// Data that is no release ScummVM knows is opened as it is.
     /// </summary>
     public static ResourceLoader Open(IGameContainer game)
     {
-        game = C64DiskImage.Open(game) ?? game;
+        game = GameImages.Unpack(game);
         var found = ScummDetector.Identify(game);
         if (found is { Unsupported: { } reason })
         {

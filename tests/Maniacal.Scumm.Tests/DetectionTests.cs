@@ -97,7 +97,7 @@ public class DetectionTests
     [InlineData("eea4d9ac2fb6f145945a308e8866915b", "C64", null)]
     [InlineData("183d7464902d40d00800e8ee1f04117c", "V2", "This is Maniac Mansion (V2, German, DOS), which Maniacal does not play: it plays only the English releases.")]
     [InlineData("0c331637580950aea2346e012ef2a868", "V2", "This is Maniac Mansion (V2, English, Atari ST), which Maniacal does not play: it plays only the Commodore 64 and DOS releases.")]
-    [InlineData("91d5db93187fab54d823f73bd6441cb6", "NES", "This is Maniac Mansion (NES, English, NES), which Maniacal does not play: it plays only the Commodore 64 and DOS releases.")]
+    [InlineData("91d5db93187fab54d823f73bd6441cb6", "NES", "This is Maniac Mansion (NES, English, NES), which Maniacal does not play: the NES release is not supported yet.")]
     [InlineData("40564ec47da48a67787d1f9bd043902a", "V2 Demo", null)]
     [InlineData("2cb46375dd5cdfd023e2f07e0a21b530", "C64 Demo", null)]
     public void Plays_the_english_c64_and_dos_releases(string md5, string variant, string? refusal)

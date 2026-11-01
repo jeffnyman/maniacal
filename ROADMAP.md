@@ -14,7 +14,8 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 4 | Sound, saves and options (V2 and V1) | Done |
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
 | 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
-| Later | A browser player, the NES, the demos, Amiga and Atari ST, Zak McKracken | Perhaps |
+| 7 | The NES | Started: the cartridge is read and recognized |
+| Later | A browser player, Amiga and Atari ST, Zak McKracken | Perhaps |
 
 ## Design
 
@@ -803,11 +804,38 @@ Where it comes from:
 - At 1.0, move `PublicAPI.Unshipped.txt` into `PublicAPI.Shipped.txt` and set package
   validation's baseline (`PackageValidationBaselineVersion`), so a breaking change fails the build.
 
+## Phase 7: the NES
+
+The NES release (1990), in English, played as ScummVM plays it, for the 1.0 if it is ready. It
+runs on the version 1 interpreter, with its own resources, graphics, costumes, font, interface
+and sound. `docs/nes` documents its data. The steps:
+
+1. **The cartridge (done).** `NesRom` reads the cartridge as `ScummNESFile` does, into the DOS
+   releases' room files: the index as `00.LFL` ("CF", the global objects, and where every room,
+   costume, script and sound is), rooms 1 to 53 with their graphics, scripts, sounds and costumes,
+   and `54.LFL` with the costume parts, the font's translation and the prepositions. Each
+   resource's place and length in each of the seven ROM sets come from ScummVM's source through
+   `tools/port_nes_tables.py`, and the cartridge's own lengths are checked against them. A `.prg`
+   (the program data alone, as ScummVM wants it) and a `.nes` (the same behind its 16-byte iNES
+   header, as dumps usually come) are both read, known by the MD5 of the program data. The index
+   built from the USA cartridge is ScummVM's to the byte (`91d5db93...`, 2082 bytes), so the
+   release is named as ScummVM names it, and refused for now: "the NES release is not supported
+   yet". `ResourceIndex` reads the NES's index (775 objects, 80 costume slots). Tested in
+   `NesRomTests`: every room file is its resources end to end, and every room, script, sound and
+   costume the index names reads whole.
+2. **Scripts, headless.** The NES's differences in the version 1 interpreter (`script_v2.cpp`'s
+   NES branches: its verbs, inventory, sentence and text), booting and stepping without a screen.
+3. **Rooms.** `gfx_nes.cpp`: the rooms' tiles, their palettes and attributes, the 256-pixel-wide
+   screen and its strips (`_NESStartStrip`), and the title screens.
+4. **Costumes and the font.** `NESCostumeRenderer` and the costume parts in `54.LFL`
+   (`v1MMNEScostTables`), the NES font and its translation.
+5. **The interface.** The NES's verbs, inventory and cursor, and its input.
+6. **Sound.** `player_nes.cpp`, the NES's sound chip (APU) and its music.
+7. **The walkthrough**, won in the NES release, and saves checked against ScummVM.
+
 ## Later, perhaps
 
 - The CGA and Hercules color maps of `setV1ColorTable` and `resetPalette`.
 - A browser player: a host for the browser (WebAssembly), as the SDL host is for the desktop.
-- NES: `file_nes.cpp`, `gfx_nes.cpp`, `NESCostumeRenderer` and the NES charset. It needs a ROM,
-  and `docs/nes` documents the data.
 - Amiga and Atari ST V2 data, with `Player_V2A`.
 - Zak McKracken V1/V2, on the same engine.
