@@ -78,12 +78,14 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         Sound = new SoundSystem(loader.Index.Version, LoadSound, sampleRate, pcjr);
         Engine = new ScriptEngine(
             loader.Index.Version,
-            n => loader.Index.Locate(ResourceType.Script, n).IsPresent ? loader.Load(ResourceType.Script, n) : null,
+            LoadScript,
             this,
             loader.Index.ObjectOwners,
             loader.Index.ObjectStates,
-            seed);
+            seed,
+            loader.Index.IsNes);
         IsDemo = loader.IsDemo;
+        Camera = new Camera(IsNes);
         Actors = new Actor[ActorCount];
         for (int i = 0; i < ActorCount; i++)
         {
@@ -140,9 +142,10 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
     /// <summary>
     /// How fast the game's clock runs, in quarter-frames a second: 1193182 / 5041 for version 2,
-    /// and for version 1 twelve a tick of the PC's 18.2 Hz timer. Mirrors <c>setTimerAndShakeFrequency</c>.
+    /// and for version 1 twelve a tick of the PC's 18.2 Hz timer; the NES, as the C64, at 240, four
+    /// a frame of its 60. Mirrors <c>setTimerAndShakeFrequency</c>, whose PC rates are for DOS only.
     /// </summary>
-    internal double TimerFrequency => Version switch
+    internal double TimerFrequency => IsNes ? C64NtscTimerRate : Version switch
     {
         0 => C64NtscTimerRate,
         1 => 1193182.0 / 65536 * 12,
@@ -153,8 +156,8 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     private const double C64NtscTimerRate = 240.0;
 
     /// <summary>
-    /// The ticks the next step lasts: <c>VAR_TIMER_NEXT</c>, at least 1, and in version 1 rounded
-    /// up to a multiple of 3; version 0 has no such variable and takes 4, and as many more as the C64
+    /// The ticks the next step lasts: <c>VAR_TIMER_NEXT</c>, at least 1, and in version 1 (not the
+    /// NES's) rounded up to a multiple of 3; version 0 has no such variable and takes 4, and as many more as the C64
     /// took to draw the last step (<c>DelayCalculateDelta</c>). Mirrors the <c>delta</c> of
     /// <c>ScummEngine::go</c>.
     /// </summary>
@@ -168,7 +171,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             return Version switch
             {
                 0 => delta + _redrawTicks,
-                1 => (delta + 2) / 3 * 3,
+                1 when !IsNes => (delta + 2) / 3 * 3,
                 _ => delta,
             };
         }
@@ -184,7 +187,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     public TimeSpan Time { get; private set; }
 
     /// <summary>The camera, whose centre is the room column in the middle of the screen.</summary>
-    public Camera Camera { get; } = new();
+    public Camera Camera { get; }
 
     internal Actor[] Actors { get; }
 
@@ -210,6 +213,8 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     bool IActorWorld.IsPlayer(int actor) => IsPlayer(actor);
 
     bool IActorWorld.IsDemo => IsDemo;
+
+    bool IActorWorld.IsNes => IsNes;
 
     int IActorWorld.BoxCount => CurrentRoom?.WalkBoxes.Count ?? 0;
 
@@ -275,6 +280,9 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
     /// <summary>Whether the release is a demo, which boots and colours some things differently.</summary>
     internal bool IsDemo { get; }
+
+    /// <summary>Whether the release is the NES's: version 1, with its own resources, screen and a few rules of its own.</summary>
+    internal bool IsNes => Engine.IsNes;
 
     /// <summary>
     /// One step of the main loop, in the order of <c>scummLoop</c> for these versions: count the
@@ -430,18 +438,18 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             // o2_roomOps sub-operation 1: the camera's limits, in columns, kept inside the room
             case "o2_roomOps" when (arguments[2] & 0x1F) == 1:
                 {
-                    int width = CurrentRoom?.Width ?? ScreenLayout.Width;
-                    int Clamp(int column) => Math.Clamp(column * 8, ScreenLayout.Width / 2, Math.Max(ScreenLayout.Width / 2, width - ScreenLayout.Width / 2));
+                    int width = CurrentRoom?.Width ?? Camera.ScreenWidth, half = Camera.ScreenWidth / 2;
+                    int Clamp(int column) => Math.Clamp(column * 8, half, Math.Max(half, width - half));
                     engine.Variables[VarCameraMinX] = Clamp(arguments[0]);
                     engine.Variables[VarCameraMaxX] = Clamp(arguments[1]);
                     return 0;
                 }
 
-            // o2_lights: the light level (version 1 translates it); a third byte of 1 sets the flashlight's size instead
+            // o2_lights: the light level (version 1 but the NES translates it); a third byte of 1 sets the flashlight's size instead
             case "o2_lights":
                 if (arguments[2] == 0)
                 {
-                    engine.Variables[VarCurrentLights] = Version == 1
+                    engine.Variables[VarCurrentLights] = Version == 1 && !IsNes
                         ? arguments[0] switch { 2 => 11, 1 => 4, _ => 0 }
                         : arguments[0];
                 }
@@ -504,7 +512,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
                         {
                             actor.SetFacing(180);
                         }
-                        else if (Version == 1)
+                        else if (Version == 1 && !IsNes)
                         {
                             actor.SetDirection(180);
                         }
@@ -738,8 +746,8 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         CurrentRoom = room;
         _moved.Clear();
         _boxFlags = room.WalkBoxes.Boxes.Select(b => b.Flags).ToArray();
-        SetVar(Engine.Vars.CameraMinX, ScreenLayout.Width / 2);
-        SetVar(Engine.Vars.CameraMaxX, room.Width - ScreenLayout.Width / 2);
+        SetVar(Engine.Vars.CameraMinX, Camera.ScreenWidth / 2);
+        SetVar(Engine.Vars.CameraMaxX, room.Width - Camera.ScreenWidth / 2);
         Camera.SetRoom(room.Width);
         SyncCameraLimits();
 
@@ -885,7 +893,9 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     private Surface8 Draw()
     {
         var layout = ScreenLayout.ForVersion(Version);
-        if (CurrentRoom is not { } room)
+
+        // the NES's rooms are drawn from its tiles (GdiNES), not yet
+        if (CurrentRoom is not { } room || IsNes)
         {
             var blank = new Surface8(ScreenLayout.Width, ScreenLayout.Height);
             for (int y = 0; y < MessageLine.Height; y++)
@@ -1041,6 +1051,46 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     private int SortKey(Actor actor) => Version == 0 && actor.Number == V0Plant ? 0 : actor.Y;
 
     /// <summary>A sound resource, or null when there is none; some index entries point past their room file, and play nothing.</summary>
+    /// <summary>A global script, as the index finds it; the NES's title script patched as ScummVM patches it.</summary>
+    private ReadOnlyMemory<byte>? LoadScript(int number)
+    {
+        if (!_loader.Index.Locate(ResourceType.Script, number).IsPresent || _loader.Load(ResourceType.Script, number) is not { } script)
+        {
+            return null;
+        }
+
+        return _loader.Index.IsNes && number == NesTitleScript ? PatchNesTitleScript(script) : script;
+    }
+
+    // the NES's title script, whose logo scroll waits for the camera (script 120)
+    private const int NesTitleScript = 120;
+
+    /// <summary>
+    /// The NES's title script waits for the camera to pass column 45 as the logo scrolls, which a
+    /// 224-pixel-wide view reaches and a 256-pixel one, ScummVM's and this, does not: the column
+    /// becomes 44. Mirrors the NES patch of ScummVM's <c>applyWorkaroundIfNeeded</c>, which finds
+    /// the loop by its bytes (setCameraAt 10, panCameraTo 70, breakHere, then the test of variable
+    /// 2 jumping back 7 bytes, before a stopScript).
+    /// </summary>
+    private static ReadOnlyMemory<byte> PatchNesTitleScript(ReadOnlyMemory<byte> script)
+    {
+        ReadOnlySpan<byte> prefix = [0x32, 0x0A, 0x12, 0x46, 0x80, 0x38, 0x02];
+        ReadOnlySpan<byte> tail = [0x00, 0xF9, 0xFF, 0x62];
+        const byte Column = 0x2C;
+
+        var code = script.ToArray();
+        for (int i = 0; i + prefix.Length + 1 + tail.Length <= code.Length; i++)
+        {
+            if (code.AsSpan(i).StartsWith(prefix) && code.AsSpan(i + prefix.Length + 1).StartsWith(tail))
+            {
+                code[i + prefix.Length] = Column;
+                break;
+            }
+        }
+
+        return code;
+    }
+
     private byte[]? LoadSound(int number)
     {
         if (!_sounds.TryGetValue(number, out var data))
@@ -1064,7 +1114,8 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     {
         if (!_costumes.TryGetValue(number, out var costume))
         {
-            costume = _loader.LoadCostume(number);
+            // the NES's costumes are its own (NESCostumeLoader), not read yet
+            costume = IsNes ? null : _loader.LoadCostume(number);
             _costumes[number] = costume;
         }
 

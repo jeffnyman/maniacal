@@ -10,7 +10,8 @@ namespace Maniacal.Scumm.Rooms;
 /// </summary>
 /// <remarks>
 /// Header, from the room's size word: width and height at 4 (versions 0 and 1: two bytes in
-/// 8-pixel units; version 2: two words in pixels, and the picture offset at 10), the object count
+/// 8-pixel units; the NES: two words in 8-pixel units; version 2: two words in pixels, and the
+/// picture offset at 10), the object count
 /// at 20, the walkbox offset at 21 (a byte), the sound and script counts at 22 and 23, the exit and
 /// entry script offsets at 24 and 26, and from 28 the object image offsets, the object code
 /// offsets, the sound numbers and the script numbers.
@@ -19,7 +20,10 @@ public sealed class Room
 {
     private const int HeaderSize = 28;
 
-    private Room(int number, int version, ReadOnlyMemory<byte> data)
+    // the NES's screen, 32 tiles wide, which narrower rooms are widened to (setupRoomSubBlocks)
+    private const int NesScreenWidth = 32 * 8;
+
+    private Room(int number, int version, bool nes, ReadOnlyMemory<byte> data)
     {
         var span = data.Span;
         if (span.Length < HeaderSize)
@@ -29,9 +33,15 @@ public sealed class Room
 
         Number = number;
         Version = version;
+        IsNes = nes;
         Data = data;
 
-        if (version <= 1)
+        if (nes)
+        {
+            Width = Math.Max(Word(span, 4) * 8, NesScreenWidth);
+            Height = Word(span, 6) * 8;
+        }
+        else if (version <= 1)
         {
             Width = span[4] * 8;
             Height = span[5] * 8;
@@ -94,6 +104,9 @@ public sealed class Room
     /// <summary>The SCUMM version the room's data is in (0, 1 or 2).</summary>
     public int Version { get; }
 
+    /// <summary>Whether the room is the NES's.</summary>
+    internal bool IsNes { get; }
+
     /// <summary>The room resource, from its size word.</summary>
     internal ReadOnlyMemory<byte> Data { get; }
 
@@ -123,14 +136,14 @@ public sealed class Room
     /// <summary>The object with a global number, or null when it is not in this room.</summary>
     internal RoomObject? FindObject(int number) => Objects.FirstOrDefault(o => o.Number == number);
 
-    internal static Room Parse(int number, int version, ReadOnlyMemory<byte> data)
+    internal static Room Parse(int number, int version, ReadOnlyMemory<byte> data, bool nes = false)
     {
         if (version is < 0 or > 2)
         {
             throw new ArgumentOutOfRangeException(nameof(version), version, "Only the room formats of versions 0 to 2 are supported.");
         }
 
-        return new Room(number, version, data);
+        return new Room(number, version, nes, data);
     }
 
     private static int[] Numbers(ReadOnlySpan<byte> bytes)

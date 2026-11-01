@@ -43,12 +43,12 @@ internal readonly record struct ActorDrawing(CostumeFrame Frame, int X, int Y, b
 /// </summary>
 internal static class RoomView
 {
-    /// <summary>The 320-pixel-wide part of a drawn room the camera shows, and its mask.</summary>
+    /// <summary>The part of a drawn room the camera shows, as wide as the screen, and its mask.</summary>
     internal static MaskedImage Window(MaskedImage room, Camera camera)
     {
-        int width = Math.Min(Camera.ScreenWidth, room.Pixels.Width);
+        int width = Math.Min(camera.ScreenWidth, room.Pixels.Width);
         int height = room.Pixels.Height;
-        var view = new MaskedImage(new Surface8(Camera.ScreenWidth, height), new Surface8(Camera.ScreenWidth, height));
+        var view = new MaskedImage(new Surface8(camera.ScreenWidth, height), new Surface8(camera.ScreenWidth, height));
         int left = Math.Clamp(camera.Left, 0, room.Pixels.Width - width);
         for (int y = 0; y < height; y++)
         {

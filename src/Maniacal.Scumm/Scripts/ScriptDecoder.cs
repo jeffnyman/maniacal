@@ -6,7 +6,8 @@ namespace Maniacal.Scumm.Scripts;
 /// Decodes script instructions: which handler an opcode runs, and the operands it fetches. The
 /// operand layouts mirror the fetches of ScummVM's handlers in <c>script_v2.cpp</c>, the
 /// <c>o5_</c>, <c>o4_</c> and <c>o3_</c> handlers the version 2 table borrows, and for version 0
-/// (the C64) <c>script_v0.cpp</c> with the version 2 handlers its table borrows.
+/// (the C64) <c>script_v0.cpp</c> with the version 2 handlers its table borrows. The NES runs
+/// version 1's table, but for <c>switchCostumeSet</c>, which takes a byte there.
 /// </summary>
 /// <remarks>
 /// <para>Operand kinds (<c>ScummEngine_v2::getVar</c>, <c>getResultPos</c>, and
@@ -22,11 +23,14 @@ namespace Maniacal.Scumm.Scripts;
 /// with bit 0x40 as no operand at all: the object the running sentence is about
 /// (<c>ScummEngine_v0::getActiveObject</c>). Its text is bytes up to a zero, without escapes.</para>
 /// </remarks>
-internal sealed class ScriptDecoder(int version)
+internal sealed class ScriptDecoder(int version, bool nes = false)
 {
     private const byte Param1 = 0x80, Param2 = 0x40, Param3 = 0x20;
 
     public int Version { get; } = version;
+
+    /// <summary>Whether the scripts are the NES's.</summary>
+    public bool IsNes { get; } = nes;
 
     private readonly string[] _handlers = version == 0 ? OpcodeTable.HandlersV0 : OpcodeTable.Handlers;
 
@@ -72,8 +76,18 @@ internal sealed class ScriptDecoder(int version)
             // no operands
             case "o5_stopObjectCode" or "o5_breakHere" or "o5_stopMusic" or "o2_cutscene" or "o2_endCutscene"
                 or "o2_restart" or "o2_drawSentence" or "o2_waitForMessage" or "o2_waitForSentence" or "o2_dummy"
-                or "o2_switchCostumeSet" or "o_stopCurrentScript" or "o_nop" or "o_cutscene" or "o_endCutscene"
+                or "o_stopCurrentScript" or "o_nop" or "o_cutscene" or "o_endCutscene"
                 or "o_screenPrepare":
+                break;
+
+            // the NES's costume set, a byte (NES_loadCostumeSet); elsewhere nothing (o2_dummy) or,
+            // on the C64, a byte the engine skips
+            case "o2_switchCostumeSet":
+                if (IsNes)
+                {
+                    Byte(ref r);
+                }
+
                 break;
 
             // the active object (getActiveObject)

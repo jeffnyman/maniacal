@@ -122,7 +122,7 @@ public sealed class ResourceLoader
 
     /// <summary>Loads and parses a room, or returns null when the index has no such room.</summary>
     internal Room? LoadRoom(int room)
-        => Load(ResourceType.Room, room) is { } data ? Room.Parse(room, Index.Version, data) : null;
+        => Load(ResourceType.Room, room) is { } data ? Room.Parse(room, Index.Version, data, Index.IsNes) : null;
 
     /// <summary>Loads and parses a costume, or returns null when the index has no such costume.</summary>
     internal Costume? LoadCostume(int costume)

@@ -31,6 +31,25 @@ public class ScriptDecoderTests
         Assert.Equal(4, constants.Length);
     }
 
+    /// <summary>
+    /// switchCostumeSet (0xAB) takes a byte on the NES, the set to load (NES_loadCostumeSet), and
+    /// nothing in DOS's version 1 (o2_dummy).
+    /// </summary>
+    [Fact]
+    public void The_nes_switches_costume_sets_by_a_byte()
+    {
+        byte[] code = [0xAB, 0x01, 0xA0];
+
+        var nes = new ScriptDecoder(1, nes: true).Decode(code, 0);
+        var dos = new ScriptDecoder(1).Decode(code, 0);
+
+        Assert.Equal("switchCostumeSet", nes.Name);
+        Assert.Equal([Operand.Constant(1)], nes.Operands);
+        Assert.Equal(2, nes.Length);
+        Assert.Empty(dos.Operands);
+        Assert.Equal(1, dos.Length);
+    }
+
     [Fact]
     public void Jumps_count_from_the_end_of_the_instruction()
     {

@@ -413,7 +413,7 @@ public sealed class GameInspector(ResourceLoader loader)
         int covered = entries.Min(v => v.Offset);
         try
         {
-            var decoder = new ScriptDecoder(Version);
+            var decoder = new ScriptDecoder(Version, loader.Index.IsNes);
             foreach (var instruction in decoder.DecodeReachable(code, entries.Select(v => v.Offset)).Values)
             {
                 if (instruction.Offset > covered)

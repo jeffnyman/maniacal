@@ -14,7 +14,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 4 | Sound, saves and options (V2 and V1) | Done |
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
 | 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
-| 7 | The NES | Started: the cartridge is read and recognized |
+| 7 | The NES | Started: the cartridge is read, and its scripts run headless to the driveway |
 | Later | A browser player, Amiga and Atari ST, Zak McKracken | Perhaps |
 
 ## Design
@@ -823,8 +823,31 @@ and sound. `docs/nes` documents its data. The steps:
    yet". `ResourceIndex` reads the NES's index (775 objects, 80 costume slots). Tested in
    `NesRomTests`: every room file is its resources end to end, and every room, script, sound and
    costume the index names reads whole.
-2. **Scripts, headless.** The NES's differences in the version 1 interpreter (`script_v2.cpp`'s
-   NES branches: its verbs, inventory, sentence and text), booting and stepping without a screen.
+2. **Scripts, headless (done).** The NES runs on the version 1 interpreter with ScummVM's NES
+   branches, booting and stepping without a screen (its rooms are not drawn and its actors have
+   no costumes until steps 3 and 4):
+   - `switchCostumeSet` takes a byte, the costume set (`NES_loadCostumeSet`); the decoder and the
+     listings know it, and the world keeps the set for step 4.
+   - Rooms give their width and height as words in 8-pixel units, narrow ones widened to the
+     screen's 32 columns (`setupRoomSubBlocks`).
+   - The camera looks through a 256-pixel-wide screen, with triggers at columns 6 and 21
+     (`resetScumm`); the scripts' camera limits come from that width.
+   - The title script's logo scroll waits for the camera to pass column 45, which a 256-pixel
+     view never reaches: it is patched to 44 as ScummVM patches it (`applyWorkaroundIfNeeded`).
+   - The clock is 60 Hz, four quarter-frames a frame, without version 1's rounding of waits to
+     three ticks; the light levels are taken as they are; the talking actor is variable 41; an
+     actor put in a room is not turned to the front; the security door's code is not bypassed,
+     the NES having none; `setObjPreposition` changes nothing; the verbs sit a column to the right,
+     in colour 1, keyed `qwer`, `asdf`, `zxcv`; and the prepositions are the cartridge's (costume
+     78). The end of a cutscene follows the kid, as version 2 does.
+
+   Tested in `NesPlayTests`: the title plays through rooms 33 and 49 to the kid selection, two
+   kids picked start the game in the driveway (each kid given a CD player of his own by script
+   131), with the NES's twelve verbs, and Dave walks out to the front of the house, every
+   instruction handled. Left for the steps they belong to: the screen's layout (256 by 240, the
+   room from line 32 to 160, the verbs and inventory under it), the narrow rooms' mouse offset
+   (`_NESStartStrip`), the pickup sound (51), the NES's talk colours, the save menu's restart and
+   its `Alt-F5` save script (163), and `Shift-B` to skip a cutscene.
 3. **Rooms.** `gfx_nes.cpp`: the rooms' tiles, their palettes and attributes, the 256-pixel-wide
    screen and its strips (`_NESStartStrip`), and the title screens.
 4. **Costumes and the font.** `NESCostumeRenderer` and the costume parts in `54.LFL`

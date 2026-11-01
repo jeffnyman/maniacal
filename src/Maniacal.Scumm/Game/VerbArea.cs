@@ -77,7 +77,10 @@ internal sealed class VerbArea
     private const int SentenceChars = 40, InventoryChars = 18;
 
     // the keys o2_verbOps gives the first 15 slots
-    private const string Keys = "qwertasdfgzxcvb";
+    private const string Keys = "qwertasdfgzxcvb", NesKeys = "qwerasdfzxcv";
+
+    // the NES draws its verbs in one colour, highlighted or not
+    private const int NesVerbColor = 1;
 
     private static (Rect Rect, int Color)[] MakeBoxes(int text, int arrow, int offset) =>
     [
@@ -142,21 +145,23 @@ internal sealed class VerbArea
 
     /// <summary>
     /// Makes a verb in a slot, or remakes it, and draws it. Version 1 places verbs a line lower,
-    /// under its sentence line. Mirrors the new-verb case of <c>o2_verbOps</c>.
+    /// under its sentence line; the NES a column to the right, in colour 1, with four keys a row.
+    /// Mirrors the new-verb case of <c>o2_verbOps</c>.
     /// </summary>
-    public void SetVerb(int slot, int id, int column, int row, int preposition, ReadOnlySpan<byte> name, int version)
+    public void SetVerb(int slot, int id, int column, int row, int preposition, ReadOnlySpan<byte> name, int version, bool nes = false)
     {
         var verb = Slot(slot);
+        string keys = nes ? NesKeys : Keys;
         verb.Id = id;
-        verb.Color = _demo ? DemoVerbColor : VerbColor;
-        verb.HiColor = HighlightColor;
-        verb.DimColor = VerbDimColor;
+        verb.Color = nes ? NesVerbColor : _demo ? DemoVerbColor : VerbColor;
+        verb.HiColor = nes ? NesVerbColor : HighlightColor;
+        verb.DimColor = nes ? NesVerbColor : VerbDimColor;
         verb.Mode = 1;
-        verb.Key = slot <= Keys.Length ? Keys[slot - 1] : 0;
+        verb.Key = slot <= keys.Length ? keys[slot - 1] : 0;
         verb.Preposition = preposition;
         verb.Name = name.ToArray();
-        verb.X = column * 8;
-        verb.Y = row * 8 + (version == 1 ? 8 : 0);
+        verb.X = column * 8 + (nes ? 8 : 0);
+        verb.Y = row * 8 + (version == 1 && !nes ? 8 : 0);
         Draw(slot, false);
         MouseOver(0);
     }

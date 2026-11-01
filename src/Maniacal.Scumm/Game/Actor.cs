@@ -9,6 +9,9 @@ internal interface IActorWorld
     /// <summary>Whether the release is a demo, whose actors differ a little.</summary>
     bool IsDemo => false;
 
+    /// <summary>Whether the release is the NES's, whose actors differ a little.</summary>
+    bool IsNes => false;
+
     int CurrentRoom { get; }
 
     int Version { get; }
@@ -226,8 +229,9 @@ internal class Actor
             Show();
         }
 
+        // Maniac Mansion's versions 0 and 1 turn an actor to the front as it is put, but the NES's
         AfterPut();
-        if (_world.Version <= 1)
+        if (_world.Version <= 1 && !_world.IsNes)
         {
             SetDirection(180);
         }

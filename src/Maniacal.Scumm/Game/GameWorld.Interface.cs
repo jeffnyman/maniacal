@@ -1,6 +1,7 @@
 using System.Text;
 using Maniacal.Scumm.Graphics;
 using Maniacal.Scumm.Rooms;
+using Maniacal.Scumm.Resources;
 using Maniacal.Scumm.Scripts;
 using Maniacal.Scumm.View;
 
@@ -309,6 +310,15 @@ public sealed partial class GameWorld
                 PickUp(arguments[0]);
                 return true;
 
+            // the NES keeps its prepositions apart from its objects, and changes none
+            case "o2_setObjPreposition" when IsNes:
+                return true;
+
+            // the NES's costumes come in two sets, the kids' and the rest (NES_loadCostumeSet)
+            case "o2_switchCostumeSet" when IsNes:
+                NesCostumeSet = arguments[0];
+                return true;
+
             case "o4_saveLoadGame":
                 result = SaveLoadGame(arguments[0], instruction);
                 return true;
@@ -360,7 +370,7 @@ public sealed partial class GameWorld
                 Verbs.SetMode(arguments[1], arguments[2]);
                 break;
             default:
-                Verbs.SetVerb(arguments[3] + 1, arguments[0], arguments[1], arguments[2], arguments[4], instruction.Operands[5].Text, Version);
+                Verbs.SetVerb(arguments[3] + 1, arguments[0], arguments[1], arguments[2], arguments[4], instruction.Operands[5].Text, Version, IsNes);
                 break;
         }
     }
@@ -487,7 +497,7 @@ public sealed partial class GameWorld
             sentence.Add((byte)' ');
             sentence.AddRange(Encoding.Latin1.GetBytes(NameOf(first)));
 
-            if (Version == 1 && Engine.Variables[VarSentencePreposition] == 0)
+            if (Version == 1 && !IsNes && Engine.Variables[VarSentencePreposition] == 0)
             {
                 int preposition = Verbs.Slots[slot].Preposition;
                 Engine.Variables[VarSentencePreposition] = preposition == 0xFF ? ObjectCode(first)?.Preposition ?? 0 : preposition;
@@ -495,7 +505,11 @@ public sealed partial class GameWorld
         }
 
         int prepositionIndex = Engine.Variables[VarSentencePreposition];
-        if (prepositionIndex is > 0 and <= 4)
+        if (prepositionIndex is > 0 and <= 4 && IsNes)
+        {
+            sentence.AddRange(NesPreposition(prepositionIndex));
+        }
+        else if (prepositionIndex is > 0 and <= 4)
         {
             string[] prepositions = [" ", " in", " with", " on", " to"];
             sentence.AddRange(Encoding.Latin1.GetBytes(prepositions[prepositionIndex]));
@@ -509,6 +523,28 @@ public sealed partial class GameWorld
         }
 
         Verbs.DrawSentence([.. sentence]);
+    }
+
+    /// <summary>The costume set the NES's scripts last chose: 0 or 1.</summary>
+    internal int NesCostumeSet { get; private set; }
+
+    // the NES's preposition list, from the cartridge (costume 78): five words of 8 bytes
+    private const int NesPrepositions = 78, NesPrepositionLength = 8;
+
+    /// <summary>
+    /// One of the NES's prepositions, a space and the word, as its cartridge has them. Mirrors the
+    /// NES case of <c>drawSentence</c>, which reads them from costume 78.
+    /// </summary>
+    private byte[] NesPreposition(int index)
+    {
+        if (_loader.Load(ResourceType.Costume, NesPrepositions) is not { } list)
+        {
+            return [];
+        }
+
+        var word = list.Span.Slice(2 + index * NesPrepositionLength, NesPrepositionLength);
+        int end = word.IndexOf((byte)0);
+        return word[..(end < 0 ? word.Length : end)].ToArray();
     }
 
     /// <summary>
@@ -562,11 +598,11 @@ public sealed partial class GameWorld
         ResetSentence();
     }
 
-    /// <summary>Mirrors <c>o2_endCutscene</c>'s camera: version 2 follows the kid, version 1 puts back the camera mode or room the cutscene began with.</summary>
+    /// <summary>Mirrors <c>o2_endCutscene</c>'s camera: version 2 and the NES follow the kid, version 1 puts back the camera mode or room the cutscene began with.</summary>
     private void EndCutscene()
     {
         int ego = Engine.Variables[ScriptEngine.VarEgo];
-        if (Version >= 2)
+        if (Version >= 2 || IsNes)
         {
             if (ego is > 0 and < ActorCount)
             {

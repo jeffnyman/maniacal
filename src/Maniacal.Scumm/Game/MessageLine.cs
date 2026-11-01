@@ -50,7 +50,7 @@ internal sealed class MessageLine
     /// interpreter doing the same; the colour itself, as saved, stays the script's.
     /// </summary>
     private byte ShownColor(int color)
-        => _engine.Version == 1 ? Palettes.ManiacV1ToEga[color & 0x0F] : (byte)color;
+        => _engine.Version == 1 && !_engine.IsNes ? Palettes.ManiacV1ToEga[color & 0x0F] : (byte)color;
 
     public MessageLine(Font font, ScriptEngine engine, Func<int, Actor?> actorOf, Func<int, string> nameOf, Func<int, string> verbNameOf)
     {
@@ -69,8 +69,8 @@ internal sealed class MessageLine
 
     /// <summary>
     /// The actor whose speech shows, <see cref="NoActor"/> when nobody's does, or 0 before anyone
-    /// has spoken. Mirrors <c>getTalkingActor</c> and <c>setTalkingActor</c>: version 2 keeps it in
-    /// <c>VAR_TALK_ACTOR</c>, variable 41.
+    /// has spoken. Mirrors <c>getTalkingActor</c> and <c>setTalkingActor</c>: version 2 and the NES
+    /// keep it in <c>VAR_TALK_ACTOR</c>, variable 41.
     /// </summary>
     public int TalkingActor
     {
@@ -78,7 +78,7 @@ internal sealed class MessageLine
         private set
         {
             _talkingActor = value;
-            if (_engine.Version >= 2)
+            if (_engine.Version >= 2 || _engine.IsNes)
             {
                 _engine.Variables[_engine.Vars.TalkActor] = value;
             }

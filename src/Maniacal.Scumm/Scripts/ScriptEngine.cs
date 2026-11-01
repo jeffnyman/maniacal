@@ -49,13 +49,14 @@ internal sealed class ScriptEngine
     private readonly List<(int Number, ScriptKind Kind, int Slot)> _nested = [];
     private readonly int[] _arguments = new int[16];
 
-    public ScriptEngine(int version, Func<int, ReadOnlyMemory<byte>?> loadScript, IScriptHost host, IReadOnlyList<byte> objectOwners, IReadOnlyList<byte> objectStates, int seed = 1)
+    public ScriptEngine(int version, Func<int, ReadOnlyMemory<byte>?> loadScript, IScriptHost host, IReadOnlyList<byte> objectOwners, IReadOnlyList<byte> objectStates, int seed = 1, bool nes = false)
     {
         Version = version;
+        IsNes = nes;
         Vars = EngineVariables.For(version);
         _loadScript = loadScript;
         _host = host;
-        _decoder = new ScriptDecoder(version);
+        _decoder = new ScriptDecoder(version, nes);
         _random = new Random(seed);
         ObjectOwners = [.. objectOwners];
         ObjectStates = [.. objectStates];
@@ -66,6 +67,9 @@ internal sealed class ScriptEngine
     }
 
     public int Version { get; }
+
+    /// <summary>Whether the scripts are the NES's, version 1 with a few differences.</summary>
+    public bool IsNes { get; }
 
     /// <summary>The numbers of the variables the engine itself uses, as this version gives them.</summary>
     public EngineVariables Vars { get; }
@@ -185,11 +189,12 @@ internal sealed class ScriptEngine
 
     /// <summary>
     /// An object's state. Without the copy protection, the security door is always open: its
-    /// Intrinsic bit is set whenever its state is read. Mirrors <c>ScummEngine::getState</c>.
+    /// Intrinsic bit is set whenever its state is read, but on the NES, which has no such code.
+    /// Mirrors <c>ScummEngine::getState</c>.
     /// </summary>
     public int GetState(int obj)
     {
-        if (!CopyProtection && Version != 0 && obj is SecurityDoorOutside or SecurityDoorInside)
+        if (!CopyProtection && Version != 0 && !IsNes && obj is SecurityDoorOutside or SecurityDoorInside)
         {
             ObjectStates[obj] |= StateIntrinsic;
         }

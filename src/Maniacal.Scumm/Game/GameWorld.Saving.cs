@@ -301,7 +301,7 @@ public sealed partial class GameWorld
             }
         }
 
-        Camera.LoadFrom(s, room?.Width ?? ScreenLayout.Width);
+        Camera.LoadFrom(s, room?.Width ?? Camera.ScreenWidth);
         SyncCameraLimits();
         for (int i = 0; i < ScummState.ActorCount; i++)
         {

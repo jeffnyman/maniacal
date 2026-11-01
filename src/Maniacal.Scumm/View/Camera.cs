@@ -9,32 +9,44 @@ internal enum CameraMode
 }
 
 /// <summary>
-/// The camera of versions 1 and 2: the x of the centre of the 320-pixel view, in room pixels,
-/// moving 8 pixels a step. Mirrors ScummVM's <c>camera.cpp</c> (<c>setCameraAt</c>,
+/// The camera of versions 1 and 2: the x of the centre of the 320-pixel view (the NES's: 256),
+/// in room pixels, moving 8 pixels a step. Mirrors ScummVM's <c>camera.cpp</c> (<c>setCameraAt</c>,
 /// <c>setCameraFollows</c>, <c>moveCamera</c>, <c>cameraMoved</c>, <c>panCameraTo</c>) for
 /// versions before 7, which have no fast-scroll or scroll-script variables.
 /// </summary>
 public sealed class Camera
 {
-    internal Camera()
+    /// <summary>The camera of a screen 320 pixels wide, or the NES's 256 (<c>_screenWidth</c>).</summary>
+    internal Camera(bool nes = false)
     {
+        ScreenWidth = nes ? NesScreenWidth : DosScreenWidth;
+        (LeftTrigger, RightTrigger) = nes ? (6, 21) : (10, 30);
+        _roomWidth = ScreenWidth;
+        X = DestinationX = MinX = MaxX = ScreenWidth / 2;
     }
 
-    internal const int ScreenWidth = 320;
-    internal const int Strips = ScreenWidth / 8;
+    /// <summary>The width of the view of every release but the NES's, and the NES's.</summary>
+    internal const int DosScreenWidth = 320, NesScreenWidth = 256;
 
-    /// <summary>Mirrors <c>camera._leftTrigger</c> and <c>_rightTrigger</c>: the view columns past which a followed actor moves the camera.</summary>
-    internal const int LeftTrigger = 10, RightTrigger = 30;
+    /// <summary>The width of the view in pixels (<c>_screenWidth</c>).</summary>
+    internal int ScreenWidth { get; }
 
-    private int _roomWidth = ScreenWidth;
+    internal int Strips => ScreenWidth / 8;
+
+    /// <summary>Mirrors <c>camera._leftTrigger</c> and <c>_rightTrigger</c>: the view columns past which a followed actor moves the camera (<c>resetScumm</c>; the NES's are 6 and 21).</summary>
+    internal int LeftTrigger { get; }
+
+    internal int RightTrigger { get; }
+
+    private int _roomWidth;
 
     internal CameraMode Mode { get; private set; } = CameraMode.Normal;
 
     /// <summary>The centre of the view, in room pixels.</summary>
-    public int X { get; private set; } = ScreenWidth / 2;
+    public int X { get; private set; }
 
     /// <summary>Where the camera is heading.</summary>
-    internal int DestinationX { get; private set; } = ScreenWidth / 2;
+    internal int DestinationX { get; private set; }
 
     /// <summary>The actor followed in <see cref="CameraMode.FollowActor"/>.</summary>
     internal int Follows { get; private set; }
@@ -42,9 +54,9 @@ public sealed class Camera
     internal bool MovingToActor { get; private set; }
 
     /// <summary>The scripts' limits on the camera centre: variables 23 and 24 (<c>VAR_CAMERA_MIN_X</c>, <c>VAR_CAMERA_MAX_X</c>).</summary>
-    internal int MinX { get; set; } = ScreenWidth / 2;
+    internal int MinX { get; set; }
 
-    internal int MaxX { get; set; } = ScreenWidth / 2;
+    internal int MaxX { get; set; }
 
     /// <summary>The first strip of the room in view (<c>_screenStartStrip</c>).</summary>
     internal int StartStrip { get; private set; }
