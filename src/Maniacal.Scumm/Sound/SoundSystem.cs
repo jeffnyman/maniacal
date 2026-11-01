@@ -6,20 +6,22 @@ namespace Maniacal.Scumm.Sound;
 /// ScummVM's <c>Sound</c> does for these versions (<c>startSound</c>, <c>addSoundToQueue</c>,
 /// <c>processSoundQueues</c>, <c>triggerSound</c>, <c>stopSound</c>, <c>stopAllSounds</c> and
 /// <c>isSoundRunning</c>). The player is version 1's or version 2's, on the PCjr by default, as
-/// ScummVM prefers it when a release supports both, or the C64's SID player.
+/// ScummVM prefers it when a release supports both, the C64's SID player, or the NES's.
 /// </summary>
 internal sealed class SoundSystem
 {
     private readonly Func<int, byte[]?> _load;
     private readonly List<int> _queue = [];
 
-    public SoundSystem(int version, Func<int, byte[]?> load, int sampleRate, bool pcjr = true)
+    public SoundSystem(int version, Func<int, byte[]?> load, int sampleRate, bool pcjr = true, bool nes = false)
     {
         _load = load;
 
-        // ScummVM gives Player_V1 to version 1 of Maniac Mansion only, and Player_SID to the C64
+        // ScummVM gives Player_V1 to version 1 of Maniac Mansion only, Player_SID to the C64, and
+        // Player_NES to the NES
         Player = version switch
         {
+            _ when nes => new PlayerNes(sampleRate),
             0 => new PlayerSid(sampleRate),
             1 => new PlayerV1(sampleRate, pcjr),
             _ => new PlayerV2(sampleRate, pcjr),
@@ -58,6 +60,15 @@ internal sealed class SoundSystem
         }
 
         _queue.Clear();
+    }
+
+    /// <summary>A sound to the player at once, past the queue. Mirrors <c>Sound::triggerSound</c>.</summary>
+    public void Trigger(int sound)
+    {
+        if (_load(sound) is { } data)
+        {
+            Player.StartSound(sound, data);
+        }
     }
 
     /// <summary>Mirrors <c>Sound::stopSound</c>: the sound stops, and leaves the queue.</summary>

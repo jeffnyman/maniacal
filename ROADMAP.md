@@ -14,7 +14,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 4 | Sound, saves and options (V2 and V1) | Done |
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
 | 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
-| 7 | The NES | Under way: playable by its own interface, all but its sound and saves |
+| 7 | The NES | Under way: playable by its own interface, with its sound; its saves to come |
 | Later | A browser player, Amiga and Atari ST, Zak McKracken | Perhaps |
 
 ## Design
@@ -924,7 +924,26 @@ and sound. `docs/nes` documents its data. The steps:
    (the verb area, the cursor, and Dave pulling the door mat, getting the key, unlocking the
    front door with it from the inventory, opening it and going into the hall) and
    `NesDrawingTests` (those screens).
-6. **Sound.** `player_nes.cpp`, the NES's sound chip (APU) and its music.
+6. **Sound (done).** `PlayerNes` plays the NES's music and effects as ScummVM's `Player_NES`
+   does, ticked 60 times a second among the samples: three slots, two for effects and one for
+   the song, a sound of lower priority than the one in its slot left out; effects as register
+   writes and waits; songs as notes started and released on instruments whose commands chain
+   (`startCmd`, `releaseCmd`, `nextCmd`), the song silenced while an effect plays and given its
+   channels back after. `NesApu` is ScummVM's emulation of the NES's sound chip (`APUe`): two
+   square channels with their envelopes and sweeps, the triangle, the noise channel, the length
+   counters and the frame sequencer, mixed at the host's rate, its integer widths kept. The
+   pickup sound (51) starts at once, past the queue, as `o2_pickupObject` triggers it. The
+   player's and the chip's tables come from ScummVM's source through `tools/port_nes_sound.py`;
+   the title screens' twinkles wait for the title screens.
+
+   Checked against ScummVM 2026.4.0's own output, recorded through SDL's disk audio driver and
+   aligned on ours: the meteor's sounds and the title song as loud, second by second, within 1
+   to 3%, their notes within ten samples of ScummVM's. Sample by sample they part where the
+   chip's history does, ScummVM's having run through its title screens first: the noise
+   channel's shift register, the channels' phases, and the level a stopped triangle holds (a
+   constant offset, which is all of the difference late in the song). Tested in
+   `NesSoundTests`: an effect played and ended, the slots' priorities, and the intro's loudness
+   against ScummVM's.
 7. **The walkthrough**, won in the NES release, and saves checked against ScummVM.
 
 ## Later, perhaps

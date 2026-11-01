@@ -592,6 +592,9 @@ public sealed partial class GameWorld
         Verbs.DrawSentence([.. sentence]);
     }
 
+    // the NES's sound for an object picked up (o2_pickupObject)
+    private const int NesPickupSound = 51;
+
     /// <summary>The costume set the NES's scripts last chose: 0 or 1.</summary>
     internal int NesCostumeSetNumber { get; private set; }
 
@@ -639,6 +642,12 @@ public sealed partial class GameWorld
         Engine.ObjectOwners[obj] = (byte)Engine.Variables[ScriptEngine.VarEgo];
         Engine.PutState(obj, Engine.GetState(obj) | ScriptEngine.StateIntrinsic | ScriptEngine.StateUntouchable);
         RedrawInventory();
+
+        // the NES's pickup sound, at once, not through the queue (Trac #2536)
+        if (IsNes)
+        {
+            Sound.Trigger(NesPickupSound);
+        }
     }
 
     /// <summary>
