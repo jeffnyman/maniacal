@@ -755,6 +755,16 @@ Where it comes from:
   and `DetectedGame` is sealed. The records left positional are small values that will not grow:
   `Rgb`, `Rect`, `VerbEntry`, `StandingActor`.
 
+- **Threads.** What may be used from which thread is written down, on the types it is about: a
+  world, the engine around it and an inspector are used from one thread at a time; a world's
+  sound may be read from another (the sound players lock, as ScummVM's do); worlds and
+  inspectors share nothing, and a `ManiacMansion` may be shared; the engine calls a host's
+  drivers only from the thread that calls `Tick`. The library's one piece of shared state, the
+  MD5 table's lookup built on first use, is now built once whichever thread asks first (a
+  thread-safe `Lazy`). `ThreadingTests` steps four worlds of one release on four threads at once,
+  each reaching the screen one alone does, and reads a world's sound on a thread of its own
+  while the game steps through the intro.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies

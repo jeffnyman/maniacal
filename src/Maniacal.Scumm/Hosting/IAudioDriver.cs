@@ -17,7 +17,10 @@ public interface IAudioDriver
     /// </summary>
     int Volume { get; set; }
 
-    /// <summary>Starts pulling samples from the source, replacing any source already playing.</summary>
+    /// <summary>
+    /// Starts pulling samples from the source, replacing any source already playing. The driver
+    /// may read the source from a thread of its own, such as an audio device's callback.
+    /// </summary>
     void Start(IAudioSource source);
 
     /// <summary>Stops pulling samples.</summary>

@@ -203,6 +203,10 @@ public sealed record RoomScreen
 /// that is not there, the index's empty slots (entries in room 0, as number 0 mostly is), and the
 /// few entries the original data has that point at nothing the game loads. Data that is damaged
 /// inside a resource throws <see cref="InvalidDataException"/>.
+/// <para>
+/// An inspector is used from one thread at a time: it caches what it reads and does not lock.
+/// Separate inspectors may work on separate threads.
+/// </para>
 /// </summary>
 /// <param name="loader">The release's resources, from <see cref="ResourceLoader.Open"/>.</param>
 public sealed class GameInspector(ResourceLoader loader)

@@ -184,7 +184,9 @@ A missing folder, a folder with no release in it, and a release Maniacal does no
 throw their own exception (`DirectoryNotFoundException`, `FileNotFoundException`,
 `NotSupportedException`), with a message that says which. Headless, the game can be watched as
 well as played: `world.ObjectsHere()` and `ActorsHere()` say what is in the room and where,
-`ClickObject` clicks an object, and `ReadAudio()` hands out the sound each step made.
+`ClickObject` clicks an object, and `ReadAudio()` hands out the sound each step made. A world
+is used from one thread at a time, but its `Audio` may be read from another, as an audio
+device's callback reads it; separate worlds share nothing and may run on threads of their own.
 
 It also looks inside a release without playing it, as the player's `--room`, `--costume`,
 `--script` and `--view` do: room pictures with their objects, costumes' figures, scripts decoded,

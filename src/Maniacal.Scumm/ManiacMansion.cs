@@ -17,6 +17,10 @@ namespace Maniacal.Scumm;
 /// </code>
 /// It is the front door; <see cref="ResourceLoader.Open"/> with <see cref="GameWorld"/> or
 /// <see cref="GameInspector"/> is the same thing taken step by step.
+/// <para>
+/// It does not change once opened, so it may be shared between threads; each world and
+/// inspector it gives opens resources of its own, and so may go to a thread of its own.
+/// </para>
 /// </summary>
 public sealed class ManiacMansion
 {

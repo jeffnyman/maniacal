@@ -19,6 +19,11 @@ namespace Maniacal.Scumm;
 /// F1 to F9 and the characters), and <see cref="InputEventType.Quit"/>; the others it passes over.
 /// Mouse positions are on the 320x200 screen it sets with <c>SetMode</c>.
 /// </para>
+/// <para>
+/// It calls the host's drivers only from the thread that calls <see cref="Initialize"/>,
+/// <see cref="Tick"/> and <see cref="Dispose"/>, which are made from one thread at a time. The
+/// audio source it gives <c>IAudioDriver.Start</c> may be read from another thread.
+/// </para>
 /// </summary>
 public sealed class ScummEngine : Engine
 {

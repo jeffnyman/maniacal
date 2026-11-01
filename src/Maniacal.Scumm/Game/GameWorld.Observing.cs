@@ -107,7 +107,8 @@ public sealed partial class GameWorld
     /// The music and sound effects, interleaved stereo at the sample rate the world was made with.
     /// Read it as the game runs, a step's worth after each step: sound nobody has read for a
     /// quarter of a second is made and thrown away, so that a silent host does not hold up what
-    /// the scripts time by the sound.
+    /// the scripts time by the sound. It may be read from another thread than the one stepping
+    /// the world, as an audio device's callback reads it.
     /// </summary>
     public IAudioSource Audio => Sound.Output;
 

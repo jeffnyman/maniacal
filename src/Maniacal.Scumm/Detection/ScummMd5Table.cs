@@ -19,8 +19,9 @@ internal sealed record Md5Entry(
 
 internal static partial class ScummMd5Table
 {
-    // built on first use: field initialisers in two parts of a partial class run in no defined order
-    private static Dictionary<string, Md5Entry>? _byMd5;
+    // built on first use (field initialisers in two parts of a partial class run in no defined
+    // order), once, whichever thread asks first: Lazy's default is thread-safe
+    private static readonly Lazy<Dictionary<string, Md5Entry>> ByMd5 = new(() => Entries.ToDictionary(e => e.Md5));
 
-    public static Md5Entry? Find(string md5) => (_byMd5 ??= Entries.ToDictionary(e => e.Md5)).GetValueOrDefault(md5);
+    public static Md5Entry? Find(string md5) => ByMd5.Value.GetValueOrDefault(md5);
 }

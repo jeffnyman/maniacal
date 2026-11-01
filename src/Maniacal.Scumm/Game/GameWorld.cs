@@ -14,6 +14,12 @@ namespace Maniacal.Scumm.Game;
 /// run a step at a time as ScummVM's <c>scummLoop</c> does. It is the scripts' host for the
 /// instructions that work on rooms, the camera and actors; the others are recorded in
 /// <see cref="Unhandled"/> until their subsystems exist.
+/// <para>
+/// A world is used from one thread at a time: it does not lock. The exception is its sound,
+/// <see cref="Audio"/>, which may be read from another thread (an audio device's callback) while
+/// the game steps on its own; <see cref="ReadAudio"/>, which goes by the world's clock, may not.
+/// Worlds share nothing, so separate worlds may run on separate threads.
+/// </para>
 /// </summary>
 public sealed partial class GameWorld : IScriptHost, IActorWorld
 {
