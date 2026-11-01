@@ -765,6 +765,16 @@ Where it comes from:
   each reaching the screen one alone does, and reads a world's sound on a thread of its own
   while the game steps through the intro.
 
+- **Saves used from outside.** A fifth program in `maniacal-playground` saves in both versions
+  Maniacal writes, loads each back, and tries what can go wrong. Round trips hold in every release;
+  a bad version, a damaged save and a file that is no save each fail clearly; the game's own save
+  screen saves into the `SaveStore` under `SaveTarget`. One bug, now fixed: a save from another
+  release loaded, and the game then failed while stepping. A save keeps the MD5 of its release
+  (ScummVM's `_gameMD5`, read here without the rest of the state), so `Load` now refuses one made
+  with another SCUMM version or platform, naming both releases, before the world is touched (a
+  save from another copy of the same release still loads, as ScummVM loads it), and any other
+  failure in reading a save is an `InvalidDataException`.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies

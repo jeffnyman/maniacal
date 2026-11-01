@@ -101,6 +101,22 @@ public static class SaveFile
         return (info, state);
     }
 
+    /// <summary>
+    /// The MD5 of the release a save was made with, as its state's first field keeps it
+    /// (<c>_gameMD5</c>, since save version 39), read without the rest of the state.
+    /// </summary>
+    internal static byte[] ReadGameMd5(byte[] file)
+    {
+        var data = Decompress(file);
+        var (_, start) = ReadHeader(data);
+        if (start + 16 > data.Length)
+        {
+            throw new InvalidDataException($"The save ends early, at byte {data.Length}.");
+        }
+
+        return data[start..(start + 16)];
+    }
+
     /// <summary>A save's name, version, time played and date, without its state.</summary>
     internal static SaveInfo ReadInfo(byte[] file) => ReadHeader(Decompress(file)).Info;
 

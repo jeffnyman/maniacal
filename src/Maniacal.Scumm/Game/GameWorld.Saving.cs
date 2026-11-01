@@ -46,12 +46,37 @@ public sealed partial class GameWorld
     /// Loads a ScummVM save file made here or by ScummVM, as ScummVM's own load does: the save is
     /// restored, then the game goes through its save room as if the save screen had loaded it.
     /// </summary>
+    /// <remarks>
+    /// Throws <see cref="InvalidDataException"/> when the file is no save, is damaged, or was made
+    /// with another release (another SCUMM version or platform, whose saves this one cannot read:
+    /// the message names both); the world is left as it was. A save from another copy of the same
+    /// release is loaded, as ScummVM loads it.
+    /// </remarks>
     public SaveInfo Load(byte[] file)
     {
-        var (info, state) = SaveFile.Read(file, Engine.ObjectOwners.Length, Version == 0);
-        Restore(state);
-        AfterLoad(state);
-        return info;
+        // a save keeps the MD5 of the release it was made with; another version's or platform's
+        // is refused before anything is read (ScummVM only warns, its saves being kept per game)
+        var saved = SaveFile.ReadGameMd5(file);
+        var ours = ScummDetector.FromMd5(ScummDetector.IndexMd5(_loader.Game));
+        if (ScummDetector.FromMd5(saved) is { } theirs && ours is not null
+            && (theirs.Version != ours.Version || theirs.Platform != ours.Platform))
+        {
+            throw new InvalidDataException($"This save was made with {theirs.Description}, not this release, {ours.Description}: its saves cannot be loaded here.");
+        }
+
+        (SaveInfo Info, ScummState State) read;
+        try
+        {
+            read = SaveFile.Read(file, Engine.ObjectOwners.Length, Version == 0);
+        }
+        catch (Exception ex) when (ex is not InvalidDataException)
+        {
+            throw new InvalidDataException("The save does not fit this release: it is damaged, or another release's.", ex);
+        }
+
+        Restore(read.State);
+        AfterLoad(read.State);
+        return read.Info;
     }
 
     /// <summary>

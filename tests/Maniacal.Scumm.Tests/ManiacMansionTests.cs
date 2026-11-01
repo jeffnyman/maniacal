@@ -67,6 +67,45 @@ public class ManiacMansionTests
         Assert.Equal(Graphics.Palettes.ForVersion(world.Version)[1], colour(1));
     }
 
+    /// <summary>
+    /// A save keeps the MD5 of the release it was made with; one made with another release (whose
+    /// data it cannot fit) is refused by name, before the world is touched. Found by a program
+    /// written against the package, where such a save loaded and the game then failed.
+    /// </summary>
+    [Theory]
+    [InlineData(WalkthroughTests.V2, WalkthroughTests.V1, "This save was made with Maniac Mansion (V2, English, DOS), not this release, Maniac Mansion (V1, English, DOS)")]
+    [InlineData(WalkthroughTests.V1, WalkthroughTests.V2, "This save was made with Maniac Mansion (V1, English, DOS), not this release, Maniac Mansion (V2, English, DOS)")]
+    [InlineData(WalkthroughTests.C64, WalkthroughTests.V2, "This save was made with Maniac Mansion (C64, English, Commodore 64), not this release, Maniac Mansion (V2, English, DOS)")]
+    [InlineData(WalkthroughTests.V2, WalkthroughTests.C64, "This save was made with Maniac Mansion (V2, English, DOS), not this release, Maniac Mansion (C64, English, Commodore 64)")]
+    public void A_save_from_another_release_is_refused(string from, string into, string message)
+    {
+        if (GameFolders.Find(from) is not { } fromPath || GameFolders.Find(into) is not { } intoPath)
+        {
+            return;
+        }
+
+        var saver = ManiacMansion.Open(fromPath).Play();
+        saver.Boot();
+        for (int i = 0; i < 60; i++)
+        {
+            saver.Step();
+        }
+
+        var save = saver.Save("title", new DateTime(2026, 11, 1));
+        var loader = ManiacMansion.Open(intoPath).Play();
+        loader.Boot();
+        loader.Step();
+        int steps = loader.Steps;
+
+        var ex = Assert.Throws<InvalidDataException>(() => loader.Load(save));
+        Assert.StartsWith(message, ex.Message, StringComparison.Ordinal);
+        Assert.Equal(steps, loader.Steps);
+
+        // the same save loads into its own release
+        var again = ManiacMansion.Open(fromPath).Play();
+        Assert.Equal("title", again.Load(save).Name);
+    }
+
     /// <summary>A release a folder below the one given is found, as the player finds one.</summary>
     [Fact]
     public void A_release_a_folder_below_is_found()

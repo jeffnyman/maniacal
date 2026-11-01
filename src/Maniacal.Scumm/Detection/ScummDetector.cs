@@ -109,6 +109,12 @@ internal static class ScummDetector
         return new byte[16];
     }
 
+    /// <summary>The release an index MD5 names, as a save keeps it, or null for one ScummVM's table does not know.</summary>
+    public static ScummGame? FromMd5(ReadOnlySpan<byte> md5)
+        => ScummMd5Table.Find(Convert.ToHexStringLower(md5)) is { } entry && Variants.TryGetValue(entry.Variant, out var variant)
+            ? new ScummGame(entry, entry.Variant, variant.Version, variant.Demo)
+            : null;
+
     public static ScummGame? Identify(IGameContainer container)
     {
         container = C64DiskImage.Open(container) ?? container;
