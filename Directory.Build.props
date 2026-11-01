@@ -26,11 +26,11 @@
     <RepositoryUrl>https://github.com/jeffnyman/maniacal</RepositoryUrl>
     <PackageProjectUrl>https://github.com/jeffnyman/maniacal</PackageProjectUrl>
     <!-- dotnet pack -p:VersionSuffix=alpha.2 for the next prerelease; an empty suffix is a release -->
-    <VersionPrefix>0.2.0</VersionPrefix>
+    <VersionPrefix>0.3.0</VersionPrefix>
     <VersionSuffix>alpha</VersionSuffix>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>scumm;maniac-mansion;lucasfilm;c64;adventure;interpreter;scummvm;retro;games</PackageTags>
-    <PackageReleaseNotes>Second prerelease: the library's public API, settled for a 1.0. It breaks code written against 0.1.0-alpha. The engine's internals (the script engine, actors, sound players, decoders, renderers, resource index, save serializer) are no longer public. GameWorld is the way to play headless: boot, step, screen, input, saves and loads, and new CopyProtection, Audio, SkipCutscene, Variables and SetVariable, CurrentScript, RunningScripts and ActorsHere. GameInspector (Maniacal.Scumm.Inspection) is new: room pictures with their objects, costumes' figures, scripts decoded, and a room's screen with figures standing in it. Every public member is documented. The maniacal tool plays as before; its --room, --costume, --script and --view are built on the inspection API. Built and tested on Windows, Linux and macOS.</PackageReleaseNotes>
+    <PackageReleaseNotes>Third prerelease. Nothing public is removed or changed since 0.2.0-alpha; the new API is added. New: ManiacMansion, a front door that opens a release from its folder (Open, then Play, Inspect or CreateEngine); GameInspector.Rooms, Scripts, Costumes and Palette; GameWorld.ReadAudio, SampleRate, ObjectsHere, ClickObject and Palette. Changed: only the English releases for the Commodore 64 and DOS are played, and others are refused with a NotSupportedException that names them; the 1987 and 1988 DOS demos now play; the inspector answers null, not an exception, for the index's empty slots and its entries that point at nothing. Fixed in all three releases, checked against ScummVM: a script that starts a cutscene goes on after it; left-facing figures are drawn in the right column; the 1987 release's messages have their proper colours. The maniacal tool has --help, --version, one-line errors and exit codes, and keeps each release's saves in a folder of its own: saves made before are in saves/maniac, to be moved by hand.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsPackable)' == 'true'">

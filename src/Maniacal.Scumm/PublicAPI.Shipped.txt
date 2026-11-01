@@ -33,6 +33,7 @@ Maniacal.Scumm.Game.GameWorld.Audio.get -> Maniacal.Scumm.Hosting.IAudioSource!
 Maniacal.Scumm.Game.GameWorld.Boot() -> void
 Maniacal.Scumm.Game.GameWorld.Camera.get -> Maniacal.Scumm.View.Camera!
 Maniacal.Scumm.Game.GameWorld.Click(int x, int y, bool right = false) -> void
+Maniacal.Scumm.Game.GameWorld.ClickObject(int number) -> bool
 Maniacal.Scumm.Game.GameWorld.CopyProtection.get -> bool
 Maniacal.Scumm.Game.GameWorld.CopyProtection.set -> void
 Maniacal.Scumm.Game.GameWorld.CurrentRoom.get -> Maniacal.Scumm.Rooms.Room?
@@ -45,8 +46,12 @@ Maniacal.Scumm.Game.GameWorld.Load(byte[]! file) -> Maniacal.Scumm.Saves.SaveInf
 Maniacal.Scumm.Game.GameWorld.Mouse.get -> (int X, int Y)
 Maniacal.Scumm.Game.GameWorld.MoveMouse(int x, int y) -> void
 Maniacal.Scumm.Game.GameWorld.NameOf(int number) -> string!
+Maniacal.Scumm.Game.GameWorld.ObjectsHere() -> System.Collections.Generic.IReadOnlyList<Maniacal.Scumm.Game.RoomObjectInfo>!
+Maniacal.Scumm.Game.GameWorld.Palette.get -> System.ReadOnlyMemory<Maniacal.Scumm.Graphics.Rgb>
 Maniacal.Scumm.Game.GameWorld.PressKey(int key) -> void
+Maniacal.Scumm.Game.GameWorld.ReadAudio() -> short[]!
 Maniacal.Scumm.Game.GameWorld.RunningScripts() -> System.Collections.Generic.IReadOnlyList<Maniacal.Scumm.Game.RunningScript>!
+Maniacal.Scumm.Game.GameWorld.SampleRate.get -> int
 Maniacal.Scumm.Game.GameWorld.Save(string! name, System.DateTime saved, int version = 108) -> byte[]!
 Maniacal.Scumm.Game.GameWorld.SaveStore.get -> Maniacal.Scumm.Storage.ISaveStore?
 Maniacal.Scumm.Game.GameWorld.SaveStore.set -> void
@@ -64,6 +69,29 @@ Maniacal.Scumm.Game.GameWorld.Time.get -> System.TimeSpan
 Maniacal.Scumm.Game.GameWorld.Unhandled.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Maniacal.Scumm.Game.GameWorld.Variables.get -> System.Collections.Generic.IReadOnlyList<int>!
 Maniacal.Scumm.Game.GameWorld.Version.get -> int
+Maniacal.Scumm.Game.RoomObjectInfo
+Maniacal.Scumm.Game.RoomObjectInfo.Equals(Maniacal.Scumm.Game.RoomObjectInfo other) -> bool
+Maniacal.Scumm.Game.RoomObjectInfo.Height.get -> int
+Maniacal.Scumm.Game.RoomObjectInfo.Height.init -> void
+Maniacal.Scumm.Game.RoomObjectInfo.Name.get -> string!
+Maniacal.Scumm.Game.RoomObjectInfo.Name.init -> void
+Maniacal.Scumm.Game.RoomObjectInfo.Number.get -> int
+Maniacal.Scumm.Game.RoomObjectInfo.Number.init -> void
+Maniacal.Scumm.Game.RoomObjectInfo.RoomObjectInfo() -> void
+Maniacal.Scumm.Game.RoomObjectInfo.ScreenX.get -> int?
+Maniacal.Scumm.Game.RoomObjectInfo.ScreenX.init -> void
+Maniacal.Scumm.Game.RoomObjectInfo.ScreenY.get -> int?
+Maniacal.Scumm.Game.RoomObjectInfo.ScreenY.init -> void
+Maniacal.Scumm.Game.RoomObjectInfo.State.get -> int
+Maniacal.Scumm.Game.RoomObjectInfo.State.init -> void
+Maniacal.Scumm.Game.RoomObjectInfo.Touchable.get -> bool
+Maniacal.Scumm.Game.RoomObjectInfo.Touchable.init -> void
+Maniacal.Scumm.Game.RoomObjectInfo.Width.get -> int
+Maniacal.Scumm.Game.RoomObjectInfo.Width.init -> void
+Maniacal.Scumm.Game.RoomObjectInfo.X.get -> int
+Maniacal.Scumm.Game.RoomObjectInfo.X.init -> void
+Maniacal.Scumm.Game.RoomObjectInfo.Y.get -> int
+Maniacal.Scumm.Game.RoomObjectInfo.Y.init -> void
 Maniacal.Scumm.Game.RunningScript
 Maniacal.Scumm.Game.RunningScript.Delay.get -> int
 Maniacal.Scumm.Game.RunningScript.Delay.init -> void
@@ -463,10 +491,14 @@ Maniacal.Scumm.Inspection.Facing.Left = 0 -> Maniacal.Scumm.Inspection.Facing
 Maniacal.Scumm.Inspection.Facing.Right = 1 -> Maniacal.Scumm.Inspection.Facing
 Maniacal.Scumm.Inspection.GameInspector
 Maniacal.Scumm.Inspection.GameInspector.Costume(int number) -> Maniacal.Scumm.Inspection.CostumeFigures?
+Maniacal.Scumm.Inspection.GameInspector.Costumes.get -> System.Collections.Generic.IReadOnlyList<int>!
 Maniacal.Scumm.Inspection.GameInspector.GameInspector(Maniacal.Scumm.Resources.ResourceLoader! loader) -> void
+Maniacal.Scumm.Inspection.GameInspector.Palette.get -> System.ReadOnlyMemory<Maniacal.Scumm.Graphics.Rgb>
 Maniacal.Scumm.Inspection.GameInspector.Room(int number, Maniacal.Scumm.Inspection.RoomObjects objects = Maniacal.Scumm.Inspection.RoomObjects.Initial) -> Maniacal.Scumm.Inspection.RoomPicture?
 Maniacal.Scumm.Inspection.GameInspector.RoomScripts(int number) -> System.Collections.Generic.IReadOnlyList<Maniacal.Scumm.Inspection.ScriptListing!>?
+Maniacal.Scumm.Inspection.GameInspector.Rooms.get -> System.Collections.Generic.IReadOnlyList<int>!
 Maniacal.Scumm.Inspection.GameInspector.Script(int number) -> Maniacal.Scumm.Inspection.ScriptListing?
+Maniacal.Scumm.Inspection.GameInspector.Scripts.get -> System.Collections.Generic.IReadOnlyList<int>!
 Maniacal.Scumm.Inspection.GameInspector.Version.get -> int
 Maniacal.Scumm.Inspection.GameInspector.View(int number, int? cameraX = null, System.Collections.Generic.IReadOnlyList<Maniacal.Scumm.Inspection.StandingActor>? actors = null) -> Maniacal.Scumm.Inspection.RoomScreen?
 Maniacal.Scumm.Inspection.ObjectInfo
@@ -570,6 +602,15 @@ Maniacal.Scumm.Inspection.StandingActor.X.get -> int
 Maniacal.Scumm.Inspection.StandingActor.X.init -> void
 Maniacal.Scumm.Inspection.StandingActor.Y.get -> int
 Maniacal.Scumm.Inspection.StandingActor.Y.init -> void
+Maniacal.Scumm.ManiacMansion
+Maniacal.Scumm.ManiacMansion.CreateEngine(Maniacal.Scumm.Hosting.IHost! host) -> Maniacal.Scumm.ScummEngine!
+Maniacal.Scumm.ManiacMansion.Description.get -> string!
+Maniacal.Scumm.ManiacMansion.Detected.get -> Maniacal.Scumm.Hosting.DetectedGame!
+Maniacal.Scumm.ManiacMansion.Files.get -> Maniacal.Scumm.Storage.IGameContainer!
+Maniacal.Scumm.ManiacMansion.Inspect() -> Maniacal.Scumm.Inspection.GameInspector!
+Maniacal.Scumm.ManiacMansion.IsDemo.get -> bool
+Maniacal.Scumm.ManiacMansion.Play(int seed = 1, int sampleRate = 22050, bool pcjr = true) -> Maniacal.Scumm.Game.GameWorld!
+Maniacal.Scumm.ManiacMansion.Version.get -> int
 Maniacal.Scumm.Resources.ResourceLoader
 Maniacal.Scumm.Resources.ResourceLoader.Game.get -> Maniacal.Scumm.Storage.IGameContainer!
 Maniacal.Scumm.Rooms.Room
@@ -703,6 +744,9 @@ override Maniacal.Scumm.Costumes.CostumeFrame.ToString() -> string!
 ~override Maniacal.Scumm.Game.ActorInfo.Equals(object obj) -> bool
 override Maniacal.Scumm.Game.ActorInfo.GetHashCode() -> int
 ~override Maniacal.Scumm.Game.ActorInfo.ToString() -> string
+~override Maniacal.Scumm.Game.RoomObjectInfo.Equals(object obj) -> bool
+override Maniacal.Scumm.Game.RoomObjectInfo.GetHashCode() -> int
+~override Maniacal.Scumm.Game.RoomObjectInfo.ToString() -> string
 ~override Maniacal.Scumm.Game.RunningScript.Equals(object obj) -> bool
 override Maniacal.Scumm.Game.RunningScript.GetHashCode() -> int
 ~override Maniacal.Scumm.Game.RunningScript.ToString() -> string
@@ -747,6 +791,7 @@ override Maniacal.Scumm.Inspection.ScriptListing.ToString() -> string!
 ~override Maniacal.Scumm.Inspection.StandingActor.Equals(object obj) -> bool
 override Maniacal.Scumm.Inspection.StandingActor.GetHashCode() -> int
 ~override Maniacal.Scumm.Inspection.StandingActor.ToString() -> string
+override Maniacal.Scumm.ManiacMansion.ToString() -> string!
 ~override Maniacal.Scumm.Rooms.VerbEntry.Equals(object obj) -> bool
 override Maniacal.Scumm.Rooms.VerbEntry.GetHashCode() -> int
 ~override Maniacal.Scumm.Rooms.VerbEntry.ToString() -> string
@@ -761,6 +806,8 @@ static Maniacal.Scumm.Costumes.CostumeFrame.operator !=(Maniacal.Scumm.Costumes.
 static Maniacal.Scumm.Costumes.CostumeFrame.operator ==(Maniacal.Scumm.Costumes.CostumeFrame? left, Maniacal.Scumm.Costumes.CostumeFrame? right) -> bool
 static Maniacal.Scumm.Game.ActorInfo.operator !=(Maniacal.Scumm.Game.ActorInfo left, Maniacal.Scumm.Game.ActorInfo right) -> bool
 static Maniacal.Scumm.Game.ActorInfo.operator ==(Maniacal.Scumm.Game.ActorInfo left, Maniacal.Scumm.Game.ActorInfo right) -> bool
+static Maniacal.Scumm.Game.RoomObjectInfo.operator !=(Maniacal.Scumm.Game.RoomObjectInfo left, Maniacal.Scumm.Game.RoomObjectInfo right) -> bool
+static Maniacal.Scumm.Game.RoomObjectInfo.operator ==(Maniacal.Scumm.Game.RoomObjectInfo left, Maniacal.Scumm.Game.RoomObjectInfo right) -> bool
 static Maniacal.Scumm.Game.RunningScript.operator !=(Maniacal.Scumm.Game.RunningScript left, Maniacal.Scumm.Game.RunningScript right) -> bool
 static Maniacal.Scumm.Game.RunningScript.operator ==(Maniacal.Scumm.Game.RunningScript left, Maniacal.Scumm.Game.RunningScript right) -> bool
 static Maniacal.Scumm.Graphics.Font.English(int version, bool demo = false) -> Maniacal.Scumm.Graphics.Font!
@@ -819,6 +866,8 @@ static Maniacal.Scumm.Inspection.ScriptListing.operator !=(Maniacal.Scumm.Inspec
 static Maniacal.Scumm.Inspection.ScriptListing.operator ==(Maniacal.Scumm.Inspection.ScriptListing? left, Maniacal.Scumm.Inspection.ScriptListing? right) -> bool
 static Maniacal.Scumm.Inspection.StandingActor.operator !=(Maniacal.Scumm.Inspection.StandingActor left, Maniacal.Scumm.Inspection.StandingActor right) -> bool
 static Maniacal.Scumm.Inspection.StandingActor.operator ==(Maniacal.Scumm.Inspection.StandingActor left, Maniacal.Scumm.Inspection.StandingActor right) -> bool
+static Maniacal.Scumm.ManiacMansion.Open(Maniacal.Scumm.Storage.IGameContainer! files) -> Maniacal.Scumm.ManiacMansion!
+static Maniacal.Scumm.ManiacMansion.Open(string! folder) -> Maniacal.Scumm.ManiacMansion!
 static Maniacal.Scumm.Resources.ResourceLoader.Open(Maniacal.Scumm.Storage.IGameContainer! game) -> Maniacal.Scumm.Resources.ResourceLoader!
 static Maniacal.Scumm.Rooms.VerbEntry.operator !=(Maniacal.Scumm.Rooms.VerbEntry left, Maniacal.Scumm.Rooms.VerbEntry right) -> bool
 static Maniacal.Scumm.Rooms.VerbEntry.operator ==(Maniacal.Scumm.Rooms.VerbEntry left, Maniacal.Scumm.Rooms.VerbEntry right) -> bool

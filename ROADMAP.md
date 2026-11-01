@@ -13,7 +13,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 3 | The interpreter (V2 and V1) | Done |
 | 4 | Sound, saves and options (V2 and V1) | Done |
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
-| 6 | A release of its own | 0.2.0-alpha, the public API settled; then a 1.0 |
+| 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
 | Later | A browser player, the NES, the demos, Amiga and Atari ST, Zak McKracken | Perhaps |
 
 ## Design
@@ -540,7 +540,7 @@ Where it comes from:
 - `docs/c64-engine` is the authority here: `interpreter/script_engine.asm`, `include/opcode_handlers.inc`,
   `walkboxes/`, `ui/sentence_action.asm`, `sound/sid_voice_controller.asm`.
 
-## Phase 6: a release of its own (0.2.0-alpha)
+## Phase 6: a release of its own (0.3.0-alpha)
 
 - **Standing alone.** The host contract, screen surfaces, PNG and WAV writing, game folders, save stores, the audio sources and the SDL host came from Daventry's packages
   (0.1.0-alpha); they are now Maniacal's own, as `Maniacal.Scumm`'s `Hosting`, `Input`,
@@ -732,6 +732,13 @@ Where it comes from:
   release's colours as a `ReadOnlyMemory<Rgb>`, which a program can keep in a field or a lambda,
   where `Palettes.ForVersion`'s span (unchanged) could not be.
 
+- **The third release.** 0.3.0-alpha carries everything since 0.2.0-alpha: English only and a
+  save folder for each release, the DOS demos, the three fixes the comparison with ScummVM
+  2026.4.0 found, the command line made ready for a 1.0, and what the programs used from outside
+  asked for (the inspector's null answers, the lists, sound a step at a time, the objects on
+  screen, the front door, a palette that can be kept). Nothing public was removed or changed; at
+  the release `PublicAPI.Unshipped.txt` moved into `PublicAPI.Shipped.txt` again.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies
@@ -740,6 +747,8 @@ Where it comes from:
   and animates actors, not about drawing them; the twinkling star differs too, being random.
 - Verb names: the programs used from outside found verbs only as numbers. The DOS releases' names
   live in their own scripts (`verbOps` in the boot script), so this waits until it is wanted.
+- Move the programs in `maniacal-playground` to 0.3.0-alpha, drop their workarounds, and use what
+  was added for them, to see that it helped.
 - At 1.0, move `PublicAPI.Unshipped.txt` into `PublicAPI.Shipped.txt` and set package
   validation's baseline (`PackageValidationBaselineVersion`), so a breaking change fails the build.
 
