@@ -36,7 +36,7 @@ The comments are written for readers who do not know the Commodore 64. The heade
 and each routine says what it does in plain terms, and long routines are followed by pseudocode.
 The code itself is easier to follow with a little background:
 
-- **6502 assembly.** You need to recognise the instructions, not write them. The 6502 has three
+- **6502 assembly.** You need to recognize the instructions, not write them. The 6502 has three
   8-bit registers (A, X, Y), a 256-byte stack at `$0100`, and a "zero page" (`$0000`-`$00FF`)
   that is faster to address, so the engine keeps its hottest variables and pointers there.
   Pointers are 16-bit and little-endian, and there are no multiply or divide instructions, which
@@ -76,7 +76,7 @@ falls into two parts:
 2. **The interpreter**: the script virtual machine. [interpreter/script_engine.asm](interpreter/script_engine.asm)
    schedules and dispatches, and the `interpreter/ops_*.asm` files hold the opcode handlers, each
    of which reads its operands from the script and calls into the engine. The `ops_` prefix marks
-   every file that is part of the interpreter.
+   every file that's part of the interpreter.
 
 ### Resources and their representations
 
@@ -100,7 +100,7 @@ how many of these can be active at once, so the engine works through a second la
 | **Voice** | A sound being played | 7 logical voices on 3 SID oscillators and the filter |
 | **Task** | A running script | 16 |
 
-A costume exists whether or not it is in the current room. Only when it is in the room does it
+A costume exists whether or not it's in the current room. Only when it's in the room does it
 get an actor, and with it a hardware sprite. In the same way a sound resource only plays once
 voices have been allocated to it, and a script only runs once it has a task.
 
@@ -343,12 +343,13 @@ between them.
 
 ## In ScummVM
 
-ScummVM implements version 0 in `engines/scumm`. It is organised differently and is not a
-line-by-line translation of this engine, but most modules here have a counterpart there. The tables give the files and the main classes or functions
-to compare. The sound player is the closest match: the comments in `players/player_sid.cpp` give
-the C64 addresses of the routines they mirror (for example `onTimer()` at `$481B` and
-`stopMusic_intern()` at `$4CAA`), and those are the same addresses as `sound_irq_handler` in
-[sound_engine.asm](sound/sound_engine.asm) and `stop_music` in [music.asm](sound/music.asm).
+ScummVM implements version 0 in `engines/scumm`. It is organized differently and is not a
+line-by-line translation of this engine, but most modules here have a counterpart there. The
+tables give the files and the main classes or functions to compare. The sound player is the
+closest match: the comments in `players/player_sid.cpp` give the C64 addresses of the
+routines they mirror (for example `onTimer()` at `$481B` and `stopMusic_intern()` at `$4CAA`),
+and those are the same addresses as `sound_irq_handler` in [sound_engine.asm](sound/sound_engine.asm)
+and `stop_music` in [music.asm](sound/music.asm).
 
 ### Disk and resources
 

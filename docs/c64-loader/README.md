@@ -1,6 +1,6 @@
 # The C64 boot loader
 
-When a Commodore 64 owner typed `LOAD` for Maniac Mansion, the program that came off the disk was
+When a Commodore 64 owner typed `LOAD` for *Maniac Mansion*, the program that came off the disk was
 not the game. It was a chain of ten small programs, some running on the C64 and some inside the
 disk drive, that loaded the game engine at high speed, checked that the disk was an original, and
 decrypted the engine with keys that only an original disk produces. This folder documents that
@@ -127,18 +127,19 @@ The engine itself is stored encrypted. Stage 7 decrypts the remaining loader cod
 Stage 10 decrypts `$0400`–`$13FF`, the start of the engine, with a three-byte state seeded from
 checks 1 to 3: the sector checksum plus the drive's result, the decryptor checksum minus the drive's
 result, and the checksum of stage 8. If any check gives the wrong byte, decryption still runs to
-completion, but it produces garbage, and the jump to `$0400` runs that garbage. Afterwards stage 8 overwrites the loader's decrypted code with zeroes,
-so the keys and the decryptor are no longer in memory once the game runs.
+completion, but it produces garbage, and the jump to `$0400` runs that garbage. Afterwards stage 8
+overwrites the loader's decrypted code with zeroes, so the keys and the decryptor are no longer in
+memory once the game runs.
 
 ## Hand-off to the engine
 
 The loader ends with an `RTS` that lands at `$0400`, the engine's entry point `game_code_entry` in
 [`../c64-engine/system/entry_point.asm`](../c64-engine/system/entry_point.asm). The engine sets up
-the stack, video and memory map, initialises its subsystems, and clears its heap (`$7B7B` to
+the stack, video and memory map, initializes its subsystems, and clears its heap (`$7B7B` to
 `$C800`), overwriting what is left of the loader. It then starts global script 1, the first of the
 game's [scripts](../scripts/README.md).
 
-The engine does not keep the loader's drive code. During initialisation
+The engine does not keep the loader's drive code. During initialization
 [`../c64-engine/disk/drive_setup.asm`](../c64-engine/disk/drive_setup.asm) uploads its own 512-byte
 program into the drive with `M-W` and starts it with `U3`. From then on all disk access goes
 through that program and the engine's own serial routines in [`../c64-engine/disk/`](../c64-engine/disk/):
@@ -155,9 +156,9 @@ protection and the decryption all concern the program code at `$0400`. An interp
 program. What it needs from the disk is the *game data*, which the engine reads itself, unencrypted,
 by track and sector.
 
-A `.d64` image holds exactly what that requires. It is the decoded 256-byte contents of every sector
+A `.d64` image holds exactly what that requires. It's the decoded 256-byte contents of every sector
 of tracks 1 to 35 in order, 683 sectors or 174,848 bytes. It has no GCR, no half-tracks and no
-track 36, so the copy protection cannot even be represented in it; it does not matter, because
+track 36, so the copy protection cannot even be represented in it; it doesn't matter, because
 nothing outside the loader looks at those.
 
 ScummVM reads the images this way, in `ScummDiskImage` (`engines/scumm/file.cpp`):

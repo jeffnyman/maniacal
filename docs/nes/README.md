@@ -88,7 +88,7 @@ Optional, applied by default:
 ## The puzzle chain
 
 `build puzzle` adds a small new puzzle chain to the game. It changes existing objects, adds new
-ones and ends in a new room. It does not touch the rest of the game. Its sources are the most
+ones and ends in a new room. It doesn't touch the rest of the game. Its sources are the most
 direct illustration in this resource of how SCUMM rooms, objects and scripts fit together:
 
 | File | What it defines |

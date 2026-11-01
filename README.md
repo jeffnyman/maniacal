@@ -2,15 +2,21 @@
 <img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/maniacal-title.png" width="738" height="340" alt="Maniacal">
 </h1>
 
-[![Build](https://github.com/jeffnyman/maniacal/actions/workflows/build.yml/badge.svg)](https://github.com/jeffnyman/maniacal/actions/workflows/build.yml)
-[![NuGet](https://img.shields.io/nuget/vpre/Maniacal.svg)](https://www.nuget.org/packages/Maniacal)
+<p align="center">
+  <a href="https://github.com/jeffnyman/maniacal/actions/workflows/build.yml"><img src="https://github.com/jeffnyman/maniacal/actions/workflows/build.yml/badge.svg" alt="Build"></a>
+  <a href="https://www.nuget.org/packages/Maniacal"><img src="https://img.shields.io/nuget/vpre/Maniacal.svg" alt="NuGet"></a>
+</p>
 
-*Maniacal* is a C# implementation of the SCUMM interpreter for *Maniac Mansion*. It's a port of the
+<p align="center">
+  ✨ Long live the classics.
+</p>
+
+**Maniacal** is a C# implementation of the SCUMM interpreter for *Maniac Mansion*. It's a port of the
 parts of ScummVM's `engines/scumm` that *Maniac Mansion* uses (SCUMM versions 0, 1 and 2),
 restructured as a .NET library on a small host contract of its own, so the same engine runs
 headless (as the tests run it) and on the desktop (SDL).
 
-*Maniacal* is not a ScummVM fork and does not aim to run any other SCUMM game. *Zak McKracken* uses
+**Maniacal** is not a ScummVM fork and does not aim to run any other SCUMM game. *Zak McKracken* uses
 the same engine generations and would come nearly for free, but, at least for right now, it's not a goal.
 
 ## Screenshots
@@ -247,8 +253,59 @@ paths: [how Maniac Mansion works](docs/how-maniac-mansion-works.md), and
 engine to ScummVM's code and to Maniacal's. ScummVM's `engines/scumm` is the reference the code is
 ported from. The ScummVM checkout lives next to this repository and is not part of it.
 
-## Licence
+## Author
 
-GPL-3.0-or-later, as ScummVM and Daventry are. See [LICENSE](LICENSE). The host layer is derived
-from Daventry's, also by Jeff Nyman. The command line tools in `docs/nes/tools`
-carry their own licences next to them.
+<p align="center">
+  Made with 🤍 by <a href="https://github.com/jeffnyman">Jeff Nyman</a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/C%23-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt="C#">
+</p>
+
+<p align="center">
+  <a href="https://testerstories.com" target="_blank" >
+    <img src="https://img.shields.io/badge/Website-Jeff%20Nyman-000000?style=social&logo=wordpress" alt="Website - Jeff Nyman">
+  </a>
+</p>
+<p align="center">
+  <a href="https://www.linkedin.com/in/jeffnyman/" target="_blank" >
+    <img src="https://img.shields.io/badge/LinkedIn-Jeff%20Nyman-0A66C2?style=social&logo=linkedin" alt="LinkedIn - Jeff Nyman">
+  </a>
+</p>
+
+## Doxazein (δοξάζειν)
+
+<p align="center">
+  חֶסֶד וֶאֱמֶת אַל־יַעַזְבֻךָ קָשְׁרֵם עַל־גַּרְגְּרֹתֶיךָ כָּתְבֵם עַל־לוּחַ לִבֶּךָ
+</p>
+
+<p align="center">
+"Let not mercy and truth forsake thee:<br>
+bind them about thy neck;<br>
+write them upon the table of thine heart."<br>
+<em>Proverbs 3:3</em>
+</p>
+
+## License
+
+**Maniacal**, A Player for *Maniac Mansion*\
+Copyright (C) 2026 [Jeff Nyman][owner]
+
+[![GNU General Public License version 3](assets/gplv3-127x51.png)][GNU General Public License]
+
+> This program is free software: you can redistribute it and/or modify
+> it under the terms of the [GNU General Public License] as published by
+> the Free Software Foundation, either version 3 of the License, or
+> (at your option) any later version.
+>
+> This program is distributed in the hope that it will be useful,
+> but WITHOUT ANY WARRANTY; without even the implied warranty of
+> MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+> [GNU General Public License] for more details.
+
+[owner]: https://github.com/jeffnyman
+[GNU General Public License]: https://www.gnu.org/licenses/gpl-3.0.en.html
+
+The host layer is derived from [Daventry](https://github.com/jeffnyman/daventry), also by
+Jeff Nyman. The command line tools in `docs/nes/tools` carry their own licenses next to them.

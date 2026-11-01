@@ -1,6 +1,6 @@
 # The game
 
-This section covers Maniac Mansion as a player sees it: the story, the kids, the puzzles and the
+This section covers *Maniac Mansion* as a player sees it: the story, the kids, the puzzles and the
 map. Knowing the game well makes the rest of this resource easier to follow. A script, a variable
 or an object number means much more once you know which puzzle it belongs to.
 
@@ -14,12 +14,12 @@ man-eating plant, and the meteor police.
 
 The kids are Dave (always in the team), Syd, Razor, Michael, Bernard, Wendy and Jeff. Each has
 different skills, so the team decides which solutions are open and which endings can be reached.
-Kids can be caught and locked in the dungeon, can die, and can be left in dead ends. That is why the
+Kids can be caught and locked in the dungeon, can die, and can be left in dead ends. That's why the
 game's state is mostly a large set of variables and object states that the scripts test.
 
 The player builds sentences from a fixed list of verbs (Walk to, Push, Pull, Give, Open, Close,
 Read, Pick up / Get, What is, Unlock, New kid, Turn on, Turn off, Fix, Use) and the objects on screen
-or in the inventory. The sentence line shows the sentence as it is being built. How the engine
+or in the inventory. The sentence line shows the sentence as it's being built. How the engine
 turns that sentence into a running script is covered in [../scripts/](../scripts/) and
 [../c64-engine/](../c64-engine/).
 
@@ -30,7 +30,7 @@ turns that sentence into a running script is covered in [../scripts/](../scripts
 | Commodore 64 | 1987 | 0 | The original. Two disk sides, a custom fast loader and disk copy protection, no in-game door code. |
 | Apple II | 1987 | 0 | Close to the C64 release. |
 | DOS ("V1") | 1987 | 1 | Keeps the C64-style character graphics. Adds the door-code copy protection. |
-| DOS, Amiga, Atari ST ("V2", enhanced) | 1988 | 2 | Redrawn graphics in 16 colours, on the engine generation Zak McKracken also uses. |
+| DOS, Amiga, Atari ST ("V2", enhanced) | 1988 | 2 | Redrawn graphics in 16 colors, on the engine generation *Zak McKracken* also uses. |
 | NES | 1990 | 1 (NES dialect) | Censored and partly redrawn. See [../nes/](../nes/). |
 
 ## What is here

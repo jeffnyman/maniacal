@@ -90,8 +90,8 @@ sentence such as "Open Mailbox", the sentence system looks up the verb in the di
 [`ui/sentence_action.asm`](../c64-engine/ui/sentence_action.asm)) and runs the code at that offset
 (`execute_verb_handler_for_object`). If the object has no handler for the verb, the engine falls back
 to global script 3, "Verb: Defaults", which prints the stock refusals ("It doesn't seem to
-open.", "I can't pick that up.", "That doesn't seem to work."). "Walk to" without a handler just walks; "Give" to a kid without a handler transfers the
-object; "Read" in the dark always goes to the defaults.
+open.", "I can't pick that up.", "That doesn't seem to work."). "Walk to" without a handler just walks;
+"Give" to a kid without a handler transfers the object; "Read" in the dark always goes to the defaults.
 
 One rule matters for anyone reading `object-scripts.c`: in version 0, verb number `$0F` in a verb
 table matches *any* verb (`DEFAULT_VERB = $0F` in `sentence_action.asm`; ScummVM's
