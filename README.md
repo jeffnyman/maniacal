@@ -44,6 +44,18 @@ release.
 <td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/v2-green-tentacle.png" width="280" alt="Green Tentacle's room"><br>Green Tentacle's room</td>
 <td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/v2-weird-ed.png" width="280" alt="Weird Ed's room"><br>Weird Ed's room</td>
 </tr>
+<tr><th colspan="3">Atari ST (1988)</th></tr>
+<tr>
+<td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/atari-st-front-porch.png" width="280" alt="The front of the mansion"><br>The front of the mansion</td>
+<td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/atari-st-green-tentacle.png" width="280" alt="Green Tentacle's room"><br>Green Tentacle's room</td>
+<td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/atari-st-weird-ed.png" width="280" alt="Weird Ed's room"><br>Weird Ed's room</td>
+</tr>
+<tr><th colspan="3">Amiga (1988)</th></tr>
+<tr>
+<td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/amiga-front-porch.png" width="280" alt="The front of the mansion"><br>The front of the mansion</td>
+<td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/amiga-green-tentacle.png" width="280" alt="Green Tentacle's room"><br>Green Tentacle's room</td>
+<td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/amiga-weird-ed.png" width="280" alt="Weird Ed's room"><br>Weird Ed's room</td>
+</tr>
 <tr><th colspan="3">NES (1990)</th></tr>
 <tr>
 <td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/nes-front-porch.png" width="256" alt="The front of the mansion"><br>The front of the mansion</td>
