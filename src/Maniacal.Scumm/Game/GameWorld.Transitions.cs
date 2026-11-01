@@ -16,8 +16,13 @@ internal readonly record struct TransitionFrame(Surface8 Screen, int QuarterFram
 public sealed partial class GameWorld
 {
     // the effects resetScumm gives versions 1 and 2 and the C64: the iris to leave, the inverse
-    // iris to enter (_switchRoomEffect2, _switchRoomEffect), and the effect of the first frame (_newEffect)
-    private const int LeaveEffect = 1, EnterEffect = 5, NoEffect = 129;
+    // iris to enter (_switchRoomEffect2, _switchRoomEffect), and the effect of the first frame
+    // (_newEffect); the NES wipes across the screen both ways
+    private const int NoEffect = 129, NesWipe = 6;
+
+    private int LeaveEffect => IsNes ? NesWipe : 1;
+
+    private int EnterEffect => IsNes ? NesWipe : 5;
 
     // the quarter-frames between a transition's iterations (kC64Delay, kPictureDelay, kNoDelay)
     private int TransitionDelay => Version switch
@@ -55,14 +60,14 @@ public sealed partial class GameWorld
                 }
             }
 
-            var black = new Surface8(ScreenLayout.Width, ScreenLayout.Height);
+            var black = new Surface8(Layout.Width, Layout.Height);
             if (effect is >= 1 and <= 6)
             {
                 TransitionEffect(effect - 1, black);
             }
             else if (effect == NoEffect)
             {
-                var layout = ScreenLayout.ForVersion(Version);
+                var layout = Layout;
                 for (int y = layout.RoomTop; y < layout.RoomBottom; y++)
                 {
                     black.Row(y).CopyTo(display.Row(y));
@@ -95,16 +100,17 @@ public sealed partial class GameWorld
     /// <summary>
     /// The room part of the screen as displayed takes another's, a line of 8x8 blocks at a time
     /// along four lines that move each iteration, a frame after each. Versions before 3 work the
-    /// iterations out from the room's height. Mirrors <c>transitionEffect</c>.
+    /// iterations out from the room's height, but the NES, which takes the effect's own. Mirrors
+    /// <c>transitionEffect</c>.
     /// </summary>
     private void TransitionEffect(int effect, Surface8 source)
     {
         var display = Displayed();
-        var layout = ScreenLayout.ForVersion(Version);
+        var layout = Layout;
         int height = layout.RoomHeight;
         int bottom = height / 8;
         var (iterations, deltas, starts) = TransitionEffects.All[effect];
-        if (Version <= 2)
+        if (Version <= 2 && !IsNes)
         {
             iterations = effect is 0 or 4 ? (height + 15) / 16 : height / 8;
         }

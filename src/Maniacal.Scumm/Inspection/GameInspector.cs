@@ -220,7 +220,7 @@ public sealed class GameInspector(ResourceLoader loader)
     public int Version => loader.Index.Version;
 
     /// <summary>The colours the pictures' colour numbers stand for, the release's palette, in a form that can be kept.</summary>
-    public ReadOnlyMemory<Rgb> Palette => Palettes.MemoryForVersion(Version);
+    public ReadOnlyMemory<Rgb> Palette => Palettes.MemoryForVersion(Version, loader.Index.IsNes);
 
     /// <summary>The numbers of the release's rooms, in order: those <see cref="Room"/> and <see cref="RoomScripts"/> answer.</summary>
     public IReadOnlyList<int> Rooms => _rooms ??= Numbers(ResourceType.Room, _ => true);
@@ -381,7 +381,7 @@ public sealed class GameInspector(ResourceLoader loader)
             placed.Add(new PlacedActor { Costume = actor.Costume, X = actor.X, Y = actor.Y, Box = box, Behind = behind });
         }
 
-        return new RoomScreen { Screen = RoomView.Screen(image, ScreenLayout.ForVersion(room.Version)), CameraX = camera.X, ViewLeft = camera.Left, Actors = placed };
+        return new RoomScreen { Screen = RoomView.Screen(image, ScreenLayout.For(room.Version, room.IsNes), room.NesStartStrip > 0 ? 16 : 0, room.IsNes ? NesBitmap.Black : (byte)0), CameraX = camera.X, ViewLeft = camera.Left, Actors = placed };
     }
 
     /// <summary>The numbers of an index's entries that hold something readable that passes the test.</summary>

@@ -40,6 +40,7 @@ public sealed class Room
         {
             Width = Math.Max(Word(span, 4) * 8, NesScreenWidth);
             Height = Word(span, 6) * 8;
+            NesStartStrip = Word(span, 4) < 32 ? (32 - Word(span, 4)) >> 1 : 0;
         }
         else if (version <= 1)
         {
@@ -106,6 +107,15 @@ public sealed class Room
 
     /// <summary>Whether the room is the NES's.</summary>
     internal bool IsNes { get; }
+
+    /// <summary>
+    /// The NES: how many strips a room narrower than the screen is moved right by, to its middle
+    /// (<c>_NESStartStrip</c>), or 0.
+    /// </summary>
+    internal int NesStartStrip { get; }
+
+    /// <summary>The NES: the pattern table the room draws with, its shared tiles and its tileset (<see cref="Graphics.NesBitmap.Patterns"/>).</summary>
+    internal byte[]? NesPatterns { get; set; }
 
     /// <summary>The room resource, from its size word.</summary>
     internal ReadOnlyMemory<byte> Data { get; }

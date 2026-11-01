@@ -150,7 +150,7 @@ public sealed partial class GameWorld
     {
         var s = new ScummState(Engine.ObjectOwners.Length, Version == 0);
         var room = CurrentRoom;
-        var layout = ScreenLayout.ForVersion(Version);
+        var layout = Layout;
 
         s.GameMd5 = ScummDetector.IndexMd5(_loader.Game);
         s.CurrentRoom = s.RoomResource = room?.Number ?? 0;

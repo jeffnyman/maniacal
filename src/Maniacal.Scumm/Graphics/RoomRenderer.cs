@@ -4,15 +4,16 @@ namespace Maniacal.Scumm.Graphics;
 
 /// <summary>
 /// Draws rooms and their objects, in the colour numbers of <see cref="Palettes.ForVersion"/>: the
-/// C64's for version 0, EGA for versions 1 and 2.
+/// C64's for version 0, EGA for versions 1 and 2; the NES's in its own (<see cref="Palettes.Nes"/>).
 /// </summary>
 internal static class RoomRenderer
 {
     /// <summary>The state bit that makes an object draw its image. Mirrors ScummVM's <c>kObjectStateIntrinsic</c>.</summary>
     public const int ImageState = 8;
 
-    internal static MaskedImage DrawBackground(Room room) => room.Version switch
+    internal static MaskedImage DrawBackground(Room room, bool lit = true) => room.Version switch
     {
+        _ when room.IsNes => NesBitmap.ForRoom(room).DrawBackground(lit),
         0 or 1 => V1Bitmap.ForRoom(room).DrawBackground(),
         _ => DecodeV2(room, room.ImageOffset, room.Width, room.Height),
     };
@@ -36,11 +37,16 @@ internal static class RoomRenderer
         && !room.Objects.Any(other => other.ImageOffset == obj.ImageOffset && (other.Width != obj.Width || other.Height != obj.Height));
 
     /// <summary>Decodes an object's image, or returns null when it has none.</summary>
-    internal static MaskedImage? DrawObject(Room room, RoomObject obj, V1Bitmap? v1 = null)
+    internal static MaskedImage? DrawObject(Room room, RoomObject obj, V1Bitmap? v1 = null, NesBitmap? nes = null, bool lit = true)
     {
         if (!HasImage(room, obj))
         {
             return null;
+        }
+
+        if (room.IsNes)
+        {
+            return (nes ?? NesBitmap.ForRoom(room)).DrawObject(room.Data.Span, obj, lit);
         }
 
         return room.Version <= 1
@@ -54,16 +60,18 @@ internal static class RoomRenderer
     /// drawn from the last to the first, each only when its state has <see cref="ImageState"/> set
     /// and every parent up the chain is in the state its child expects. An object's mask replaces
     /// the room's mask where it is drawn. An object the scripts moved is drawn where
-    /// <paramref name="positionOf"/> puts it.
+    /// <paramref name="positionOf"/> puts it. The NES draws a room without its lights in a dark
+    /// palette.
     /// </summary>
-    internal static MaskedImage Render(Room room, Func<int, int> stateOf, Func<RoomObject, (int X, int Y)>? positionOf = null)
+    internal static MaskedImage Render(Room room, Func<int, int> stateOf, Func<RoomObject, (int X, int Y)>? positionOf = null, bool lit = true)
     {
-        var image = DrawBackground(room);
-        var v1 = room.Version <= 1 ? V1Bitmap.ForRoom(room) : null;
+        var nes = room.IsNes ? NesBitmap.ForRoom(room) : null;
+        var image = nes?.DrawBackground(lit) ?? DrawBackground(room);
+        var v1 = room.Version <= 1 && !room.IsNes ? V1Bitmap.ForRoom(room) : null;
 
         foreach (var obj in VisibleObjects(room, stateOf))
         {
-            if (DrawObject(room, obj, v1) is { } objectImage)
+            if (DrawObject(room, obj, v1, nes, lit) is { } objectImage)
             {
                 var (x, y) = positionOf?.Invoke(obj) ?? (obj.X, obj.Y);
                 Paste(image, objectImage, x, y);
@@ -92,11 +100,12 @@ internal static class RoomRenderer
     /// </summary>
     internal static MaskedImage RenderAll(Room room)
     {
-        var image = DrawBackground(room);
-        var v1 = room.Version <= 1 ? V1Bitmap.ForRoom(room) : null;
+        var nes = room.IsNes ? NesBitmap.ForRoom(room) : null;
+        var image = nes?.DrawBackground(lit: true) ?? DrawBackground(room);
+        var v1 = room.Version <= 1 && !room.IsNes ? V1Bitmap.ForRoom(room) : null;
         for (int i = room.Objects.Count - 1; i >= 0; i--)
         {
-            if (OwnsImage(room, room.Objects[i]) && DrawObject(room, room.Objects[i], v1) is { } objectImage)
+            if (OwnsImage(room, room.Objects[i]) && DrawObject(room, room.Objects[i], v1, nes) is { } objectImage)
             {
                 Paste(image, objectImage, room.Objects[i].X, room.Objects[i].Y);
             }

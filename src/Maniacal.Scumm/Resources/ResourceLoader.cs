@@ -122,7 +122,20 @@ public sealed class ResourceLoader
 
     /// <summary>Loads and parses a room, or returns null when the index has no such room.</summary>
     internal Room? LoadRoom(int room)
-        => Load(ResourceType.Room, room) is { } data ? Room.Parse(room, Index.Version, data, Index.IsNes) : null;
+    {
+        if (Load(ResourceType.Room, room) is not { } data)
+        {
+            return null;
+        }
+
+        var parsed = Room.Parse(room, Index.Version, data, Index.IsNes);
+        if (Index.IsNes)
+        {
+            parsed.NesPatterns = Graphics.NesBitmap.Patterns(data.Span, n => Load(ResourceType.Costume, n));
+        }
+
+        return parsed;
+    }
 
     /// <summary>Loads and parses a costume, or returns null when the index has no such costume.</summary>
     internal Costume? LoadCostume(int costume)

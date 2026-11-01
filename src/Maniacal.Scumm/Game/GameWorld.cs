@@ -86,6 +86,8 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             loader.Index.IsNes);
         IsDemo = loader.IsDemo;
         Camera = new Camera(IsNes);
+        Layout = ScreenLayout.For(Version, IsNes);
+        Mouse = (Layout.Width / 2, Layout.Height / 2);
         Actors = new Actor[ActorCount];
         for (int i = 0; i < ActorCount; i++)
         {
@@ -122,7 +124,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
         var font = Font.English(Version, IsDemo);
         Messages = new MessageLine(font, Engine, n => n is > 0 and < ActorCount ? Actors[n] : null, NameOf, VerbName);
-        Verbs = new VerbArea(font, ScreenLayout.ForVersion(Version).RoomBottom, () => Engine.Interface, c64: Version == 0, demo: IsDemo);
+        Verbs = new VerbArea(font, Layout.RoomBottom, () => Engine.Interface, c64: Version == 0, demo: IsDemo);
 
         // ScummEngine_v0::resetScumm: the C64's engine makes its verbs itself, and resetScummVars
         // resets the sentence and starts it with Dave as the kid
@@ -284,6 +286,17 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// <summary>Whether the release is the NES's: version 1, with its own resources, screen and a few rules of its own.</summary>
     internal bool IsNes => Engine.IsNes;
 
+    /// <summary>Where the parts of the release's screen are.</summary>
+    internal ScreenLayout Layout { get; }
+
+    /// <summary>
+    /// How far right the room shows on screen: 16 pixels for the NES's narrow rooms, which the
+    /// screen centres (<c>_NESStartStrip</c>, the shift of <c>drawStripToScreen</c>), else 0.
+    /// </summary>
+    internal int RoomScreenLeft => CurrentRoom is { NesStartStrip: > 0 } ? NesNarrowRoomShift : 0;
+
+    private const int NesNarrowRoomShift = 16;
+
     /// <summary>
     /// One step of the main loop, in the order of <c>scummLoop</c> for these versions: count the
     /// script delays down by the step's length (<c>VAR_TIMER_NEXT</c> ticks, at least 1), move the
@@ -400,7 +413,9 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     public Surface8 Screen()
     {
         var screen = _frame ?? Draw();
-        for (int y = 0; y < Verbs.Pixels.Height; y++)
+
+        // the NES's verbs and inventory are its own, not drawn yet
+        for (int y = 0; y < Verbs.Pixels.Height && !IsNes; y++)
         {
             Verbs.Pixels.Row(y).CopyTo(screen.Row(Verbs.Top + y));
         }
@@ -892,13 +907,16 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// </summary>
     private Surface8 Draw()
     {
-        var layout = ScreenLayout.ForVersion(Version);
-
-        // the NES's rooms are drawn from its tiles (GdiNES), not yet
-        if (CurrentRoom is not { } room || IsNes)
+        var layout = Layout;
+        if (CurrentRoom is not { } room)
         {
-            var blank = new Surface8(ScreenLayout.Width, ScreenLayout.Height);
-            for (int y = 0; y < MessageLine.Height; y++)
+            var blank = new Surface8(layout.Width, layout.Height);
+            if (IsNes)
+            {
+                blank.Fill(NesBitmap.Black);
+            }
+
+            for (int y = 0; y < MessageLine.Height && !IsNes; y++)
             {
                 Messages.Text.Row(y).CopyTo(blank.Row(y));
             }
@@ -906,8 +924,9 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             return blank;
         }
 
-        var view = RoomView.Window(RoomRenderer.Render(room, StateOf, PositionOf), Camera);
         int lights = CurrentLights;
+        bool lit = (lights & Flashlight.RoomLightsOn) != 0;
+        var view = RoomView.Window(RoomRenderer.Render(room, StateOf, PositionOf, lit), Camera);
         bool colors = (lights & LightActorColors) != 0;
         _actorStrips.Clear();
 
@@ -918,10 +937,10 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             if ((lights & Flashlight.FlashlightOn) != 0 && _flashlight.Strips > 0 && _flashlight.Rows > 0)
             {
                 int height = Math.Min(view.Pixels.Height, layout.RoomHeight);
-                light = Flashlight.Area(Mouse.X + Camera.Left, Mouse.Y - layout.RoomTop, Camera.Left, _flashlight.Strips, _flashlight.Rows, view.Pixels.Width, height);
+                light = Flashlight.Area(Mouse.X - RoomScreenLeft + Camera.Left, Mouse.Y - layout.RoomTop, Camera.Left, _flashlight.Strips, _flashlight.Rows, view.Pixels.Width, height);
             }
 
-            Flashlight.Darken(view.Pixels, Version, light);
+            Flashlight.Darken(view.Pixels, Version, light, IsNes);
         }
         foreach (var actor in ActorsInRoom().Where(a => a.Visible).OrderBy(SortKey))
         {
@@ -960,8 +979,10 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             }
         }
 
-        var screen = RoomView.Screen(view, layout);
-        for (int y = 0; y < MessageLine.Height && y < layout.RoomTop; y++)
+        var screen = RoomView.Screen(view, layout, RoomScreenLeft, IsNes ? NesBitmap.Black : (byte)0);
+
+        // the NES's text is drawn in its own font, not yet
+        for (int y = 0; y < MessageLine.Height && y < layout.RoomTop && !IsNes; y++)
         {
             Messages.Text.Row(y).CopyTo(screen.Row(y));
         }

@@ -14,7 +14,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 4 | Sound, saves and options (V2 and V1) | Done |
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
 | 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
-| 7 | The NES | Started: the cartridge is read, and its scripts run headless to the driveway |
+| 7 | The NES | Started: the cartridge is read, its scripts run, its rooms are drawn |
 | Later | A browser player, Amiga and Atari ST, Zak McKracken | Perhaps |
 
 ## Design
@@ -848,8 +848,31 @@ and sound. `docs/nes` documents its data. The steps:
    room from line 32 to 160, the verbs and inventory under it), the narrow rooms' mouse offset
    (`_NESStartStrip`), the pickup sound (51), the NES's talk colours, the save menu's restart and
    its `Alt-F5` save script (163), and `Shift-B` to skip a cutscene.
-3. **Rooms.** `gfx_nes.cpp`: the rooms' tiles, their palettes and attributes, the 256-pixel-wide
-   screen and its strips (`_NESStartStrip`), and the title screens.
+3. **Rooms (done).** `NesBitmap` draws the NES's rooms and object images as ScummVM's `GdiNES`
+   does: the pattern table of the tiles every room shares (costume 37) and the room's tileset
+   after them, decoded when the room is loaded; the room's 16-colour palette, its nametable (with
+   a gap of two tiles at each edge), the attributes picking a sub-palette for each 2x2 tile
+   block, and the mask, a bit a column, set where a tile's pixel is not the background colour.
+   An object's image patches the nametable, attributes and mask where it lies and is drawn from
+   them. Without its lights a room is drawn in the dark palette, the flashlight square, on the
+   NES's black (0x1D). The colours are the NES's 64, ScummVM's default NTSC palette
+   (`Palettes.Nes`, from `tableNESNTSCPalette` through `tools/port_palettes.py`), which the
+   world's `Palette` gives for the NES.
+
+   The screen is the NES's, 256 by 240 (`ScreenLayout.Nes`): the room from line 32 to 160, black
+   around it. The rooms 28 tiles wide (37 of the 54) show 16 pixels in from the left, cut 16 from
+   the right, and the scripts' virtual mouse moves two columns left in them (`_NESStartStrip`);
+   rooms change with the NES's horizontal wipe both ways (effect 6, its own 16 iterations).
+   `GameWorld.Screen()` is a `Surface8` of the release's size, so the public API only grew
+   `Palettes.Nes`; the engine sets the host's mode and palette from the world.
+
+   Checked against ScummVM 2026.4.0's window: the intro's hillside matched to the pixel, the
+   logo's room and the kid selection but for the text, the copyright in the verb area and the
+   cursor, which later steps draw. Tested in `NesDrawingTests`: every room draws, the palette,
+   the dark room, the screen's layout and the narrow rooms' place, and the intro's room as
+   ScummVM showed it. The title screens ScummVM shows before the boot script
+   (`playNESTitleScreens`, two pictures and the second's sparkles, `gfx_nes.cpp`) are still to
+   come, with the text and the actors.
 4. **Costumes and the font.** `NESCostumeRenderer` and the costume parts in `54.LFL`
    (`v1MMNEScostTables`), the NES font and its translation.
 5. **The interface.** The NES's verbs, inventory and cursor, and its input.

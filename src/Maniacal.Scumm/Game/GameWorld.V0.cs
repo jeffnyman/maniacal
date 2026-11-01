@@ -646,7 +646,7 @@ public sealed partial class GameWorld
     private void CheckExecVerbsV0()
     {
         int egoNumber = Engine.Variables[ScriptEngine.VarEgo];
-        var layout = ScreenLayout.ForVersion(Version);
+        var layout = Layout;
         var (x, y) = Mouse;
         bool inVerbs = y >= layout.RoomBottom, inRoom = y >= layout.RoomTop && y < layout.RoomBottom;
         bool clicked = _input == LeftClick;
@@ -855,7 +855,7 @@ public sealed partial class GameWorld
         }
 
         // the room, in actor units (VAR(6) and VAR(7) hold where the kid goes); a frozen kid stays
-        var layout = ScreenLayout.ForVersion(Version);
+        var layout = Layout;
         int walkX = (Mouse.X + Camera.Left) / 8, walkY = (Mouse.Y - layout.RoomTop) / 2;
         Engine.Variables[6] = walkX;
         Engine.Variables[7] = walkY;

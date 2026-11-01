@@ -65,19 +65,23 @@ internal static class Flashlight
 
     /// <summary>
     /// Darkens a view whose lights are off: everything goes black, then, with the flashlight on,
-    /// its area shows the lit room again with its corners rounded.
+    /// its area shows the room again with its corners rounded. The NES's black is its own, and its
+    /// flashlight is square (<c>drawFlashlight</c>); the room it shows is drawn dark already.
     /// </summary>
-    public static void Darken(Surface8 view, int version, Rect? light)
+    public static void Darken(Surface8 view, int version, Rect? light, bool nes = false)
     {
         var lit = light is { IsEmpty: false } ? Copy(view, light.Value) : null;
-        view.Fill(0);
+        view.Fill(nes ? Graphics.NesBitmap.Black : (byte)0);
         if (lit is null || light is not { } area)
         {
             return;
         }
 
         view.Blit(lit, lit.Bounds, area.X, area.Y);
-        RoundCorners(view, version, area);
+        if (!nes)
+        {
+            RoundCorners(view, version, area);
+        }
     }
 
     private static Surface8 Copy(Surface8 view, Rect area)

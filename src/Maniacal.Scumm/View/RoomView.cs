@@ -4,13 +4,23 @@ using Maniacal.Scumm.Graphics;
 namespace Maniacal.Scumm.View;
 
 /// <summary>
-/// Where the parts of the 320x200 screen are. Mirrors the <c>initScreens</c> calls of
-/// <c>ScummEngine::resetScumm</c>: the message lines above the room, the verbs and inventory below.
+/// Where the parts of the screen are, 320 by 200 but for the NES's 256 by 240. Mirrors the
+/// <c>initScreens</c> calls of <c>ScummEngine::resetScumm</c>: the message lines above the room,
+/// the verbs and inventory below.
 /// </summary>
-internal readonly record struct ScreenLayout(int RoomTop, int RoomBottom)
+internal readonly record struct ScreenLayout(int RoomTop, int RoomBottom, int Width = ScreenLayout.DosWidth, int Height = ScreenLayout.DosHeight)
 {
-    public const int Width = 320;
-    public const int Height = 200;
+    /// <summary>The screen of every release but the NES's.</summary>
+    public const int DosWidth = 320, DosHeight = 200;
+
+    /// <summary>
+    /// The NES's screen, 256 by 240, the room from line 32 to 160: <c>initScreens(16, 144)</c>
+    /// with everything moved down the 16 lines <c>initScreens</c> keeps above the NES's text.
+    /// </summary>
+    public static readonly ScreenLayout Nes = new(32, 160, 256, 240);
+
+    /// <summary>The layout of a release: <see cref="ForVersion"/>, or <see cref="Nes"/>.</summary>
+    public static ScreenLayout For(int version, bool nes) => nes ? Nes : ForVersion(version);
 
     /// <summary>
     /// Version 1 shows 136 room lines (<c>initScreens(16, 152)</c>), version 2 shows 128
@@ -122,14 +132,24 @@ internal static class RoomView
         return (left, left + frame.Pixels.Width + version switch { 0 => 0, 1 => 8, _ => 1 });
     }
 
-    /// <summary>The whole 320x200 screen with the room view in its place; the rest is black for now.</summary>
-    internal static Surface8 Screen(MaskedImage view, ScreenLayout layout)
+    /// <summary>
+    /// The whole screen with the room view in its place; the rest is black for now, the NES's
+    /// black on the NES. A room view may start further right (<paramref name="left"/>), its right
+    /// edge cut at the screen's last 16 pixels, as the NES's narrow rooms are shown.
+    /// </summary>
+    internal static Surface8 Screen(MaskedImage view, ScreenLayout layout, int left = 0, byte black = 0)
     {
-        var screen = new Surface8(ScreenLayout.Width, ScreenLayout.Height);
+        var screen = new Surface8(layout.Width, layout.Height);
+        if (black != 0)
+        {
+            screen.Fill(black);
+        }
+
         int lines = Math.Min(layout.RoomHeight, view.Pixels.Height);
+        int width = Math.Min(view.Pixels.Width, layout.Width - left - (left > 0 ? left : 0));
         for (int y = 0; y < lines; y++)
         {
-            view.Pixels.Row(y).CopyTo(screen.Row(layout.RoomTop + y));
+            view.Pixels.Row(y)[..width].CopyTo(screen.Row(layout.RoomTop + y)[left..]);
         }
 
         return screen;

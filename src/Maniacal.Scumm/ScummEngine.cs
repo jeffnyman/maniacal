@@ -61,9 +61,9 @@ public sealed class ScummEngine : Engine
             SaveTarget = Detected.GameId,
         };
         _world.Engine.CopyProtection = CopyProtection;
-        Host.Graphics.SetMode(ScreenLayout.Width, ScreenLayout.Height);
+        Host.Graphics.SetMode(_world.Layout.Width, _world.Layout.Height);
         Host.Graphics.SetTitle($"Maniacal - {Detected.Title}");
-        Host.Graphics.SetPalette(Palettes.ForVersion(_world.Version));
+        Host.Graphics.SetPalette(_world.Palette.Span);
         StartAudio(_world);
         _world.Boot();
     }

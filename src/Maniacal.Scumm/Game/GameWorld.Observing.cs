@@ -116,7 +116,7 @@ public sealed partial class GameWorld
     /// The colours <see cref="Screen"/>'s colour numbers stand for, the release's palette, in a form
     /// that can be kept: <c>PngWriter.Write(file, world.Screen(), world.Palette.Span)</c>.
     /// </summary>
-    public ReadOnlyMemory<Rgb> Palette => Palettes.MemoryForVersion(Version);
+    public ReadOnlyMemory<Rgb> Palette => Palettes.MemoryForVersion(Version, IsNes);
 
     /// <summary>The rate the world makes its sound at, in frames a second: the one it was made with.</summary>
     public int SampleRate { get; }
@@ -174,13 +174,13 @@ public sealed partial class GameWorld
             return [];
         }
 
-        var layout = ScreenLayout.ForVersion(Version);
+        var layout = Layout;
         var objects = new List<RoomObjectInfo>();
         foreach (var obj in room.Objects.Where(o => o.Number >= 1))
         {
             var (x, y) = PositionOf(obj);
-            int centreX = x + obj.Width / 2 - Camera.Left, centreY = y + obj.Height / 2 + layout.RoomTop;
-            bool inView = centreX is >= 0 and < ScreenLayout.Width && centreY >= layout.RoomTop && centreY < layout.RoomBottom;
+            int centreX = x + obj.Width / 2 - Camera.Left + RoomScreenLeft, centreY = y + obj.Height / 2 + layout.RoomTop;
+            bool inView = centreX >= RoomScreenLeft && centreX < Math.Min(layout.Width, RoomScreenLeft + Camera.ScreenWidth) && centreY >= layout.RoomTop && centreY < layout.RoomBottom;
             objects.Add(new RoomObjectInfo
             {
                 Number = obj.Number,

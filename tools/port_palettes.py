@@ -1,7 +1,7 @@
 """Generates Palettes.g.cs from ScummVM's engines/scumm/palette.cpp.
 
-Keeps the palettes of Maniac Mansion's DOS and C64 releases (tableEGAPalette, and the VICE-based
-branch of tableC64Palette with its 17th colour), and the rows of setV1ColorTable's v1ColorMaps
+Keeps the palettes of Maniac Mansion's DOS, C64 and NES releases (tableEGAPalette, the VICE-based
+branch of tableC64Palette with its 17th colour, and tableNESNTSCPalette), and the rows of setV1ColorTable's v1ColorMaps
 those releases draw rooms with. Run from the repository root:
 
     python tools/port_palettes.py ../scummvm/engines/scumm/palette.cpp > src/Maniacal.Scumm/Graphics/Palettes.g.cs
@@ -77,6 +77,11 @@ def main(path):
             "tableC64Palette",
             "C64Rgb",
             "The 16 C64 colours of ScummVM's VICE-based palette, and a 17th for the inventory and sentence line (<c>tableC64Palette</c>).",
+        ),
+        (
+            "tableNESNTSCPalette",
+            "NesRgb",
+            "The NES's 64 colours, as ScummVM shows them unless asked for the NES Classic's (<c>tableNESNTSCPalette</c>, Mesen's NTSC palette).",
         ),
     ]:
         print(f"    /// <summary>{summary}</summary>")

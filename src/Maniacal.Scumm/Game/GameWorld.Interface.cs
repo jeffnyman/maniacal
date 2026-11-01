@@ -72,13 +72,13 @@ public sealed partial class GameWorld
     public IReadOnlyList<int> Inventory => _inventory;
 
     /// <summary>The mouse, in screen pixels. Mirrors <c>_mouse</c>.</summary>
-    public (int X, int Y) Mouse { get; private set; } = (ScreenLayout.Width / 2, ScreenLayout.Height / 2);
+    public (int X, int Y) Mouse { get; private set; }
 
     /// <summary>Whether the cursor shows. Mirrors <c>_cursor.state &gt; 0</c>, which version 2 keeps with <c>_userPut</c>.</summary>
     public bool CursorShown => Engine.CursorOn;
 
     /// <summary>Moves the mouse to a screen point.</summary>
-    public void MoveMouse(int x, int y) => Mouse = (Math.Clamp(x, 0, ScreenLayout.Width - 1), Math.Clamp(y, 0, ScreenLayout.Height - 1));
+    public void MoveMouse(int x, int y) => Mouse = (Math.Clamp(x, 0, Layout.Width - 1), Math.Clamp(y, 0, Layout.Height - 1));
 
     /// <summary>A mouse click for the next step to handle; the right button skips cutscenes, as Escape does.</summary>
     public void Click(int x, int y, bool right = false)
@@ -713,7 +713,7 @@ public sealed partial class GameWorld
     /// </summary>
     private void UpdateVirtualMouse()
     {
-        var layout = ScreenLayout.ForVersion(Version);
+        var layout = Layout;
         int x = Mouse.X + Camera.Left;
         int y = Mouse.Y - layout.RoomTop;
         if (y < 0 || y >= layout.RoomHeight)
@@ -723,6 +723,12 @@ public sealed partial class GameWorld
 
         Engine.Variables[VarVirtMouseX] = x >> 3;
         Engine.Variables[VarVirtMouseY] = y >> 1;
+
+        // the NES's narrow rooms show two strips further right (scummLoop_updateScummVars)
+        if (CurrentRoom is { NesStartStrip: > 0 })
+        {
+            Engine.Variables[VarVirtMouseX] = Math.Max(0, Engine.Variables[VarVirtMouseX] - 2);
+        }
     }
 
     /// <summary>
@@ -798,7 +804,7 @@ public sealed partial class GameWorld
             return;
         }
 
-        var layout = ScreenLayout.ForVersion(Version);
+        var layout = Layout;
         var (x, y) = Mouse;
         bool inVerbs = y >= layout.RoomBottom;
         if (inVerbs && y <= Verbs.Top + 8)
