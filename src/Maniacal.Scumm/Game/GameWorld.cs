@@ -209,6 +209,8 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
     bool IActorWorld.IsPlayer(int actor) => IsPlayer(actor);
 
+    bool IActorWorld.IsDemo => IsDemo;
+
     int IActorWorld.BoxCount => CurrentRoom?.WalkBoxes.Count ?? 0;
 
     BoxCorners IActorWorld.BoxCorners(int box) => Rooms.BoxCorners.Of(CurrentRoom!.WalkBoxes.Boxes[box]);

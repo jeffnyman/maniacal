@@ -15,6 +15,15 @@ internal static class V0Actors
         0x06,
     ];
 
+    /// <summary>The demo's talk flags, as <see cref="Talk"/> (<c>v0ActorDemoTalk</c>).</summary>
+    public static readonly byte[] DemoTalk =
+    [
+        0x00, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x00,
+        0x46, 0x06, 0x06, 0x06, 0x06, 0xE2, 0xE2, 0x06,
+        0xC0, 0x06, 0x06, 0x00, 0xC0, 0xC0, 0x00, 0x06,
+        0x06,
+    ];
+
     /// <summary>The colour each actor's words are in (<c>v0MMActorTalkColor</c>).</summary>
     public static readonly byte[] TalkColors =
     [

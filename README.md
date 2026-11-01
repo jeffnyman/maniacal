@@ -60,13 +60,15 @@ packages are an alpha: the engine works, but its public API is still to be settl
 | DOS, enhanced (1988) | 2 | `00.LFL` to `53.LFL`, XOR-encoded | Winnable, with sound and saves |
 | DOS demo (1987) | 1 | `00.MAN` to `49.MAN`, the full release's rooms renamed | Plays its demo through |
 | DOS demo (1988) | 2 | `00.LFL` to `53.LFL`, rooms of the 1988 release | Plays its demo through |
+| Commodore 64 demo (1987) | 0 | `maniacdemo.d64`, one disk image | Its menu, the self-running demo and the hands-on one |
 | NES (1990) | 1 (NES dialect) | `.prg` extracted from the ROM | Not supported; later, if at all |
 
 These are the English releases, and only they are played: a release in another language or for
-another platform, or the C64's demo, is named and refused (`maniacal: this is Maniac Mansion (V2,
-German, DOS), which Maniacal does not play: it plays only the English releases.`), by the tool
-and by the library alike. The demos run themselves, as they were made to, from the title through
-the mansion to the Edisons' lab.
+another platform is named and refused (`maniacal: this is Maniac Mansion (V2, German, DOS), which
+Maniacal does not play: it plays only the English releases.`), by the tool and by the library
+alike. The DOS demos run themselves, as they were made to, from the title through the mansion to
+the Edisons' lab; the C64's opens on a menu of a self-running demo and a hands-on one, and F7
+takes it back there.
 
 What works, in every release:
 
@@ -121,8 +123,7 @@ data could not be read, a headless run stopped on an error, or the window could 
 
 ### Not yet
 
-The C64's demo (there is no data here to test it); the other languages; the NES release; the
-Amiga and Atari ST releases.
+The other languages; the NES release; the Amiga and Atari ST releases.
 [ROADMAP.md](ROADMAP.md) gives the order of work, done and to come.
 
 ## Layout
@@ -231,7 +232,8 @@ dotnet run --project src/Maniacal.Player -- --help
 
 Maniacal ships no game data. Point it at a folder holding a release. The tests look for the folders
 `maniac_mansion_original_DOS.com` (V1), `maniac_mansion_enhanced_DOS.com` (V2), `maniac_mansion_c64`
-(V0), and the DOS demos' `maniac_mansion_demo_original_DOS` and `maniac_mansion_demo_enhanced_DOS`,
+(V0), and the demos' `maniac_mansion_demo_original_DOS`, `maniac_mansion_demo_enhanced_DOS` and
+`maniac_mansion_demo_C64`,
 their names in any case, in the folder named by the `MANIACAL_GAMES` environment variable or in
 any folder above the test binary; a test whose folder is not there passes without checking. The
 `.gitignore` keeps game files out of the repository.

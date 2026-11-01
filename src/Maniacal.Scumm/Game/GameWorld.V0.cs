@@ -31,6 +31,9 @@ public sealed partial class GameWorld
     // the keys of the C64's save screen and cutscene skip, and the script of that save screen (saveMenuScript)
     private const int KeyF5 = KeyF1 + 4, KeyF7 = KeyF1 + 6, V0SaveScreenScript = 2;
 
+    // the room the demo's F7 does not leave, its title (ScummVM's _roomResource != 0x2D)
+    private const int DemoMenuRoom = 0x2D;
+
     // the kid version 0 starts with, Dave (ScummEngine_v0::resetScummVars)
     private const int V0FirstKid = 3;
 
@@ -484,13 +487,29 @@ public sealed partial class GameWorld
         Messages.Talk(actor, MessageLine.DecodeV0(text));
     }
 
+    // the demo's lines show in the verb area in place of the verbs (ScummVM's _drawDemo)
+    private bool _drawDemo;
+
     /// <summary>
-    /// A mode: the interface, the cursor and the freezing of scripts each mode has. Mirrors
-    /// <c>ScummEngine_v0::setMode</c> for the full game.
+    /// A mode: the interface, the cursor and the freezing of scripts each mode has. The demo,
+    /// with variable 11 set, shows its lines in the verb area in the cutscene and keypad modes,
+    /// and back in the normal ones has its verbs made again. Mirrors <c>ScummEngine_v0::setMode</c>.
     /// </summary>
     private void SetMode(int mode)
     {
         CurrentMode = mode;
+        if (IsDemo && mode is ModeCutscene or ModeKeypad && Engine.Variables[11] != 0)
+        {
+            _drawDemo = true;
+        }
+        else if (IsDemo && mode is ModeNormal or ModeNoNewKid)
+        {
+            ResetVerbsV0();
+            ActiveVerb = V0VerbWalkTo;
+            _redrawSentenceLine = true;
+            _drawDemo = false;
+        }
+
         int state = mode switch
         {
             // the cutscene leaves the freezing as it is
@@ -559,10 +578,21 @@ public sealed partial class GameWorld
         _clicked = _rightClicked = false;
         _key = 0;
 
-        // ScummEngine_v2::processKeyboard on the C64: F5 opens the game's own save screen, F7 skips a cutscene
+        // ScummEngine_v2::processKeyboard on the C64: F5 opens the game's own save screen, F7 skips a
+        // cutscene; in the demo F7 goes back to its menu instead, from anywhere but the title room
         if (key == KeyF5)
         {
             Engine.RunScript(V0SaveScreenScript);
+        }
+        else if (key == KeyF7 && IsDemo)
+        {
+            if (CurrentRoom?.Number != DemoMenuRoom)
+            {
+                Restart();
+                return;
+            }
+
+            key = 0;
         }
         else if (key == KeyF7)
         {
@@ -764,6 +794,17 @@ public sealed partial class GameWorld
                     }
                 }
             }
+        }
+
+        // ScummEngine_v0::verbDemoMode: the demo's lines over the verbs, killed for them
+        if (_drawDemo && IsDemo)
+        {
+            for (int slot = 1; slot < 16; slot++)
+            {
+                Verbs.Kill(slot);
+            }
+
+            Verbs.DrawDemoLines(V0Verbs.DemoLines);
         }
 
         if (_redrawSentenceLine)

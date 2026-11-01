@@ -6,6 +6,9 @@ namespace Maniacal.Scumm.Game;
 /// <summary>What an actor needs of the room it walks in.</summary>
 internal interface IActorWorld
 {
+    /// <summary>Whether the release is a demo, whose actors differ a little.</summary>
+    bool IsDemo => false;
+
     int CurrentRoom { get; }
 
     int Version { get; }

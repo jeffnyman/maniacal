@@ -45,4 +45,15 @@ internal static class V0Verbs
         (14, 7, 1, "Nimm"),
         (15, 13, 2, "Was ist"),
     ];
+
+    /// <summary>The demo's lines in the verb area, each with its colour (<c>v0DemoStr</c>, drawn by <c>verbDemoMode</c>).</summary>
+    public static readonly (int Color, string Text)[] DemoLines =
+    [
+        (7, "        MANIAC MANSION DEMO DISK        "),
+        (5, "          from Lucasfilm Games          "),
+        (5, "    Copyright = 1987 by Lucasfilm Ltd.  "),
+        (5, "           All Rights Reserved.         "),
+        (0, "                                        "),
+        (16, "       Press F7 to return to menu.      "),
+    ];
 }

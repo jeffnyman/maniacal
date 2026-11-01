@@ -303,6 +303,19 @@ internal sealed class VerbArea
     }
 
     /// <summary>
+    /// Draws the C64 demo's lines in the verb area, a line to every 8 pixels from its top, each in
+    /// its colour. Mirrors <c>ScummEngine_v0::verbDrawDemoString</c>, which draws over the verbs
+    /// <c>verbDemoMode</c> has killed.
+    /// </summary>
+    public void DrawDemoLines(IReadOnlyList<(int Color, string Text)> lines)
+    {
+        for (int i = 0; i < lines.Count; i++)
+        {
+            DrawString(System.Text.Encoding.Latin1.GetBytes(lines[i].Text), _offset, Top + 8 * i + _offset, Width - 1 + _offset, lines[i].Color);
+        }
+    }
+
+    /// <summary>
     /// Shows a sentence on the sentence line, up to 40 characters not counting fillers, while the
     /// sentence line is on. Mirrors the drawing half of <c>ScummEngine_v2::drawSentence</c>.
     /// </summary>

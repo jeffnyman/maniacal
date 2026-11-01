@@ -11,6 +11,9 @@ public class WalkthroughTests
     // the DOS demos' folders
     internal const string V1Demo = "maniac_mansion_demo_original_DOS", V2Demo = "maniac_mansion_demo_enhanced_DOS";
 
+    // the C64 demo's folder, its one disk maniacdemo.d64
+    internal const string C64Demo = "maniac_mansion_demo_C64";
+
     // the rooms on the way
     internal const int Driveway = 44, FrontOfTheHouse = 1, Hall = 10, Cellar = 8, LivingRoom = 3, Library = 5,
         Kitchen = 7, DiningRoom = 37, StorageRoom = 36, Pool = 6, Landing = 11, PaintingRoom = 14, MusicRoom = 17,

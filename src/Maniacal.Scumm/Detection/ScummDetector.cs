@@ -16,8 +16,7 @@ internal sealed record ScummGame(Md5Entry Entry, string Variant, int Version, bo
 
     /// <summary>
     /// Whether Maniacal plays the release: the English releases for the Commodore 64 and DOS and
-    /// the DOS demos, the ones it is tested on. Not the C64's demo yet (there is no data to test
-    /// it), nor other languages or platforms.
+    /// their demos, the ones it is tested on. Not other languages or platforms.
     /// </summary>
     public bool IsSupported => Unsupported is null;
 
@@ -25,7 +24,6 @@ internal sealed record ScummGame(Md5Entry Entry, string Variant, int Version, bo
     public string? Unsupported
         => Language != "en" ? "it plays only the English releases"
         : !(Platform == "dos" && Version is 1 or 2) && !(Platform == "c64" && Version == 0) ? "it plays only the Commodore 64 and DOS releases"
-        : IsDemo && Platform == "c64" ? "the Commodore 64 demo is not supported yet"
         : null;
 
     /// <summary>The release in words: <c>Maniac Mansion (V2, German, DOS)</c>.</summary>

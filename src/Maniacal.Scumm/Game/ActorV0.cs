@@ -55,11 +55,12 @@ internal sealed class ActorV0 : Actor
     private int _tmpWalkBox;
     private bool _tmpNewWalkBoxEntered;
 
-    /// <summary>Mirrors <c>Actor_v0::initActor</c>: standing, with its talk flags from <c>v0ActorTalk</c>.</summary>
+    /// <summary>Mirrors <c>Actor_v0::initActor</c>: standing, with its talk flags from <c>v0ActorTalk</c>, or the demo's <c>v0ActorDemoTalk</c>.</summary>
     public ActorV0(int number, IActorWorld world) : base(number, world)
     {
         Moving = Standing;
-        Sound = number < V0Actors.Talk.Length ? V0Actors.Talk[number] : 0;
+        var talk = world.IsDemo ? V0Actors.DemoTalk : V0Actors.Talk;
+        Sound = number < talk.Length ? talk[number] : 0;
         Array.Fill(_queue, (byte)BoxGeometry.NoBox);
     }
 
@@ -335,7 +336,7 @@ internal sealed class ActorV0 : Actor
                     plan = StepAcross();
                     break;
                 case WalkOn:
-                    Step();
+                    plan = Step();
                     break;
             }
 
@@ -614,9 +615,9 @@ internal sealed class ActorV0 : Actor
     /// <summary>
     /// A step on the way: across when its count comes round, then along; a step that would leave
     /// the boxes blocks that axis, and the actor turns to go along the other. Mirrors the
-    /// <c>_moving</c> 0 branch of <c>Actor_v0::walkActor</c>.
+    /// <c>_moving</c> 0 branch of <c>Actor_v0::walkActor</c>. True when the walk is to be planned again.
     /// </summary>
-    private void Step()
+    private bool Step()
     {
         int result = ActorWalkXCalculate();
         if (result == WalkArrived)
@@ -631,7 +632,7 @@ internal sealed class ActorV0 : Actor
                 StopMoving();
             }
 
-            return;
+            return false;
         }
 
         if (result == WalkBlockedX)
@@ -640,19 +641,27 @@ internal sealed class ActorV0 : Actor
             TargetFacing = _walkDirY != 0 ? 180 : 0;
             DirectionUpdate();
             Animate(OldDirection);
-            return;
+
+            // in the demo's hands-free part Purple Tentacle, following Sandy past the library's
+            // stairs, takes the step along at once, as the original engine does (ScummVM's goto
+            // WalkX for him alone); given a frame to wait, the script walking him starts him over
+            return _world.IsDemo && Number == PurpleTentacle && StepAlong();
         }
 
         if (ActorWalkYCalculate() != WalkBlockedY)
         {
-            return;
+            return false;
         }
 
         Moving = (Moving & 0xF0) | WalkBlockedY;
         TargetFacing = _walkDirX != 0 ? 90 : 270;
         DirectionUpdate();
         Animate(OldDirection);
+        return false;
     }
+
+    // the actor ScummVM's walk workaround for the demo is for
+    private const int PurpleTentacle = 13;
 
     /// <summary>
     /// Blocked across: while a step across would still leave the boxes, a step along, stopping on

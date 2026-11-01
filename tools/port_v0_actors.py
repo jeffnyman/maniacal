@@ -2,8 +2,8 @@
 
 Keeps the tables the C64's engine has for its actors rather than its scripts: their names
 (v0ActorNames_English and v0ActorNames_German, read by getActorName), talk colours
-(v0MMActorTalkColor, set by resetV1ActorTalkColor), talk flags (v0ActorTalk, set by
-Actor_v0::initActor for the full game), costume colours (actorV0Colors, read by V0CostumeRenderer::drawLimb)
+(v0MMActorTalkColor, set by resetV1ActorTalkColor), talk flags (v0ActorTalk and v0ActorDemoTalk,
+set by Actor_v0::initActor for the full game and the demo), costume colours (actorV0Colors, read by V0CostumeRenderer::drawLimb)
 and how far the slanted walkboxes narrow at each line (v0WalkboxSlantedModifier, read by
 adjustPosInBorderWalkbox). Run from the repository root:
 
@@ -19,6 +19,12 @@ BYTES = [
         "Talk",
         25,
         "What each actor's mouth does as it talks: bit 7 none, bit 6 no talking animation (<c>v0ActorTalk</c>).",
+    ),
+    (
+        "v0ActorDemoTalk",
+        "DemoTalk",
+        25,
+        "The demo's talk flags, as <see cref=\"Talk\"/> (<c>v0ActorDemoTalk</c>).",
     ),
     (
         "v0MMActorTalkColor",

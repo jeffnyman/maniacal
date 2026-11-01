@@ -1,7 +1,8 @@
 """Generates V0Verbs.g.cs from ScummVM's engines/scumm/verbs.cpp and verbs.h.
 
 Keeps the C64's verbs, which its engine makes itself rather than its scripts (v0VerbTable_English
-and v0VerbTable_German, read by ScummEngine_v0::resetVerbs): each verb's number, its column and
+and v0VerbTable_German, read by ScummEngine_v0::resetVerbs), and the demo's lines that take their
+place (v0DemoStr, drawn by verbDemoMode): each verb's number, its column and
 row, and its name. Run from the repository root:
 
     python tools/port_v0_verbs.py ../scummvm/engines/scumm/verbs.cpp ../scummvm/engines/scumm/verbs.h > src/Maniacal.Scumm/Game/V0Verbs.g.cs
@@ -49,6 +50,21 @@ def main(source_path, header_path):
         for name, column, row, text in rows:
             print(f'        ({ids[name]}, {column}, {row}, "{text}"),')
         print("    ];")
+
+    # the demo's lines, which verbDemoMode draws in the verb area in place of the verbs
+    demo_match = re.search(r"\bv0DemoStr\[\]\s*=\s*\{(.*?)\n\};", source, re.DOTALL)
+    if demo_match is None:
+        raise ValueError("Could not find v0DemoStr in source")
+    lines = re.findall(r"\{\s*(\d+),\s*\"([^\"]*)\"\s*\}", demo_match.group(1))
+    if len(lines) != 6:
+        sys.exit(f"v0DemoStr has {len(lines)} lines, not 6")
+    print()
+    print("    /// <summary>The demo's lines in the verb area, each with its colour (<c>v0DemoStr</c>, drawn by <c>verbDemoMode</c>).</summary>")
+    print("    public static readonly (int Color, string Text)[] DemoLines =")
+    print("    [")
+    for color, text in lines:
+        print(f'        ({color}, "{text}"),')
+    print("    ];")
     print("}")
 
 

@@ -775,6 +775,21 @@ Where it comes from:
   save from another copy of the same release still loads, as ScummVM loads it), and any other
   failure in reading a save is an `InvalidDataException`.
 
+- **The C64 demo.** Its disk, `maniacdemo.d64`, was identified already (ScummVM's table lists it
+  as "C64" with the extra "Demo"; its disk's name makes it the demo, as ScummVM has it), and is
+  played now, as ScummVM 2026.4.0 plays it: it boots with script 1, as the full game does; in its
+  cutscene and keypad modes, with variable 11 set, its own six lines take the verbs' place
+  ("MANIAC MANSION DEMO DISK" to "Press F7 to return to menu.", `v0DemoStr`, drawn by
+  `verbDemoMode`), and back in the normal modes its verbs are made again (`setMode`); F7 takes it
+  back to its menu, restarting it, from anywhere but the menu (`processKeyboard`); its actors talk
+  with their own flags (`v0ActorDemoTalk`); and in the hands-free part Purple Tentacle, following
+  Sandy past the library's stairs, takes his step along at once, as the original engine did and
+  ScummVM does for him alone, without which he stops there for good. The two tables come from
+  ScummVM's source through `tools/port_v0_verbs.py` and `tools/port_v0_actors.py`. The menu, the
+  self-running demo (porch, room 10, the lab, room 3, the library, and back to the menu) and F7
+  are tested (`DemoTests`); against ScummVM's window, its menu is the same but for the cursor and
+  the intro it falls to the same to the pixel.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies
@@ -794,7 +809,5 @@ Where it comes from:
 - A browser player: a host for the browser (WebAssembly), as the SDL host is for the desktop.
 - NES: `file_nes.cpp`, `gfx_nes.cpp`, `NESCostumeRenderer` and the NES charset. It needs a ROM,
   and `docs/nes` documents the data.
-- The demo releases (V1 demo `00.MAN`, V2 demo, C64 demo) come with the main ones, but there is no
-  data here to test them.
 - Amiga and Atari ST V2 data, with `Player_V2A`.
 - Zak McKracken V1/V2, on the same engine.

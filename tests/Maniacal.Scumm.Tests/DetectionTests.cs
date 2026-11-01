@@ -73,6 +73,7 @@ public class DetectionTests
     [Theory]
     [InlineData(WalkthroughTests.V1Demo, "V1 Demo", 1)]
     [InlineData(WalkthroughTests.V2Demo, "V2 Demo", 2)]
+    [InlineData(WalkthroughTests.C64Demo, "C64 Demo", 0)]
     public void Identifies_the_demos(string folder, string variant, int version)
     {
         if (GameFolders.Find(folder) is not { } path)
@@ -88,7 +89,7 @@ public class DetectionTests
         Assert.True(game.IsDemo);
     }
 
-    /// <summary>Maniacal plays the English releases for the Commodore 64 and DOS and the DOS demos, and refuses the rest by name.</summary>
+    /// <summary>Maniacal plays the English releases for the Commodore 64 and DOS and their demos, and refuses the rest by name.</summary>
     [Theory]
     [InlineData("b250d0f9cc83f80ced56fe11a4fb057c", "V2", null)]
     [InlineData("624cdb93654667c869d204a64af7e57f", "V2", null)]
@@ -98,7 +99,7 @@ public class DetectionTests
     [InlineData("0c331637580950aea2346e012ef2a868", "V2", "This is Maniac Mansion (V2, English, Atari ST), which Maniacal does not play: it plays only the Commodore 64 and DOS releases.")]
     [InlineData("91d5db93187fab54d823f73bd6441cb6", "NES", "This is Maniac Mansion (NES, English, NES), which Maniacal does not play: it plays only the Commodore 64 and DOS releases.")]
     [InlineData("40564ec47da48a67787d1f9bd043902a", "V2 Demo", null)]
-    [InlineData("2cb46375dd5cdfd023e2f07e0a21b530", "C64 Demo", "This is Maniac Mansion (C64 Demo, English, Commodore 64), which Maniacal does not play: the Commodore 64 demo is not supported yet.")]
+    [InlineData("2cb46375dd5cdfd023e2f07e0a21b530", "C64 Demo", null)]
     public void Plays_the_english_c64_and_dos_releases(string md5, string variant, string? refusal)
     {
         var entry = ScummMd5Table.Find(md5)!;

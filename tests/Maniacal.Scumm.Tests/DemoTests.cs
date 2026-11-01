@@ -110,6 +110,84 @@ public class DemoTests
         Assert.Equal([15, 7, 2, 5, 14], new[] { 9, 10, 11, 13, 23 }.Select(n => world.Actors[n].TalkColor));
     }
 
+    /// <summary>
+    /// The C64 demo boots with script 1, as the full game does (ScummVM's runBootscript starts the
+    /// DOS demos' script 9 only), to its menu: in the verb area, in place of the verbs, its own
+    /// lines (verbDemoMode), "Press F7 to return to menu." in colour 16. Checked against ScummVM
+    /// 2026.4.0, whose menu is the same but for the cursor.
+    /// </summary>
+    [Fact]
+    public void The_c64_demo_shows_its_menu_and_lines()
+    {
+        if (Open(WalkthroughTests.C64Demo) is not { } world)
+        {
+            return;
+        }
+
+        world.Boot();
+        Steps(world, 300);
+
+        Assert.True(world.IsDemo);
+        Assert.Equal(0, world.Version);
+        Assert.Equal(45, world.CurrentRoom?.Number);
+        Assert.Contains(world.RunningScripts(), s => s.Kind == ScriptKind.Global && s.Number == 1);
+        Assert.Contains(world.Verbs.Pixels.Pixels, p => p == 16);
+        Assert.Equal(2, world.ObjectsHere().Count(o => o.Touchable));
+    }
+
+    /// <summary>
+    /// The self-running demo, chosen on the menu, plays through to the library and back to the
+    /// menu. There Purple Tentacle, following Sandy past the stairs, would stop for good, as he
+    /// does in ScummVM without the step it gives him alone in the demo (the original engine's).
+    /// </summary>
+    [Fact]
+    public void The_c64_self_running_demo_plays_back_to_its_menu()
+    {
+        if (Open(WalkthroughTests.C64Demo) is not { } world)
+        {
+            return;
+        }
+
+        world.Boot();
+        Steps(world, 300);
+        var selfRunning = world.ObjectsHere().Where(o => o.Touchable).OrderBy(o => o.Y).First();
+        Assert.True(world.ClickObject(selfRunning.Number));
+
+        var rooms = new List<int>();
+        for (int step = 0; step < 4000; step++)
+        {
+            world.Step();
+            if (world.CurrentRoom?.Number is { } room && (rooms.Count == 0 || rooms[^1] != room))
+            {
+                rooms.Add(room);
+            }
+        }
+
+        Assert.Equal([45, 1, 10, 31, 10, 3, 5, 45], rooms.Take(8));
+        Assert.DoesNotContain(world.Unhandled, call => !call.Contains("resourceRoutines", StringComparison.Ordinal));
+    }
+
+    /// <summary>F7 in the C64 demo goes back to its menu (ScummVM's processKeyboard restarts it), from anywhere but the menu itself.</summary>
+    [Fact]
+    public void F7_takes_the_c64_demo_back_to_its_menu()
+    {
+        if (Open(WalkthroughTests.C64Demo) is not { } world)
+        {
+            return;
+        }
+
+        world.Boot();
+        Steps(world, 300);
+        world.ClickObject(world.ObjectsHere().Where(o => o.Touchable).OrderBy(o => o.Y).First().Number);
+        Steps(world, 700);
+        Assert.NotEqual(45, world.CurrentRoom?.Number);
+
+        world.PressKey(GameWorld.KeyF1 + 6);
+        Steps(world, 30);
+
+        Assert.Equal(45, world.CurrentRoom?.Number);
+    }
+
     /// <summary>The 1987 demo's font has the 1988 release's apostrophe, as ScummVM's charset gives it.</summary>
     [Fact]
     public void The_1987_demo_has_the_1988_apostrophe()
