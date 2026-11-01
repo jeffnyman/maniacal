@@ -4,8 +4,21 @@ using System.Text;
 
 namespace Maniacal.Scumm.Saves;
 
-/// <summary>What a save says about itself: its name, format version, the time played and when it was made.</summary>
-public sealed record SaveInfo(string Name, int Version, TimeSpan PlayTime, DateTime? Saved);
+/// <summary>What a save says about itself.</summary>
+public sealed record SaveInfo
+{
+    /// <summary>The name it was saved under.</summary>
+    public string Name { get; init; } = "";
+
+    /// <summary>Its save format version, ScummVM's: 108 is ScummVM 2.7's.</summary>
+    public int Version { get; init; }
+
+    /// <summary>How long the game had been played when it was saved.</summary>
+    public TimeSpan PlayTime { get; init; }
+
+    /// <summary>When it was saved, if the save says.</summary>
+    public DateTime? Saved { get; init; }
+}
 
 /// <summary>
 /// A ScummVM save file: gzip-compressed, a header naming it and giving its format version, then
@@ -140,7 +153,7 @@ public static class SaveFile
             position += Math.Max(infoSize, InfoSize);
         }
 
-        return (new SaveInfo(name, version, playTime, saved), position);
+        return (new SaveInfo { Name = name, Version = version, PlayTime = playTime, Saved = saved }, position);
     }
 
     private static byte[] Decompress(byte[] file)

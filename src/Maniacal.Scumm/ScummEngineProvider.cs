@@ -29,7 +29,15 @@ public sealed class ScummEngineProvider : IEngineProvider
 
     /// <summary>A detected release as the engine registry names it.</summary>
     internal static DetectedGame Describe(ScummGame found)
-        => new(EngineId, found.Entry.GameId, "Maniac Mansion", found.Variant, found.Language, found.Platform);
+        => new()
+        {
+            EngineId = EngineId,
+            GameId = found.Entry.GameId,
+            Title = "Maniac Mansion",
+            Extra = found.Variant,
+            Language = found.Language,
+            PlatformName = found.Platform,
+        };
 
     /// <inheritdoc />
     public Engine Create(IHost host, IGameContainer game, DetectedGame detected)

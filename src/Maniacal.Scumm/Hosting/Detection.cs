@@ -3,20 +3,26 @@ using Maniacal.Scumm.Storage;
 namespace Maniacal.Scumm.Hosting;
 
 /// <summary>A game an engine provider recognised inside a container.</summary>
-/// <param name="EngineId">Which engine runs it, "scumm".</param>
-/// <param name="GameId">Stable short identifier, for example "maniac".</param>
-/// <param name="Title">Display title.</param>
-/// <param name="Extra">Version or release notes, such as "V2".</param>
-/// <param name="Language">ISO language code if known.</param>
-/// <param name="PlatformName">Original platform if known, such as "dos" or "c64".</param>
-public record DetectedGame(
-    string EngineId,
-    string GameId,
-    string Title,
-    string? Extra = null,
-    string? Language = null,
-    string? PlatformName = null)
+public sealed record DetectedGame
 {
+    /// <summary>Which engine runs it: <c>scumm</c>.</summary>
+    public required string EngineId { get; init; }
+
+    /// <summary>A stable short identifier, as ScummVM's: <c>maniac</c>.</summary>
+    public required string GameId { get; init; }
+
+    /// <summary>The title to show: <c>Maniac Mansion</c>.</summary>
+    public required string Title { get; init; }
+
+    /// <summary>The release, if the detection tells: <c>V2</c>, <c>V1 Demo</c>, <c>C64</c>.</summary>
+    public string? Extra { get; init; }
+
+    /// <summary>The ISO language code, if known: <c>en</c>.</summary>
+    public string? Language { get; init; }
+
+    /// <summary>The original platform, if known: <c>dos</c> or <c>c64</c>.</summary>
+    public string? PlatformName { get; init; }
+
     /// <summary>The version notes and, for anything but DOS, the platform: what tells two detections of one folder apart.</summary>
     public string Variant
     {
@@ -34,7 +40,7 @@ public record DetectedGame(
     }
 
     /// <summary>The title, the variant if any, and the engine and game ids: <c>Maniac Mansion (V2) [scumm:maniac]</c>.</summary>
-    public sealed override string ToString()
+    public override string ToString()
         => Variant.Length == 0 ? $"{Title} [{EngineId}:{GameId}]" : $"{Title} ({Variant}) [{EngineId}:{GameId}]";
 }
 

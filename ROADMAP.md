@@ -749,6 +749,12 @@ Where it comes from:
   plays one step a tick whatever `elapsed` says, its delay pacing it; which input events it reads;
   and that the audio driver, not the source, applies the volume.
 
+- **The last positional records.** `DetectedGame` and `SaveInfo` were positional records, whose
+  constructor and `Deconstruct` would break with every field added; they are records with init
+  properties now, as the other results are (`DetectedGame`'s engine, game and title `required`),
+  and `DetectedGame` is sealed. The records left positional are small values that will not grow:
+  `Rgb`, `Rect`, `VerbEntry`, `StandingActor`.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies
