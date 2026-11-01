@@ -36,6 +36,9 @@ public sealed partial class GameWorld
     /// <summary>Key codes the input takes besides characters: the function keys are 315 to 323, as in ScummVM.</summary>
     public const int KeyEscape = 27, KeyF1 = 315, KeyF4 = 318, KeyF9 = 323;
 
+    // the NES's save screen's script (processKeyboard's runScript(163))
+    private const int NesSaveMenuScript = 163;
+
     /// <summary>The owner of an object that is in its room. Mirrors <c>OF_OWNER_ROOM</c>.</summary>
     internal const int OwnerRoom = 0x0F;
 
@@ -776,6 +779,14 @@ public sealed partial class GameWorld
         if (key == (IsNes ? 'B' : KeyF4))
         {
             key = KeyEscape;
+        }
+
+        // the NES's own save screen comes up on Space, as ScummVM's original-menu option has it,
+        // and on F5, for ScummVM's Alt-F5; the key goes no further (processKeyboard)
+        if (IsNes && key is ' ' or KeyF5)
+        {
+            Engine.RunScript(NesSaveMenuScript);
+            return;
         }
 
         if (key == '.')

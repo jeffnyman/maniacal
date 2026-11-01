@@ -16,16 +16,20 @@ internal sealed record ScummGame(Md5Entry Entry, string Variant, int Version, bo
 
     /// <summary>
     /// Whether Maniacal plays the release: the English releases for the Commodore 64 and DOS and
-    /// their demos, the ones it is tested on. Not other languages or platforms.
+    /// their demos, and the American NES cartridge, the ones it is tested on. Not other languages
+    /// or platforms, nor the European NES cartridge.
     /// </summary>
     public bool IsSupported => Unsupported is null;
 
     /// <summary>Why Maniacal does not play the release, or null when it does.</summary>
     public string? Unsupported
         => Language != "en" ? "it plays only the English releases"
-        : Platform == "nes" ? "the NES release is not supported yet"
-        : !(Platform == "dos" && Version is 1 or 2) && !(Platform == "c64" && Version == 0) ? "it plays only the Commodore 64 and DOS releases"
+        : Platform == "nes" ? (Entry.Md5 == AmericanNesIndex ? null : "of the NES releases it plays only the American cartridge")
+        : !(Platform == "dos" && Version is 1 or 2) && !(Platform == "c64" && Version == 0) ? "it plays only the Commodore 64, DOS and NES releases"
         : null;
+
+    // the MD5 of the index built from the American NES cartridge
+    private const string AmericanNesIndex = "91d5db93187fab54d823f73bd6441cb6";
 
     /// <summary>The release in words: <c>Maniac Mansion (V2, German, DOS)</c>.</summary>
     public string Description => $"Maniac Mansion ({Variant}, {LanguageName(Language)}, {PlatformName(Platform)})";

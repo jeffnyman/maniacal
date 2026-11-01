@@ -14,7 +14,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 4 | Sound, saves and options (V2 and V1) | Done |
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
 | 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
-| 7 | The NES | Under way: winnable, with its sound and saves; its title screens, and opening it, to come |
+| 7 | The NES | Done: the American cartridge winnable, with its title screens, sound and saves, opened by the library and the tool |
 | Later | A browser player, Amiga and Atari ST, Zak McKracken | Perhaps |
 
 ## Design
@@ -965,10 +965,36 @@ and sound. `docs/nes` documents its data. The steps:
    here and plays on. Tested in `WalkthroughTests` (the route) and `NesSaveTests`: a game saved and
    restored plays on as the original, the save's NES values, and the costume set taken from the
    save.
-8. **Opened.** The title screens ScummVM shows before the boot script (`playNESTitleScreens`,
-   two pictures, the second's sparkles and their twinkles), the save menu's restart and its
-   `Alt-F5` save script (163), and the refusal lifted, so `ManiacMansion.Open` and the tool play
-   the NES.
+8. **Opened (done).** `Boot` shows the NES's two title screens before its boot script, as
+   `playNESTitleScreens` does: the licence screen for five seconds, then Lucasfilm Games for five
+   and a half, its eight sparkles appearing one after another, each starting its twinkle on a
+   square channel (`startTitleTwinkleGroup`, the channels left sounding when it ends); a click,
+   a right click or Escape moves on. `NesTitles` decodes them from the cartridge (tiles,
+   nametable and attributes run-length coded, then 16 colours), a step a tick of the NES's 60th of
+   a second (ScummVM's loop counts 16 milliseconds, so its sparkles come about 4% sooner); the
+   step after them runs the boot script. A load, a restart and the save screen's load run the
+   boot script without them, as ScummVM's do. The waits, the sparkles' places and timing and the
+   twinkles come from ScummVM's source through `tools/port_nes_titles.py`.
+
+   The NES's own save screen, script 163, comes up on Space (ScummVM's original-menu key) and F5
+   (for ScummVM's Alt-F5): its Save and Load are `saveLoadGame`'s one slot, as in DOS's version 1,
+   and left before the game has begun (variable 164 still 0) it starts the game over
+   (`terminateSaveMenuScript`); a save loaded from outside the save room starts the kid's song
+   again (script 5 and the sound variable 224 names), ScummVM's fix for its music.
+
+   The refusal is lifted for the American cartridge, the one tested: `ManiacMansion.Open`,
+   `ResourceLoader.Open` and the tool open it, its saves in `maniac/nes`; the European cartridge,
+   English too, is refused by name as untested. The tool's pictures take the release's palette,
+   `--view` the NES's 256 by 240 screen; the inspector does not draw the NES's costumes, drawn
+   from its costume sets, and says so.
+
+   Checked against ScummVM 2026.4.0's window: both title screens and the sparkles as they came, to
+   the pixel; and its recorded sound: the twinkles as loud within 6%, the game's first sound as
+   long after them. Tested in `NesTitleTests` (the screens, their times, skipping, the
+   twinkles), `NesSaveTests` (the save screen saving and loading, its restart in the intro, the
+   song after a load), `NesRomTests` and `DetectionTests` (the cartridge opened, the European
+   refused) and `ManiacMansionTests` (the NES opened and played, its saves refused by the DOS
+   release and the other way round).
 
 ## Later, perhaps
 
@@ -976,3 +1002,5 @@ and sound. `docs/nes` documents its data. The steps:
 - A browser player: a host for the browser (WebAssembly), as the SDL host is for the desktop.
 - Amiga and Atari ST V2 data, with `Player_V2A`.
 - Zak McKracken V1/V2, on the same engine.
+- The NES's costumes in the inspector, drawn from its costume sets.
+- The European NES cartridge, English as the American, once tested.

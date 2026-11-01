@@ -9,7 +9,7 @@
     <ToolCommandName>maniacal</ToolCommandName>
     <!-- a tool installed under a newer runtime should still start -->
     <RollForward>Major</RollForward>
-    <Description>Command line player for Maniac Mansion (Commodore 64, DOS 1987 and 1988): dotnet tool install -g Maniacal, then maniacal &lt;game folder&gt;.</Description>
+    <Description>Command line player for Maniac Mansion (Commodore 64, DOS 1987 and 1988, NES): dotnet tool install -g Maniacal, then maniacal &lt;game folder&gt;.</Description>
   </PropertyGroup>
 
   <!-- SDL3 ships native libraries for every platform; a desktop tool does not need the Android

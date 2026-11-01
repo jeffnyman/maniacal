@@ -255,9 +255,18 @@ public sealed class GameInspector(ResourceLoader loader)
         return new RoomPicture { Number = number, Width = room.Width, Height = room.Height, Pixels = image.Pixels, Mask = image.Mask, Objects = infos };
     }
 
-    /// <summary>A costume's standing and walking figures, or null if there is no such costume.</summary>
+    /// <summary>
+    /// A costume's standing and walking figures, or null if there is no such costume. The NES's
+    /// costumes are drawn from its costume sets, which this does not show: for the NES it throws
+    /// <see cref="NotSupportedException"/>, and <see cref="Costumes"/> is empty.
+    /// </summary>
     public CostumeFigures? Costume(int number)
     {
+        if (loader.Index.IsNes)
+        {
+            throw NesCostumes();
+        }
+
         if (!loader.IsReadable(ResourceType.Costume, number))
         {
             return null;
@@ -344,7 +353,9 @@ public sealed class GameInspector(ResourceLoader loader)
     /// The screen with a room as the game starts it, the camera centred at <paramref name="cameraX"/>
     /// (or at the room's left edge), and the figures standing back to front; null if there is no
     /// such room. A figure goes behind the room's mask when the walkbox under it says so. A costume
-    /// that is not there throws <see cref="KeyNotFoundException"/>.
+    /// that is not there throws <see cref="KeyNotFoundException"/>. The NES's room shows on its own
+    /// screen, 256 by 240; its figures, from its costume sets, are not drawn here, and asking for
+    /// any throws <see cref="NotSupportedException"/>.
     /// </summary>
     public RoomScreen? View(int number, int? cameraX = null, IReadOnlyList<StandingActor>? actors = null)
     {
@@ -353,7 +364,12 @@ public sealed class GameInspector(ResourceLoader loader)
             return null;
         }
 
-        var camera = new Camera();
+        if (room.IsNes && actors is { Count: > 0 })
+        {
+            throw NesCostumes();
+        }
+
+        var camera = new Camera(room.IsNes);
         camera.SetRoom(room.Width);
         camera.SetAtEx(cameraX ?? 0);
         camera.Move();
@@ -384,6 +400,8 @@ public sealed class GameInspector(ResourceLoader loader)
         return new RoomScreen { Screen = RoomView.Screen(image, ScreenLayout.For(room.Version, room.IsNes), room.NesStartStrip > 0 ? 16 : 0, room.IsNes ? NesBitmap.Black : (byte)0), CameraX = camera.X, ViewLeft = camera.Left, Actors = placed };
     }
 
+    private static NotSupportedException NesCostumes() => new("The NES's costumes are drawn from its costume sets, which the inspector does not show.");
+
     /// <summary>The numbers of an index's entries that hold something readable that passes the test.</summary>
     private List<int> Numbers(ResourceType type, Func<int, bool> holds)
         => Enumerable.Range(0, loader.Index.Count(type)).Where(n => loader.IsReadable(type, n) && holds(n)).ToList();
@@ -393,7 +411,7 @@ public sealed class GameInspector(ResourceLoader loader)
     /// no costume's format (the 1987 release's costume 0) is one the game never loads.
     /// </summary>
     private bool HoldsCostume(int number)
-        => Version == 0 || (loader.Load(ResourceType.Costume, number) is { } data && CostumeData.IsCostume(data.Span));
+        => Version == 0 || (!loader.Index.IsNes && loader.Load(ResourceType.Costume, number) is { } data && CostumeData.IsCostume(data.Span));
 
     private int InitialState(int obj)
     {

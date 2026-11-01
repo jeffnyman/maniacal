@@ -42,7 +42,7 @@ public sealed class ManiacMansion
     /// <summary>The release in words: <c>Maniac Mansion (V2, English, DOS)</c>.</summary>
     public string Description => _found.Description;
 
-    /// <summary>The release's SCUMM version: 0 for the Commodore 64, 1 for the 1987 DOS release, 2 for the 1988 one.</summary>
+    /// <summary>The release's SCUMM version: 0 for the Commodore 64, 1 for the 1987 DOS release and the NES's, 2 for the 1988 one.</summary>
     public int Version => _found.Version;
 
     /// <summary>Whether the release is one of the DOS demos, which run themselves.</summary>

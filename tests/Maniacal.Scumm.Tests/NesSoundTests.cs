@@ -6,8 +6,9 @@ using Maniacal.Scumm.Storage;
 namespace Maniacal.Scumm.Tests;
 
 /// <summary>
-/// The NES's sound: ScummVM's Player_NES and its emulation of the NES's sound chip. The tests with
-/// the cartridge pass without checking when its folder is absent.
+/// The NES's sound: ScummVM's Player_NES and its emulation of the NES's sound chip. The game starts
+/// at its boot script, the title screens left out, as ScummVM's recording was aligned from it. The
+/// tests with the cartridge pass without checking when its folder is absent.
 /// </summary>
 public class NesSoundTests
 {
@@ -77,7 +78,7 @@ public class NesSoundTests
         }
 
         var world = new GameWorld(new ResourceLoader(rom, ResourceIndex.Parse(LflFile.Read(rom, 0))), sampleRate: Rate);
-        world.Boot();
+        world.BootWithoutTitles();
         var left = new List<short>();
         var started = new HashSet<int>();
         while (world.Time.TotalSeconds < 36)

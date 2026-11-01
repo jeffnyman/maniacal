@@ -356,7 +356,7 @@ internal static class Program
 
     /// <summary>
     /// A release's own save folder: <c>saves/maniac/v2</c>, <c>saves/maniac/v1</c>,
-    /// <c>saves/maniac/c64</c>. The releases' saves do not fit one another, and their files have
+    /// <c>saves/maniac/c64</c>, <c>saves/maniac/nes</c>. The releases' saves do not fit one another, and their files have
     /// the same names (ScummVM's, <c>maniac.s01</c> and so on), so each release keeps its own.
     /// </summary>
     private static string SaveFolder(DetectedGame game)
@@ -419,7 +419,7 @@ internal static class Program
             }
             else
             {
-                PngWriter.Write(file, room.Pixels, Palettes.ForVersion(inspector.Version), zoom, zoom);
+                PngWriter.Write(file, room.Pixels, inspector.Palette.Span, zoom, zoom);
             }
 
             Console.WriteLine($"Room {number}: {room.Width}x{room.Height}, {room.Objects.Count} objects, written to {path}");
@@ -452,7 +452,7 @@ internal static class Program
             }
 
             var palette = new Rgb[256];
-            Palettes.ForVersion(inspector.Version).CopyTo(palette);
+            inspector.Palette.Span.CopyTo(palette);
             palette[CostumeFigures.Transparent] = new Rgb(0x40, 0x40, 0x60);
 
             using var file = File.Create(path);
@@ -462,7 +462,7 @@ internal static class Program
                 : $"Costume {number}: {costume.Animations} clips, {costume.Walking.Count} walk steps, written to {path}");
             return 0;
         }
-        catch (InvalidDataException ex)
+        catch (Exception ex) when (ex is InvalidDataException or NotSupportedException)
         {
             Error(ex.Message);
             return 3;
@@ -575,7 +575,7 @@ internal static class Program
             using var file = File.Create(screenshot);
             var screen = world.Screen();
             world.DrawCursor(screen);
-            PngWriter.Write(file, screen, Palettes.ForVersion(world.Version), zoom, zoom);
+            PngWriter.Write(file, screen, world.Palette.Span, zoom, zoom);
             Console.WriteLine($"Screen written to {screenshot}");
         }
 
@@ -704,7 +704,7 @@ internal static class Program
     }
 
     /// <summary>
-    /// Writes the 320x200 screen with a room as the game starts it, the camera at the given centre
+    /// Writes the screen (320x200, the NES's 256x240) with a room as the game starts it, the camera at the given centre
     /// (or the room's left edge), and standing actors. Version 1 colours are those of the actor with
     /// the costume's number. An actor goes behind the room mask when the walkbox under it says so.
     /// </summary>
@@ -725,11 +725,11 @@ internal static class Program
             }
 
             using var file = File.Create(path);
-            PngWriter.Write(file, view.Screen, Palettes.ForVersion(inspector.Version), zoom, zoom);
+            PngWriter.Write(file, view.Screen, inspector.Palette.Span, zoom, zoom);
             Console.WriteLine($"Room {number}: camera at {view.CameraX}, view from x {view.ViewLeft}, written to {path}");
             return 0;
         }
-        catch (InvalidDataException ex)
+        catch (Exception ex) when (ex is InvalidDataException or NotSupportedException)
         {
             Error(ex.Message);
             return 3;
@@ -818,20 +818,21 @@ internal static class Program
     private static void PrintHelp()
     {
         Console.WriteLine($$"""
-            maniacal {{Version()}}: Maniac Mansion from the game's own files, the Commodore 64 release
-            and the DOS releases of 1987 and 1988.
+            maniacal {{Version()}}: Maniac Mansion from the game's own files, the Commodore 64 release,
+            the DOS releases of 1987 and 1988, and the NES release.
 
             Usage:
               maniacal <game folder> [options]     play in a window
               maniacal <game folder> <tool>        look inside the game, or run it headless
               maniacal --help | --version
 
-            The game folder holds a release's files (00.LFL and the rest, or the C64's two .d64
-            disk images), or holds them in a folder below it. No game files come with Maniacal.
+            The game folder holds a release's files (00.LFL and the rest, the C64's two .d64
+            disk images, or the NES cartridge as a .nes or .prg file), or holds them in a folder
+            below it. No game files come with Maniacal.
 
             Playing:
               --fullscreen          start in full screen
-              --scale N             the window N times 320x200, 1 to 8 (3)
+              --scale N             the window N times the screen (320x200, the NES's 256x240), 1 to 8 (3)
               --speaker             the PC speaker's sound, not the PCjr's (DOS releases)
               --copy-protection     keep the security door's code (bypassed, as in ScummVM)
               --list                name the release found, and stop
@@ -839,9 +840,11 @@ internal static class Program
 
               In the game: click a verb, then an object; click the object again, or the sentence
               line, to carry it out. Escape, F4 or the right button skips a cutscene, the period
-              skips a line of speech, and F5 opens the game's save screen.
+              skips a line of speech, and F5 opens the game's save screen. On the NES a click
+              carries the sentence out at once, Shift-B also skips a cutscene, Space or F5 opens
+              its save screen, and a click or Escape skips its title screens.
               Saves go in {{SavesFolder}}, a folder for each release
-              (maniac/v2, maniac/v1, maniac/c64).
+              (maniac/v2, maniac/v1, maniac/c64, maniac/nes).
               They are ScummVM's own files, so they move between Maniacal and ScummVM 2.7 or later.
 
             Looking inside (a PNG is written to the current folder, or --output):
@@ -864,7 +867,8 @@ internal static class Program
                 --screenshot file.png    --wav file.wav    --zoom N
               --frames N            in the window, stop after N frames
 
-            Maniacal plays the English releases for the Commodore 64 and DOS.
+            Maniacal plays the English releases for the Commodore 64 and DOS, and the American NES
+            cartridge.
 
             Exit codes:
               0  done

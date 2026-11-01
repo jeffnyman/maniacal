@@ -171,6 +171,11 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         {
             const int NoTimerNext = 4;
             int timerNext = Engine.Vars.TimerNext;
+            if (ShowingTitles)
+            {
+                return 1;
+            }
+
             int delta = Math.Max(1, timerNext == EngineVariables.None ? NoTimerNext : Engine.Variables[timerNext]);
             return Version switch
             {
@@ -195,7 +200,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
     internal Actor[] Actors { get; }
 
-    /// <summary>The release's SCUMM version: 0 for the Commodore 64, 1 for the 1987 DOS release, 2 for the 1988 one.</summary>
+    /// <summary>The release's SCUMM version: 0 for the Commodore 64, 1 for the 1987 DOS release and the NES's, 2 for the 1988 one.</summary>
     public int Version => Engine.Version;
 
     /// <summary>The room on screen, or null for room 0, no room.</summary>
@@ -299,8 +304,58 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         return loaded;
     }
 
-    /// <summary>Starts the game: runs script 1, as <c>runBootscript</c> does for the full game.</summary>
-    public void Boot() => Engine.RunScript(IsDemo && Version != 0 ? DemoBootScript : 1);
+    /// <summary>
+    /// Starts the game: runs script 1, as <c>runBootscript</c> does for the full game. The NES's
+    /// first shows its two title screens (<see cref="NesTitles"/>), for which the steps tick a
+    /// 60th of a second each, and its boot script runs at the step after.
+    /// </summary>
+    public void Boot()
+    {
+        if (IsNes && NesRom.Open(_loader.Game) is { } rom)
+        {
+            _titles = NesTitles.Load(rom, sparkle => (Sound.Player as PlayerNes)?.StartTitleTwinkle(sparkle));
+            _frame = null;
+            return;
+        }
+
+        RunBootScript();
+    }
+
+    /// <summary>Starts the game without the NES's title screens, as a save loaded at the start leaves them out.</summary>
+    internal void BootWithoutTitles() => RunBootScript();
+
+    private void RunBootScript() => Engine.RunScript(IsDemo && Version != 0 ? DemoBootScript : 1);
+
+    // the NES's title screens while they show, then until the step that boots the game
+    private NesTitles? _titles;
+
+    /// <summary>Whether the NES's title screens show, before the game boots.</summary>
+    internal bool ShowingTitles => _titles is { Done: false };
+
+    /// <summary>
+    /// A step of the title screens: a click, a right click or Escape moves on to the next, and a
+    /// tick passes. Mirrors the waits of <c>playNESTitleScreens</c>.
+    /// </summary>
+    private void StepTitles(NesTitles titles)
+    {
+        Time += StepLength;
+        _transition.Clear();
+        _display = null;
+        bool skip = _clicked || _clickAfterHover || _rightClicked || _key == KeyEscape;
+        (_clicked, _clickAfterHover, _rightClicked, _key) = (false, false, false, 0);
+        if (skip)
+        {
+            titles.Skip();
+        }
+        else
+        {
+            titles.Tick();
+        }
+
+        _frame = titles.Frame();
+        Sound.Update(Time);
+        Steps++;
+    }
 
     /// <summary>The script the DOS demos boot with, their demo mode. Mirrors <c>runBootscript</c>.</summary>
     internal const int DemoBootScript = 9;
@@ -339,6 +394,19 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// </summary>
     public void Step()
     {
+        // the NES's title screens show first; the step after them boots the game
+        if (_titles is { } titles)
+        {
+            if (!titles.Done)
+            {
+                StepTitles(titles);
+                return;
+            }
+
+            _titles = null;
+            RunBootScript();
+        }
+
         int oldEgo = Engine.Variables[ScriptEngine.VarEgo];
 
         // ScummEngine_v0::scummLoop: whether the last sound started still plays
@@ -443,6 +511,11 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     /// </summary>
     public Surface8 Screen()
     {
+        if (_titles is { Done: false } titles)
+        {
+            return _frame ?? titles.Frame();
+        }
+
         var screen = _frame ?? Draw();
 
         for (int y = 0; y < Verbs.Pixels.Height; y++)

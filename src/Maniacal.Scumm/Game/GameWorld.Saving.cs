@@ -77,6 +77,8 @@ public sealed partial class GameWorld
             throw new InvalidDataException("The save does not fit this release: it is damaged, or another release's.", ex);
         }
 
+        // a load ends the NES's title screens, as one at the start leaves them out
+        _titles = null;
         Restore(read.State);
         AfterLoad(read.State);
         return read.Info;
@@ -87,18 +89,29 @@ public sealed partial class GameWorld
     /// DOS (<c>ScummEngine_v3::scummLoop_handleSaveLoad</c>). A save made in the save room ends the
     /// save screen's script (<c>terminateSaveMenuScript</c>); a save made where the save screen could
     /// have been opened goes through the save room inside a cutscene, whose end brings the kid's room
-    /// back with the camera on the kid.
+    /// back with the camera on the kid. On the NES a save made elsewhere starts the kid's music
+    /// again instead, as its save screen's script would have: script 5, and the sound variable 224
+    /// names.
     /// </summary>
     private void AfterLoad(ScummState state)
     {
-        const int SaveMenuScript = 133, VarGameStarted = 164, VarSaveAllowed = 21;
+        const int SaveMenuScript = 133, VarGameStarted = 164, VarSaveAllowed = 21, NesMusicScript = 5, VarNesMusic = 224;
         if (Version == 0)
         {
             AfterLoadV0(state);
         }
+        else if (IsNes && CurrentRoom?.Number != SaveRoom)
+        {
+            Engine.RunScript(NesMusicScript);
+            if (Engine.Variables[VarNesMusic] != 0)
+            {
+                Sound.Start(Engine.Variables[VarNesMusic]);
+            }
+        }
         else if (CurrentRoom?.Number == SaveRoom)
         {
-            if (Version == 1)
+            // version 1's security doors, which the NES does not have
+            if (Version == 1 && !IsNes)
             {
                 foreach (int obj in new[] { ScriptEngine.SecurityDoorOutside, ScriptEngine.SecurityDoorInside })
                 {
@@ -108,7 +121,7 @@ public sealed partial class GameWorld
 
             // a game saved before it began starts again; then no script of the save is left to stop
             Engine.StopScript(SaveMenuScript);
-            bool restarted = Version == 2 && Engine.Variables[VarGameStarted] == 0;
+            bool restarted = (Version == 2 || IsNes) && Engine.Variables[VarGameStarted] == 0;
             if (restarted)
             {
                 Restart();
@@ -145,7 +158,7 @@ public sealed partial class GameWorld
     {
         Engine.ContinueAfterLoad(-1, 0);
         Restore(_initial);
-        Boot();
+        RunBootScript();
     }
 
     /// <summary>The world as a ScummVM save state. Mirrors the state <c>saveLoadWithSerializer</c> writes.</summary>
@@ -459,7 +472,7 @@ public sealed partial class GameWorld
                     {
                         // a save from outside the save room: the game starts over, then loads again
                         Engine.ContinueAfterLoad(-1, 0);
-                        Boot();
+                        RunBootScript();
                         Restore(state);
                         Engine.ContinueAfterLoad(state.CurrentScript == 0xFF ? -1 : state.CurrentScript, Engine.Slots[Math.Min(state.CurrentScript, ScummState.SlotCount - 1)].Offset);
                         return instruction.Result is { } result ? Engine.ReadVar(result) : 0;

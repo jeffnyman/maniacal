@@ -7,7 +7,9 @@ namespace Maniacal.Scumm.Tests;
 
 /// <summary>
 /// The NES's rooms drawn from its tiles, as ScummVM's GdiNES draws them, on its 256 by 240 screen.
-/// The tests with the cartridge pass without checking when its folder is absent.
+/// The game starts at its boot script, the title screens left out, so the steps count as ScummVM's
+/// frames were matched from it. The tests with the cartridge pass without checking when its
+/// folder is absent.
 /// </summary>
 public class NesDrawingTests
 {
@@ -63,7 +65,7 @@ public class NesDrawingTests
         }
 
         var world = new GameWorld(loader);
-        world.Boot();
+        world.BootWithoutTitles();
         for (int step = 0; step < 107; step++)
         {
             world.Step();
@@ -95,7 +97,7 @@ public class NesDrawingTests
         }
 
         var world = new GameWorld(loader);
-        world.Boot();
+        world.BootWithoutTitles();
         for (int step = 0; step < steps; step++)
         {
             world.Step();
@@ -115,7 +117,7 @@ public class NesDrawingTests
         }
 
         var world = new GameWorld(loader);
-        world.Boot();
+        world.BootWithoutTitles();
         world.MoveMouse(0, 0);
         for (int step = 0; step < 682; step++)
         {
@@ -193,7 +195,7 @@ public class NesDrawingTests
         }
 
         var world = new GameWorld(loader);
-        world.Boot();
+        world.BootWithoutTitles();
         for (int step = 0; step < 2000 && world.CurrentRoom?.Number != SelectionRoom; step++)
         {
             world.Step();

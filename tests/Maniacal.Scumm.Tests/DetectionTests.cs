@@ -89,18 +89,19 @@ public class DetectionTests
         Assert.True(game.IsDemo);
     }
 
-    /// <summary>Maniacal plays the English releases for the Commodore 64 and DOS and their demos, and refuses the rest by name.</summary>
+    /// <summary>Maniacal plays the English releases for the Commodore 64 and DOS and their demos, and the American NES cartridge, and refuses the rest by name.</summary>
     [Theory]
     [InlineData("b250d0f9cc83f80ced56fe11a4fb057c", "V2", null)]
     [InlineData("624cdb93654667c869d204a64af7e57f", "V2", null)]
     [InlineData("7f45ddd6dbfbf8f80c0c0efea4c295bc", "V1", null)]
     [InlineData("eea4d9ac2fb6f145945a308e8866915b", "C64", null)]
     [InlineData("183d7464902d40d00800e8ee1f04117c", "V2", "This is Maniac Mansion (V2, German, DOS), which Maniacal does not play: it plays only the English releases.")]
-    [InlineData("0c331637580950aea2346e012ef2a868", "V2", "This is Maniac Mansion (V2, English, Atari ST), which Maniacal does not play: it plays only the Commodore 64 and DOS releases.")]
-    [InlineData("91d5db93187fab54d823f73bd6441cb6", "NES", "This is Maniac Mansion (NES, English, NES), which Maniacal does not play: the NES release is not supported yet.")]
+    [InlineData("0c331637580950aea2346e012ef2a868", "V2", "This is Maniac Mansion (V2, English, Atari ST), which Maniacal does not play: it plays only the Commodore 64, DOS and NES releases.")]
+    [InlineData("91d5db93187fab54d823f73bd6441cb6", "NES", null)]
+    [InlineData("17f7296f63c78642724f057fd8e736a7", "NES", "This is Maniac Mansion (NES, English, NES), which Maniacal does not play: of the NES releases it plays only the American cartridge.")]
     [InlineData("40564ec47da48a67787d1f9bd043902a", "V2 Demo", null)]
     [InlineData("2cb46375dd5cdfd023e2f07e0a21b530", "C64 Demo", null)]
-    public void Plays_the_english_c64_and_dos_releases(string md5, string variant, string? refusal)
+    public void Plays_the_english_c64_dos_and_nes_releases(string md5, string variant, string? refusal)
     {
         var entry = ScummMd5Table.Find(md5)!;
         var game = new ScummGame(entry, variant, variant.StartsWith("V2", StringComparison.Ordinal) ? 2 : variant.StartsWith("C64", StringComparison.Ordinal) ? 0 : 1, variant.EndsWith("Demo", StringComparison.Ordinal));

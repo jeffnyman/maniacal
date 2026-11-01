@@ -9,8 +9,8 @@ namespace Maniacal.Scumm.Tests;
 
 /// <summary>
 /// The NES's interface: its verbs, sentence line, inventory and cursor in its verb area, played
-/// by clicks as a player plays it. The tests pass without checking when the cartridge's folder is
-/// absent.
+/// by clicks as a player plays it, the game started at its boot script, the title screens left
+/// out. The tests pass without checking when the cartridge's folder is absent.
 /// </summary>
 public class NesInterfaceTests
 {
@@ -28,7 +28,7 @@ public class NesInterfaceTests
         }
 
         var world = new GameWorld(new ResourceLoader(rom, ResourceIndex.Parse(LflFile.Read(rom, 0))));
-        world.Boot();
+        world.BootWithoutTitles();
         Steps(world, 600);
         foreach (int obj in new[] { 261, 263, 403 })
         {

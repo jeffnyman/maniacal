@@ -102,6 +102,117 @@ public class NesSaveTests
     }
 
     /// <summary>
+    /// A load made outside the save room starts the kid's song again (script 5, and the sound
+    /// variable 224 names), as ScummVM does on the NES, its save screen's script having done so.
+    /// </summary>
+    [Fact]
+    public void A_load_starts_the_song_again()
+    {
+        if (WalkthroughTests.Start(WalkthroughTests.Nes) is not { } p || Fresh() is not { } loaded)
+        {
+            return;
+        }
+
+        int song = p.World.Engine.Variables[VarNesMusic];
+        Assert.NotEqual(0, song);
+        Assert.True(p.World.Sound.IsRunning(song));
+
+        loaded.Load(p.World.Save("driveway", DateTime.Now));
+        loaded.Step();
+
+        Assert.True(loaded.Sound.IsRunning(song));
+    }
+
+    private const int VarNesMusic = 224;
+
+    /// <summary>
+    /// The NES's own save screen (script 163, on Space or F5): its Save, and the save is in the
+    /// store, the game going on where it was; in a fresh game, its Load, and the kid stands where he
+    /// was when it was saved. Its buttons are objects of the save room, chosen as the mouse passes.
+    /// </summary>
+    [Fact]
+    public void The_save_screen_saves_and_loads()
+    {
+        if (WalkthroughTests.Start(WalkthroughTests.Nes) is not { } p)
+        {
+            return;
+        }
+
+        var store = new MemorySaveStore();
+        var world = p.World;
+        world.SaveStore = store;
+        world.Click(150, 120);
+        p.Steps(60);
+        int x = world.Actors[Dave].X;
+
+        UseSaveScreen(world, ' ', SaveButton);
+        Assert.Equal(["maniac.s01"], store.List("maniac."));
+        Assert.Equal(WalkthroughTests.Driveway, world.CurrentRoom?.Number);
+        Assert.Equal(x, world.Actors[Dave].X);
+
+        var fresh = WalkthroughTests.Start(WalkthroughTests.Nes)!.World;
+        fresh.SaveStore = store;
+        Assert.NotEqual(x, fresh.Actors[Dave].X);
+
+        UseSaveScreen(fresh, GameWorld.KeyF1 + 4, LoadButton);
+        Assert.Equal(WalkthroughTests.Driveway, fresh.CurrentRoom?.Number);
+        Assert.Equal(x, fresh.Actors[Dave].X);
+    }
+
+    /// <summary>
+    /// The save screen left before the game has begun (variable 164 still 0, in the intro) starts
+    /// the game over from its boot script (<c>terminateSaveMenuScript</c>'s restart).
+    /// </summary>
+    [Fact]
+    public void The_save_screen_left_in_the_intro_starts_the_game_over()
+    {
+        if (Fresh() is not { } world)
+        {
+            return;
+        }
+
+        world.BootWithoutTitles();
+        Steps(world, 120);
+        Assert.Equal(TitleRoom, world.CurrentRoom?.Number);
+        Assert.DoesNotContain(world.ActorsHere(), a => a.Number == Meteor && a.Visible);
+        var played = world.Time;
+
+        world.PressKey(' ');
+        Steps(world, 30);
+        Assert.Equal(GameWorld.SaveRoom, world.CurrentRoom?.Number);
+        Assert.False(world.ObjectsHere().First(o => o.Number == SaveButton).Touchable);
+        Assert.True(world.ClickObject(ResumeButton));
+        Steps(world, 60);
+
+        // the meteor, landed before, flies in again from the top of the sky
+        Assert.Equal(TitleRoom, world.CurrentRoom?.Number);
+        Assert.False(world.ShowingTitles);
+        Assert.True(world.Time > played);
+        Assert.Contains(world.ActorsHere(), a => a.Number == Meteor && a.Visible && a.X >= 40 && a.Y < 20);
+    }
+
+    // Dave, and the save screen's buttons (script 163)
+    private const int Dave = 3, Meteor = 22, SaveButton = 541, LoadButton = 542, ResumeButton = 543;
+
+    // a key that brings the save screen up, then one of its buttons
+    private static void UseSaveScreen(GameWorld world, int key, int button)
+    {
+        world.PressKey(key);
+        Steps(world, 30);
+        Assert.Equal(GameWorld.SaveRoom, world.CurrentRoom?.Number);
+        Assert.True(world.ClickObject(button));
+        Steps(world, 90);
+    }
+
+    private static void Steps(GameWorld world, int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            world.Step();
+        }
+    }
+
+    /// <summary>
     /// A load takes the costume set from the save, whichever the world had: a save made in the
     /// intro, in the other set, loaded into a game in the driveway draws the intro's figures.
     /// </summary>
@@ -113,7 +224,7 @@ public class NesSaveTests
             return;
         }
 
-        intro.Boot();
+        intro.BootWithoutTitles();
         for (int step = 0; step < 200 && intro.CurrentRoom?.Number != TitleRoom; step++)
         {
             intro.Step();

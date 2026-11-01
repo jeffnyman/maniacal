@@ -217,6 +217,17 @@ internal sealed class NesRom : IGameContainer
     }
 
     /// <summary>
+    /// A resource's bytes as the cartridge holds them, from its place on: to the program data's
+    /// end, for the title screens, which are read until they are whole (<c>decodeTitleScreen</c>),
+    /// or its length alone (<c>readTitle2SparkleChr</c>, <c>readTitle2SparklePalette</c>).
+    /// </summary>
+    internal ReadOnlyMemory<byte> Raw(NesResourceKind kind, int index, bool toEnd = false)
+    {
+        var (offset, length) = NesTables.Group(kind)[RomSet][index];
+        return toEnd ? _rom.AsMemory(offset) : _rom.AsMemory(offset, length);
+    }
+
+    /// <summary>
     /// Writes one resource as the DOS files hold it, led by its length word, and returns how many
     /// bytes that is (with no output, only counts them). A resource's place and length come from
     /// the ROM set's tables; the cartridge's own lengths are checked against them. Mirrors

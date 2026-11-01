@@ -133,18 +133,23 @@ public class NesRomTests
         Assert.Equal(79, Enumerable.Range(0, 80).Count(i => loader.IsReadable(ResourceType.Costume, i)));
     }
 
-    /// <summary>The cartridge is named and refused until Maniacal plays it.</summary>
+    /// <summary>The cartridge, a .prg or a .nes under any name, opens as the NES release, its index read from the cartridge.</summary>
     [Fact]
-    public void Refuses_the_cartridge_for_now()
+    public void Opens_the_cartridge()
     {
         if (Program() is not { } program)
         {
             return;
         }
 
-        var error = Assert.Throws<NotSupportedException>(() => ResourceLoader.Open(new MemoryGameContainer("nes").Add("mm.prg", program)));
+        foreach (var container in new[] { new MemoryGameContainer("nes").Add("mm.prg", program), new MemoryGameContainer("nes").Add("Maniac Mansion (U).nes", Ines(program)) })
+        {
+            var loader = ResourceLoader.Open(container);
 
-        Assert.Equal("This is Maniac Mansion (NES, English, NES), which Maniacal does not play: the NES release is not supported yet.", error.Message);
+            Assert.True(loader.Index.IsNes);
+            Assert.Equal(1, loader.Index.Version);
+            Assert.IsType<NesRom>(loader.Game);
+        }
     }
 
     /// <summary>A .prg or .nes that is no cartridge ScummVM knows is not taken for one.</summary>

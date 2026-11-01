@@ -17,7 +17,7 @@ namespace Maniacal.Scumm;
 /// <see cref="InputEventType.MouseDown"/> of the left button (a click) and the right (a right
 /// click, which skips a cutscene), <see cref="InputEventType.KeyDown"/> (Escape, Enter, Backspace,
 /// F1 to F9 and the characters), and <see cref="InputEventType.Quit"/>; the others it passes over.
-/// Mouse positions are on the 320x200 screen it sets with <c>SetMode</c>.
+/// Mouse positions are on the screen it sets with <c>SetMode</c>: 320x200, or the NES's 256x240.
 /// </para>
 /// <para>
 /// It calls the host's drivers only from the thread that calls <see cref="Initialize"/>,

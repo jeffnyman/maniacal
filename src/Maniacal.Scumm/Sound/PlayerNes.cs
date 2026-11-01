@@ -1,3 +1,5 @@
+using Maniacal.Scumm.Graphics;
+
 namespace Maniacal.Scumm.Sound;
 
 /// <summary>
@@ -114,6 +116,48 @@ internal sealed class PlayerNes : MusicPlayer
         }
     }
 
+    /// <summary>
+    /// The twinkle of one of the second title screen's sparkles, 0 to 7: four steps, each a square
+    /// channel's register writes and the frames they last, played in slot 0 as an effect; when it
+    /// ends the channels are left as they are. Mirrors <c>startTitleTwinkleGroup</c>.
+    /// </summary>
+    public void StartTitleTwinkle(int sparkle)
+    {
+        const int Steps = 4, StepBytes = 6, Wait = 0x10, End = 0xFF;
+        var twinkle = new List<byte>(Steps * (StepBytes + 1) + 1);
+        for (int step = 0; step < Steps; step++)
+        {
+            int at = (sparkle * Steps + step) * StepBytes;
+            for (int i = 0; i < 5; i++)
+            {
+                twinkle.Add(NesTitleTables.Twinkles[at + i]);
+            }
+
+            twinkle.Add(Wait);
+            twinkle.Add(NesTitleTables.Twinkles[at + 5]);
+        }
+
+        twinkle.Add(End);
+        lock (_sync)
+        {
+            _titleTwinkle = true;
+            var slot = _slots[0];
+            slot.Type = TitleTwinkleType;
+            slot.Id = TitleTwinkleId;
+            slot.Data = [.. twinkle];
+            slot.Base = 0;
+            slot.Offset = 0;
+            slot.FramesLeft = 1;
+            CheckSilenceChannels(0);
+            _sfxPlaying = true;
+        }
+    }
+
+    // the twinkle's slot: its priority and the id no sound has (startTitleTwinkleGroup), and
+    // whether it plays (_title2SfxActive)
+    private const int TitleTwinkleType = 10, TitleTwinkleId = -2;
+    private bool _titleTwinkle;
+
     /// <summary>Mirrors <c>stopSound</c>.</summary>
     public override void StopSound(int number)
     {
@@ -145,6 +189,7 @@ internal sealed class PlayerNes : MusicPlayer
     {
         lock (_sync)
         {
+            _titleTwinkle = false;
             foreach (var slot in _slots)
             {
                 slot.FramesLeft = 0;
@@ -231,6 +276,7 @@ internal sealed class PlayerNes : MusicPlayer
     private void PlayEffect(int number)
     {
         var slot = _slots[number];
+        bool twinkle = number == 0 && slot.Id == TitleTwinkleId && _titleTwinkle;
         if (--slot.FramesLeft != 0)
         {
             return;
@@ -258,11 +304,22 @@ internal sealed class PlayerNes : MusicPlayer
                 slot.Id = -1;
                 slot.Type = 0;
                 _sfxPlaying = false;
-                WriteControl(0);
+
+                // a title twinkle leaves the channels sounding as they are
+                if (!twinkle)
+                {
+                    WriteControl(0);
+                }
+
                 if (number == 0 && _slots[1].FramesLeft != 0)
                 {
                     _slots[1].FramesLeft = 1;
                     _sfxPlaying = true;
+                }
+
+                if (twinkle)
+                {
+                    _titleTwinkle = false;
                 }
 
                 return;

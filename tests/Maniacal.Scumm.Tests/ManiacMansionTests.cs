@@ -10,6 +10,7 @@ public class ManiacMansionTests
     [InlineData(WalkthroughTests.V1Demo, "Maniac Mansion (V1 Demo, English, DOS)", 1, true)]
     [InlineData(WalkthroughTests.V2Demo, "Maniac Mansion (V2 Demo, English, DOS)", 2, true)]
     [InlineData(WalkthroughTests.C64Demo, "Maniac Mansion (C64 Demo, English, Commodore 64)", 0, true)]
+    [InlineData(WalkthroughTests.Nes, "Maniac Mansion (NES, English, NES)", 1, false)]
     public void A_folder_opens_as_its_release(string folder, string description, int version, bool demo)
     {
         if (GameFolders.Find(folder) is not { } path)
@@ -46,6 +47,33 @@ public class ManiacMansionTests
         Assert.Equal(53, game.Inspect().Rooms.Count);
     }
 
+    /// <summary>
+    /// The NES release opened at the front door plays: its title screens first, on its 256 by 240
+    /// screen in its 64 colours, then its boot script, to the kid selection.
+    /// </summary>
+    [Fact]
+    public void The_nes_release_plays()
+    {
+        if (GameFolders.Find(WalkthroughTests.Nes) is not { } path)
+        {
+            return;
+        }
+
+        var world = ManiacMansion.Open(path).Play();
+        world.Boot();
+        world.Step();
+
+        Assert.Equal((256, 240), (world.Screen().Width, world.Screen().Height));
+        Assert.Equal(Graphics.Palettes.Nes.ToArray(), world.Palette.ToArray());
+        Assert.Null(world.CurrentRoom);
+        for (int i = 0; i < 3000 && world.CurrentRoom?.Number != 45; i++)
+        {
+            world.Step();
+        }
+
+        Assert.Equal(45, world.CurrentRoom?.Number);
+    }
+
     /// <summary>The palette can be kept and used later, in a lambda, where a span could not be.</summary>
     [Theory]
     [InlineData(WalkthroughTests.V2, 16)]
@@ -78,6 +106,8 @@ public class ManiacMansionTests
     [InlineData(WalkthroughTests.V1, WalkthroughTests.V2, "This save was made with Maniac Mansion (V1, English, DOS), not this release, Maniac Mansion (V2, English, DOS)")]
     [InlineData(WalkthroughTests.C64, WalkthroughTests.V2, "This save was made with Maniac Mansion (C64, English, Commodore 64), not this release, Maniac Mansion (V2, English, DOS)")]
     [InlineData(WalkthroughTests.V2, WalkthroughTests.C64, "This save was made with Maniac Mansion (V2, English, DOS), not this release, Maniac Mansion (C64, English, Commodore 64)")]
+    [InlineData(WalkthroughTests.Nes, WalkthroughTests.V1, "This save was made with Maniac Mansion (NES, English, NES), not this release, Maniac Mansion (V1, English, DOS)")]
+    [InlineData(WalkthroughTests.V1, WalkthroughTests.Nes, "This save was made with Maniac Mansion (V1, English, DOS), not this release, Maniac Mansion (NES, English, NES)")]
     public void A_save_from_another_release_is_refused(string from, string into, string message)
     {
         if (GameFolders.Find(from) is not { } fromPath || GameFolders.Find(into) is not { } intoPath)

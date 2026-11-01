@@ -47,10 +47,11 @@ walkthrough tests make along their routes: the same three scenes in each release
 
 ## Status
 
-All three releases play from the title screen to "You won the game!". The walkthrough tests win
+All four releases play from the title screen to "You won the game!". The walkthrough tests win
 the game every way it can be won (Syd's recording contract, Bernard's call to the Meteor Police,
-Wendy's memoirs and Michael's photographs) in each release, and the saves they make along the way,
-loaded in ScummVM 2.7.0, show the same screen but for the cursor and the DOS sentence line. The
+Wendy's memoirs and Michael's photographs) in the C64 and DOS releases, and Syd's way on the NES,
+and the saves they make along the way, loaded in ScummVM, show the same screen but for the cursor
+and what the mouse is over there. The
 packages are an alpha: the engine works, but its public API is still to be settled before a 1.0.
 
 | Release | SCUMM version | Data | State |
@@ -61,10 +62,10 @@ packages are an alpha: the engine works, but its public API is still to be settl
 | DOS demo (1987) | 1 | `00.MAN` to `49.MAN`, the full release's rooms renamed | Plays its demo through |
 | DOS demo (1988) | 2 | `00.LFL` to `53.LFL`, rooms of the 1988 release | Plays its demo through |
 | Commodore 64 demo (1987) | 0 | `maniacdemo.d64`, one disk image | Its menu, the self-running demo and the hands-on one |
-| NES (1990) | 1 (NES dialect) | The cartridge, a `.nes` dump or its `.prg` | Being ported: winnable, with its sound and saves; not opened yet |
+| NES (1990) | 1 (NES dialect) | The American cartridge, a `.nes` dump or its `.prg` | Winnable, with its title screens, sound and saves |
 
-These are the English releases, and only they are played: a release in another language or for
-another platform is named and refused (`maniacal: this is Maniac Mansion (V2, German, DOS), which
+These are the English releases, and only they are played (of the NES's, the American cartridge,
+the one tested): a release in another language or for another platform is named and refused (`maniacal: this is Maniac Mansion (V2, German, DOS), which
 Maniacal does not play: it plays only the English releases.`), by the tool and by the library
 alike. The DOS demos run themselves, as they were made to, from the title through the mansion to
 the Edisons' lab; the C64's opens on a menu of a self-running demo and a hands-on one, and F7
@@ -82,10 +83,10 @@ What works, in every release:
 - **The interface.** Kid selection, the verbs, the sentence line and the inventory, with the mouse
   and the keys.
 - **Sound.** The DOS music and effects as the PCjr made them, or as the PC speaker did with
-  `--speaker`; the C64's through an emulated SID.
+  `--speaker`; the C64's through an emulated SID; the NES's through its emulated sound chip.
 - **Saves.** ScummVM's own files (`maniac.s01` for Game A, and so on), so saves move between
-  Maniacal and ScummVM 2.7 or later. F5 opens the game's save screen; `--load` loads one through the
-  game's save room, as ScummVM's launcher does.
+  Maniacal and ScummVM 2.7 or later. F5 opens the game's save screen (on the NES, Space too);
+  `--load` loads one through the game's save room, as ScummVM's launcher does.
 - **Copy protection.** Bypassed, as in ScummVM: the steel security door stays open, so its code
   from the manual is never needed. `--copy-protection` keeps it.
 
@@ -95,9 +96,12 @@ What works, in every release:
 for the PC speaker's sound and `--copy-protection` change how. A verb is clicked, then an object;
 clicking the object again, or clicking the sentence line, carries the sentence out, as in the
 original. The right button, Escape or F4 skip a cutscene, the period key skips a line of speech,
-and F5 opens the game's save screen. Saves go in a `Maniacal/saves` folder under the user's
-application data (`%APPDATA%` on Windows, `~/.config` on Linux and macOS), in a folder for each
-release, `maniac/c64`, `maniac/v1` and `maniac/v2`: the releases' saves do not fit one another,
+and F5 opens the game's save screen. The NES plays as it did: its two title screens first (a
+click or Escape skips each), a click on an object carries the sentence out at once, Shift-B also
+skips a cutscene, and Space or F5 opens its own save screen. Saves go in a `Maniacal/saves` folder
+under the user's application data (`%APPDATA%` on Windows, `~/.config` on Linux and macOS), in a
+folder for each release, `maniac/c64`, `maniac/v1`, `maniac/v2` and `maniac/nes`: the releases'
+saves do not fit one another,
 and their files have ScummVM's names (`maniac.s01` and so on), so each release keeps its own.
 Saves made with 0.1.0-alpha or 0.2.0-alpha are in `maniac` itself; a save does not say which
 release made it, so move them by hand into the release's folder. `maniacal --help` lists
@@ -110,8 +114,8 @@ The player also has tools for looking inside the game:
 | Option | What it does |
 |---|---|
 | `--room N` | Writes a room as a PNG, with its objects as the game starts, and lists them. |
-| `--view N` | Writes the 320×200 screen, with the camera and standing actors. |
-| `--costume N` | Writes a sheet of a costume's figures. |
+| `--view N` | Writes the screen (320×200, the NES's 256×240), with the camera and standing actors. |
+| `--costume N` | Writes a sheet of a costume's figures (not yet the NES's, drawn from its costume sets). |
 | `--font`, `--text "words"` | Writes the built-in font, or words in it. |
 | `--script N`, `--room-scripts N` | Disassembles a script, or a room's scripts. |
 | `--run [steps]` | Plays headless, with clicks and keys at chosen steps (`--click step:x,y`, `--key step:key`), saves loaded or written (`--load`, `--save`, `--saves`), and a `--screenshot` or `--wav` at the end. |
@@ -123,8 +127,8 @@ data could not be read, a headless run stopped on an error, or the window could 
 
 ### Not yet
 
-The NES release, which is being ported (see [ROADMAP.md](ROADMAP.md)); the other languages; the
-Amiga and Atari ST releases.
+The other languages, the European NES cartridge, and the Amiga and Atari ST releases; the NES's
+costumes in the inspector.
 [ROADMAP.md](ROADMAP.md) gives the order of work, done and to come.
 
 ## Layout
