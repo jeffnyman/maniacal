@@ -1,3 +1,7 @@
+using Maniacal.Scumm.Game;
+using Maniacal.Scumm.Resources;
+using Maniacal.Scumm.Storage;
+
 namespace Maniacal.Scumm.Tests;
 
 /// <summary>
@@ -36,11 +40,55 @@ public class WalkthroughTests
     internal static Player? Start(string folder, string second = "Syd", string? third = null)
     {
         third ??= folder == C64 ? "Razor" : "Bernard";
-        var world = folder == C64
-            ? GameWorldTests.AfterTheC64Intro(Portrait(second), Portrait(third))
-            : PlayingTests.SelectedKids(folder, Portrait(second), Portrait(third));
+        var world = folder switch
+        {
+            C64 => GameWorldTests.AfterTheC64Intro(Portrait(second), Portrait(third)),
+            Nes => NesSelectedKids(second, third),
+            _ => PlayingTests.SelectedKids(folder, Portrait(second), Portrait(third)),
+        };
         return world is null ? null : new Player(world) { Kids = ["Dave", second, third] };
     }
+
+    /// <summary>The NES release's kids picked, by their portraits' objects, and the game started in the driveway.</summary>
+    private static GameWorld? NesSelectedKids(string second, string third)
+    {
+        if (GameFolders.Find(Nes) is not { } path || NesRom.Open(new DirectoryGameContainer(path)) is not { } rom)
+        {
+            return null;
+        }
+
+        var world = new GameWorld(new ResourceLoader(rom, ResourceIndex.Parse(LflFile.Read(rom, 0))));
+        world.Boot();
+        for (int step = 0; step < 2000 && world.CurrentRoom?.Number != NesSelection; step++)
+        {
+            world.Step();
+        }
+
+        foreach (int obj in new[] { NesPortraits[second], NesPortraits[third], NesStart })
+        {
+            for (int step = 0; step < 100; step++)
+            {
+                world.Step();
+            }
+
+            world.ClickObject(obj);
+        }
+
+        for (int step = 0; step < 3000 && !(world.CurrentRoom?.Number == Driveway && world.CursorShown); step++)
+        {
+            world.Step();
+        }
+
+        return world;
+    }
+
+    // the NES's kid selection, its portraits' objects and its start
+    private const int NesSelection = 45, NesStart = 403;
+
+    private static readonly Dictionary<string, int> NesPortraits = new()
+    {
+        ["Razor"] = 261, ["Bernard"] = 263, ["Syd"] = 260, ["Wendy"] = 264, ["Jeff"] = 265, ["Michael"] = 262,
+    };
 
     // a kid's portrait on the selection screen, counted from the left
     private static int Portrait(string kid) => Array.IndexOf(["Dave", "Syd", "Michael", "Wendy", "Bernard", "Razor", "Jeff"], kid) + 1;
@@ -48,7 +96,7 @@ public class WalkthroughTests
     /// <summary>
     /// Where a section ends, the game is saved into the folder <c>MANIACAL_CHECKPOINTS</c> names, if
     /// any, as ScummVM's slot file for the release's target (<c>maniac64</c>, <c>maniac1</c>,
-    /// <c>maniac2</c>), for loading in ScummVM to compare.
+    /// <c>maniac2</c>, <c>maniacnes</c>), for loading in ScummVM to compare.
     /// </summary>
     internal static void Checkpoint(Player p, string folder, int slot)
     {
@@ -57,7 +105,7 @@ public class WalkthroughTests
             return;
         }
 
-        string target = folder switch { C64 => "maniac64", V1 => "maniac1", _ => "maniac2" };
+        string target = folder switch { C64 => "maniac64", V1 => "maniac1", Nes => "maniacnes", _ => "maniac2" };
         File.WriteAllBytes(Path.Combine(checkpoints, $"{target}.s{slot:D2}"), p.World.Save($"Walkthrough {slot}", DateTime.Now));
     }
 
@@ -207,13 +255,7 @@ public class WalkthroughTests
         p.Go("door");
         Assert.Equal(Landing, p.Room);
 
-        // the steel security door is open already, and Open would ask for its code
-        if (p.World.Version == 0)
-        {
-            p.Do("Open", MiddleDoor(p));
-        }
-
-        p.Go(MiddleDoor(p));
+        ThroughTheMiddleDoor(p);
         Assert.Equal(Hallway, p.Room);
         p.Go("stairs");
         Assert.Equal(TentacleLanding, p.Room);
@@ -237,6 +279,26 @@ public class WalkthroughTests
     // open, and whose far side only version 2 names so)
     internal static string MiddleDoor(Player p) => p.World.Version == 0 ? "door[2]" : "steel security door";
 
+    /// <summary>
+    /// Through the landing's middle door to the hallway, or back: the C64's and the NES's shut
+    /// behind a kid and are opened (DOS's steel security door is open already, and Open would ask
+    /// for its code).
+    /// </summary>
+    internal static void ThroughTheMiddleDoor(Player p, bool back = false)
+    {
+        string door = back ? (NamesTheFarSide(p) ? "steel security door" : "door[1]") : MiddleDoor(p);
+        if ((p.World.Version == 0 || p.World.IsNes) && !p.IsOpen(door))
+        {
+            p.Do("Open", door);
+        }
+
+        p.Go(door);
+    }
+
+    // whether the middle door's far side, in the hallway, is named the steel security door: in
+    // version 2 and on the NES
+    private static bool NamesTheFarSide(Player p) => p.World.Version == 2 || p.World.IsNes;
+
     private static string MusicRoomDoor(Player p) => p.World.Version == 0 ? "door[3]" : "door[2]";
 
     /// <summary>
@@ -255,7 +317,7 @@ public class WalkthroughTests
         Assert.Equal(TentacleLanding, p.Room);
         p.Go("stairs[2]");
         Assert.Equal(Hallway, p.Room);
-        p.Go(p.World.Version == 2 ? "steel security door" : "door[1]");
+        ThroughTheMiddleDoor(p, back: true);
         Assert.Equal(Landing, p.Room);
         p.Go(MusicRoomDoor(p));
         Assert.Equal(MusicRoom, p.Room);
@@ -298,7 +360,7 @@ public class WalkthroughTests
         p.NewKid(Second(p));
         p.Go("door");
         Assert.Equal(Landing, p.Room);
-        p.Go(MiddleDoor(p));
+        ThroughTheMiddleDoor(p);
         Assert.Equal(Hallway, p.Room);
         p.Go("stairs");
         Assert.Equal(TentacleLanding, p.Room);
@@ -313,8 +375,8 @@ public class WalkthroughTests
         p.Do("Open", "door[5]");
         p.Go("door[5]");
         Assert.Equal(PlantRoom, p.Room);
-        p.Do("Use", "jar of water", "Man-eating plant", until: () => !p.Carries("jar of water"));
-        p.Do("Use", "can of Pepsi", "Man-eating plant", until: () => !p.Carries("can of Pepsi"));
+        p.Do("Use", "jar of water", ThePlant(p), until: () => !p.Carries("jar of water"));
+        p.Do("Use", "can of Pepsi", ThePlant(p), until: () => !p.Carries("can of Pepsi"));
         p.Do("Use", "paint remover", "paint blotch", until: () => !p.Carries("paint remover"));
 
         // the plant, grown and fed, can be climbed to the telescope room: on the C64 the plant's
@@ -324,6 +386,9 @@ public class WalkthroughTests
         p.Go("hole");
         Assert.Equal(PlantRoom, p.Room);
     }
+
+    // the man-eating plant, as the NES names it shorter
+    private static string ThePlant(Player p) => p.World.IsNes ? "Plant" : "Man-eating plant";
 
     /// <summary>
     /// Ed's package: the doorbell's five minutes run from the first climb to the top floor, and it
@@ -363,7 +428,7 @@ public class WalkthroughTests
         Assert.Equal(Hall, p.Room);
         p.Go("stairs");
         Assert.Equal(Landing, p.Room);
-        p.Go(MiddleDoor(p));
+        ThroughTheMiddleDoor(p);
         Assert.Equal(Hallway, p.Room);
         p.Go("stairs");
         Assert.Equal(TentacleLanding, p.Room);
@@ -480,8 +545,11 @@ public class WalkthroughTests
         p.NewKid(Second(p));
         Assert.Equal(EdnasAttic, p.Room);
         p.Keypad("Open", "wall safe", Code(p, dos: 55, c64: 36));
-        p.Do("Pick up", "sealed envelope", until: () => p.Carries("sealed envelope"));
+        p.Do("Pick up", SealedEnvelope(p), until: () => p.Carries(SealedEnvelope(p)));
     }
+
+    // the sealed envelope, as the NES names it shorter
+    private static string SealedEnvelope(Player p) => p.World.IsNes ? "envelope" : "sealed envelope";
 
     // a code the game chose, as the player read it: four digits from a variable on (another on the C64)
     internal static string Code(Player p, int dos, int c64)
@@ -514,7 +582,7 @@ public class WalkthroughTests
         p.Go("door[1]");
         Assert.Equal(Kitchen, p.Room);
         p.Do("Open", "microwave oven");
-        p.Do("Use", "sealed envelope", "microwave oven", until: () => !p.Carries("sealed envelope"));
+        p.Do("Use", SealedEnvelope(p), "microwave oven", until: () => !p.Carries(SealedEnvelope(p)));
         p.Do("Turn on", "faucet");
         p.Do("Use", "glass jar", "faucet", until: () => p.Carries("jar of water"));
         p.Do("Turn off", "faucet");
@@ -655,7 +723,8 @@ public class WalkthroughTests
 
         p.NewKid(Second(p));
         p.Do("Turn on", "flashlight");
-        p.Do("Use", "tools", "wires[1]", until: () => p.Heard("that should do it"));
+        // the NES says so after the sound of the work, as Dr. Fred's alarm breaks in: the wires show it
+        p.Do("Use", "tools", "wires[1]", until: () => p.Heard("that should do it") || (p.World.IsNes && p.IsOpen("wires[1]")));
 
         p.NewKid("Dave");
         p.Hurried = true;
@@ -689,7 +758,7 @@ public class WalkthroughTests
     }
 
     // the arcade's door, the hallway's second but where the middle door's far side is a plain door
-    private static string ArcadeDoor(Player p) => p.World.Version == 2 ? "door[2]" : "door[3]";
+    private static string ArcadeDoor(Player p) => NamesTheFarSide(p) ? "door[2]" : "door[3]";
 
     /// <summary>
     /// The lab's doors: Syd goes up from the arcade into Edna's room to be caught and taken to the
@@ -767,7 +836,7 @@ public class WalkthroughTests
 
         p.Go("door");
         Assert.Equal(Landing, p.Room);
-        p.Go(MiddleDoor(p));
+        ThroughTheMiddleDoor(p);
         Assert.Equal(Hallway, p.Room);
         p.Go("stairs");
         Assert.Equal(TentacleLanding, p.Room);
@@ -846,7 +915,8 @@ public class WalkthroughTests
         p.Go("door[2]");
         Assert.Equal(MeteorsRoom, p.Room);
         p.Do("Turn off", "switch");
-        p.Do("Pick up", "meteor", until: () => p.Carries("meteor"));
+        // the NES's Meteor stands by its object as an actor of the same name
+        p.Do("Pick up", "meteor[1]", until: () => p.Carries("meteor"));
         p.Do("Open", "door[2]", until: () => p.IsOpen("door[2]"));
         p.Go("door[2]");
         Assert.Equal(Garage, p.Room);
@@ -891,7 +961,7 @@ public class WalkthroughTests
         Assert.Equal(TentacleLanding, p.Room);
         p.Go("stairs[2]");
         Assert.Equal(Hallway, p.Room);
-        p.Go(p.World.Version == 2 ? "steel security door" : "door[1]");
+        ThroughTheMiddleDoor(p, back: true);
         Assert.Equal(Landing, p.Room);
         p.Go("stairs");
         Assert.Equal(Hall, p.Room);
@@ -902,7 +972,7 @@ public class WalkthroughTests
     {
         p.Go("stairs");
         Assert.Equal(Landing, p.Room);
-        p.Go(MiddleDoor(p));
+        ThroughTheMiddleDoor(p);
         Assert.Equal(Hallway, p.Room);
         p.Go("stairs");
         Assert.Equal(TentacleLanding, p.Room);
@@ -950,7 +1020,7 @@ public class WalkthroughTests
         Assert.True(p.Until(() => p.Room == EdnasAtticCloseUp), "the telescope never showed the safe");
         Save(37);
         TheSafe(p);
-        Assert.True(p.Carries("sealed envelope", Second(p)));
+        Assert.True(p.Carries(SealedEnvelope(p), Second(p)));
         Save(38);
         TheQuarter(p);
         Assert.True(p.Carries("quarter", Second(p)));
@@ -978,12 +1048,14 @@ public class WalkthroughTests
     /// cutscene of Dr. Fred and Sandy in the lab a minute in, Nurse Edna's leaving the kitchen, the
     /// doorbell, Dr. Fred's alarm and his game in the arcade, the mail. Each save loaded in ScummVM
     /// 2.7.0 shows the same screen there, but for the cursor and the DOS sentence line, which
-    /// ScummVM 2.7.0 leaves blank after a load.
+    /// ScummVM 2.7.0 leaves blank after a load; the NES's in ScummVM 2026.4.0, but for the cursor
+    /// and what follows the mouse there (the sentence line, the flashlight's beam).
     /// </summary>
     [Theory]
     [InlineData(C64)]
     [InlineData(V1)]
     [InlineData(V2)]
+    [InlineData(Nes)]
     public void The_route_plays(string folder)
     {
         if (Start(folder) is not { } p)

@@ -10,8 +10,10 @@ namespace Maniacal.Scumm.Tests;
 /// <c>Do("Unlock", "front door", "key")</c>. Every action is a click: the verb, then the object in
 /// the room, the inventory or an actor (the kid walking along while it is off screen), then the
 /// second object, and the last one again to carry the sentence out. Where a room has several
-/// objects of a name, <c>"door[2]"</c> is the second from the left. Before each action the player
-/// waits out any cutscene, as a player does.
+/// objects of a name, <c>"door[2]"</c> is the second from the left, and a numbered name means the
+/// room's object even where an actor shares it. Before each action the player waits out any
+/// cutscene, as a player does. On the NES the walkthrough's verbs are its own (Pick up is Get, Walk
+/// to is Go To, Unlock a key used with the door).
 /// </summary>
 internal sealed class Player(GameWorld world)
 {
@@ -32,7 +34,18 @@ internal sealed class Player(GameWorld world)
 
     private int ActiveVerb => world.Version == 0 ? world.ActiveVerb : world.Engine.Variables[GameWorld.VarSentenceVerb];
 
-    private ScreenLayout Layout => ScreenLayout.ForVersion(world.Version);
+    private ScreenLayout Layout => world.Layout;
+
+    // the room's left on screen: the NES shows its narrow rooms 16 pixels in
+    private int ScreenLeft => world.RoomScreenLeft - world.Camera.Left;
+
+    // the NES's verbs for the walkthrough's: it gets things and goes to them
+    private string Translated(string verb) => !world.IsNes ? verb : verb.ToUpperInvariant() switch
+    {
+        "PICK UP" => "Get",
+        "WALK TO" => "Go To",
+        _ => verb,
+    };
 
     // version 0's kid walks until he stands (0 is walking on there)
     private bool KidWalking => world.Version == 0 ? Kid.Moving != ActorV0.Standing : Kid.Moving != 0;
@@ -170,7 +183,7 @@ internal sealed class Player(GameWorld world)
     /// <summary>Clicks a verb by its name, as shown.</summary>
     public void Verb(string name)
     {
-        var slot = Slot(name);
+        var slot = Slot(Translated(name));
         world.Click(slot.X + 4, slot.Y + 4);
         Steps(2);
     }
@@ -179,7 +192,7 @@ internal sealed class Player(GameWorld world)
 
     private bool Shows(string verb) => world.Verbs.Slots.Any(s => s.Id != 0 && s.Mode == 1 && Shown(s.Name).Equals(verb, StringComparison.OrdinalIgnoreCase));
 
-    private int VerbId(string name) => Slot(name).Id;
+    private int VerbId(string name) => Slot(Translated(name)).Id;
 
     private VerbSlot Slot(string name) =>
         world.Verbs.Slots.FirstOrDefault(s => s.Id != 0 && s.Mode == 1 && Shown(s.Name).Equals(name, StringComparison.OrdinalIgnoreCase))
@@ -192,6 +205,12 @@ internal sealed class Player(GameWorld world)
     /// </summary>
     public void Do(string verb, string thing, string? with = null, Func<bool>? until = null)
     {
+        // the NES has no Unlock: the key is used with the door
+        if (world.IsNes && verb == "Unlock" && with is not null)
+        {
+            (verb, thing, with) = ("Use", with, thing);
+        }
+
         for (int tries = 1; ; tries++)
         {
             Sentence(verb, thing, with);
@@ -226,15 +245,16 @@ internal sealed class Player(GameWorld world)
         foreach (char digit in code)
         {
             int key = digit == '0' ? 10 : digit - '1';
-            world.Click(KeypadLeft + 24 * (key % 3) + 8 - world.Camera.Left, Layout.RoomTop + KeypadTop + 16 * (key / 3) + 8);
+            var (left, top, row) = world.IsNes ? (NesKeypadLeft, NesKeypadTop, NesKeypadRow) : (KeypadLeft, KeypadTop, KeypadRow);
+            world.Click(left + 24 * (key % 3) + 8 + ScreenLeft, Layout.RoomTop + top + row * (key / 3) + 8);
             Steps(10);
         }
 
         Settle();
     }
 
-    // the keypad's top left key, in its room
-    private const int KeypadLeft = 128, KeypadTop = 48;
+    // the keypad's top left key, in its room, and from row to row; the NES's
+    private const int KeypadLeft = 128, KeypadTop = 48, KeypadRow = 16, NesKeypadLeft = 96, NesKeypadTop = 32, NesKeypadRow = 24;
 
     private void Sentence(string verb, string thing, string? with, bool settle = true)
     {
@@ -300,7 +320,7 @@ internal sealed class Player(GameWorld world)
             Until(() => !KidWalking || Room != room, 400);
             if (Room == room)
             {
-                world.Click(left ? 4 : 315, KidLine);
+                world.Click(left ? 4 : Layout.Width - 5, KidLine);
                 Steps(2);
             }
         }
@@ -353,9 +373,9 @@ internal sealed class Player(GameWorld world)
     /// <summary>What was done so far, with the room each began in, for failures to tell.</summary>
     public List<string> Log { get; } = [];
 
-    /// <summary>The room as a failure tells it: its objects (findable or not), the actors in it, and what was done.</summary>
+    /// <summary>The room as a failure tells it: its objects (where, how big, their state, findable or not), the actors in it, and what was done.</summary>
     private string Situation() =>
-        $"in room {Room}, camera at {world.Camera.Left}; objects {string.Join(", ", world.CurrentRoom?.Objects.Where(o => o.Number > 0).Select(o => $"{Shown(world.NameOf(o.Number))}#{o.Number}{(Points(o, anywhere: true).Any() ? string.Empty : " (not found)")}") ?? [])}; "
+        $"in room {Room}, camera at {world.Camera.Left}; objects {string.Join(", ", world.CurrentRoom?.Objects.Where(o => o.Number > 0).Select(o => $"{Shown(world.NameOf(o.Number))}#{o.Number}@{world.PositionOf(o)}x{o.Width}x{o.Height}/{world.StateOf(o.Number)}{(Points(o, anywhere: true).Any() ? string.Empty : " (not found)")}") ?? [])}; "
         + $"actors {string.Join(", ", world.Actors.Skip(1).Where(a => a.InCurrentRoom && a.Visible).Select(a => $"{a.Name} at {a.X},{a.Y}"))}; carried {string.Join(", ", world.Inventory.Where(o => o != 0 && world.Engine.GetOwner(o) == Kid.Number).Select(o => Shown(world.NameOf(o))))}; heard {string.Join(" / ", _heard.TakeLast(4))}; after {string.Join("; ", Log)}";
 
     private void Note(string action) => Log.Add($"{world.Time.ToString(@"hh\:mm\:ss", System.Globalization.CultureInfo.InvariantCulture)} {Kid.Name} in {Room} at {Kid.X},{Kid.Y}: {action}");
@@ -431,7 +451,8 @@ internal sealed class Player(GameWorld world)
             return;
         }
 
-        if (Actor(name) is { } actor)
+        // an actor of the name, unless the room's object is meant by number
+        if (!numbered && Actor(name) is { } actor)
         {
             ClickActor(actor, click);
             return;
@@ -450,6 +471,7 @@ internal sealed class Player(GameWorld world)
         for (int tries = 0; tries < 20; tries++)
         {
             Ready();
+            StillCamera();
             if (Points(target, anywhere: false).FirstOrDefault() is { X: > 0 } point)
             {
                 if (click)
@@ -467,6 +489,21 @@ internal sealed class Player(GameWorld world)
         return false;
     }
 
+    // the NES handles a click a step after the mouse comes (GameWorld.Click), so the player lets
+    // the camera come to rest first, as the eye does, lest the thing move from under the mouse
+    private void StillCamera()
+    {
+        for (int i = 0; i < 100 && world.IsNes; i++)
+        {
+            int left = world.Camera.Left;
+            Step();
+            if (world.Camera.Left == left)
+            {
+                return;
+            }
+        }
+    }
+
     private Actor? Actor(string name) =>
         world.Actors.Skip(1).FirstOrDefault(a => a.InCurrentRoom && a.Visible && a != Kid && a.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
@@ -476,8 +513,9 @@ internal sealed class Player(GameWorld world)
         for (int tries = 0; tries < 20; tries++)
         {
             Ready();
-            int x = actor.X * 8 - world.Camera.Left, y = Layout.RoomTop + actor.Y * 2 - 20;
-            if (x is >= 4 and < 316)
+            StillCamera();
+            int x = actor.X * 8 + ScreenLeft, y = Layout.RoomTop + actor.Y * 2 - 20;
+            if (x >= 4 && x < Layout.Width - 4)
             {
                 if (click)
                 {
@@ -497,7 +535,14 @@ internal sealed class Player(GameWorld world)
     private void ClickCarried(int obj)
     {
         int owner = Kid.Number;
-        int index = world.Inventory.Where(o => o != 0 && world.Engine.GetOwner(o) == owner).ToList().IndexOf(obj);
+        var carried = world.Inventory.Where(o => o != 0 && world.Engine.GetOwner(o) == owner).ToList();
+        int index = carried.IndexOf(obj);
+        if (world.IsNes)
+        {
+            ClickCarriedNes(carried.Count - 1 - index);
+            return;
+        }
+
         for (int tries = 0; tries < 20 && (index < world.Verbs.InventoryOffset || index >= world.Verbs.InventoryOffset + 4); tries++)
         {
             bool down = index >= world.Verbs.InventoryOffset + 4;
@@ -510,24 +555,51 @@ internal sealed class Player(GameWorld world)
         Steps(2);
     }
 
+    // the NES lists the last picked up first, two a row from 16 and 152, its arrows by them
+    private void ClickCarriedNes(int index)
+    {
+        int top = world.Verbs.Top + world.Verbs.InventoryLine;
+        for (int tries = 0; tries < 20 && (index < world.Verbs.InventoryOffset || index >= world.Verbs.InventoryOffset + 4); tries++)
+        {
+            bool down = index >= world.Verbs.InventoryOffset + 4;
+            world.Click(down ? 140 : 132, top + 4);
+            Steps(2);
+        }
+
+        int place = index - world.Verbs.InventoryOffset;
+        world.Click((place % 2 == 0 ? 16 : 152) + 4, top + (place / 2) * 8 + 4);
+        Steps(2);
+    }
+
     /// <summary>Walks the kid along his line towards a point of the room, to floor short of the screen's edge where exits are.</summary>
     private void WalkTowards(int roomX)
     {
-        int x = roomX - world.Camera.Left;
+        int x = roomX + ScreenLeft;
         int verb = ActiveVerb;
+        int middle = Layout.Width / 2;
         Verb("Walk to");
 
         // the farthest spot on his line or near it of floor, or of an object only to look at, which
-        // he walks up to; not one he would walk into, through a door or out of the room
-        var spot = (from d in Enumerable.Range(0, 140)
-                    let sx = x < 160 ? 20 + d : 300 - d
-                    from dy in new[] { 0, 8, 16, 24, -8, -16, -24 }
-                    let y = Math.Clamp(KidLine + dy, Layout.RoomTop, Layout.RoomBottom - 1)
-                    where Harmless(world.FindObject(sx + world.Camera.Left, y - Layout.RoomTop))
-                    select (X: sx, Y: y)).FirstOrDefault((X: 160, Y: KidLine));
-        world.Click(spot.X, spot.Y);
-        Steps(5);
-        Until(() => !KidWalking, 300);
+        // he walks up to; not one he would walk into, through a door or out of the room; where
+        // that left him standing (on the wall above him, at the top of stairs), lower down
+        var before = (Kid.X, Kid.Y);
+        foreach (int[] dys in new[] { new[] { 0, 8, 16, 24, -8, -16, -24 }, [32, 48, 64, 80] })
+        {
+            var spot = (from d in Enumerable.Range(0, 140)
+                        let sx = x < middle ? 20 + d : Layout.Width - 20 - d
+                        from dy in dys
+                        let y = Math.Clamp(KidLine + dy, Layout.RoomTop, Layout.RoomBottom - 1)
+                        where Harmless(world.FindObject(sx - ScreenLeft, y - Layout.RoomTop))
+                        select (X: sx, Y: y)).FirstOrDefault((X: middle, Y: KidLine));
+            world.Click(spot.X, spot.Y);
+            Steps(5);
+            Until(() => !KidWalking, 300);
+            if ((Kid.X, Kid.Y) != before)
+            {
+                break;
+            }
+        }
+
         if (verb != ActiveVerb)
         {
             var slot = world.Verbs.Slots[world.Verbs.SlotOf(verb)];
@@ -550,9 +622,9 @@ internal sealed class Player(GameWorld world)
                let px = left + dx
                let py = top + dy
                orderby Math.Abs(dx - target.Width / 2) + Math.Abs(dy - target.Height / 2)
-               where (anywhere || (px >= world.Camera.Left + 2 && px < world.Camera.Left + 318)) && py + Layout.RoomTop < Layout.RoomBottom
+               where (anywhere || (px + ScreenLeft >= 2 && px + ScreenLeft < Layout.Width - 2)) && py + Layout.RoomTop < Layout.RoomBottom
                    && world.FindObject(px, py) == target.Number
-               select (px - world.Camera.Left, py + Layout.RoomTop);
+               select (px + ScreenLeft, py + Layout.RoomTop);
     }
 
     private static string Shown(byte[] name) => Shown(Encoding.Latin1.GetString(name));

@@ -23,6 +23,9 @@ public sealed partial class GameWorld
     // the shape of the version 2 cursor (ScummVM's _cursor for setBuiltinCursor)
     private const int CursorWidth = 23, CursorHeight = 21, CursorHotspotX = 11, CursorHotspotY = 10;
 
+    // the NES's: its cursor, and its room view's bounds (initScreens(16, 144))
+    private const int NesCursorSize = 8, NesScreenB = 16, NesScreenH = 144;
+
     // where a script's code is (WhereIsObject)
     private const int WhereInventory = 0, WhereRoom = 1, WhereGlobal = 2;
 
@@ -177,7 +180,9 @@ public sealed partial class GameWorld
         s.UserPut = s.CursorState = Engine.CursorOn ? 1 : 0;
         s.UserState = Engine.Interface;
         DrawCursorImage(s.GrabbedCursor);
-        (s.CursorWidth, s.CursorHeight, s.CursorHotspotX, s.CursorHotspotY) = (CursorWidth, CursorHeight, CursorHotspotX, CursorHotspotY);
+        (s.CursorWidth, s.CursorHeight, s.CursorHotspotX, s.CursorHotspotY) = IsNes
+            ? (NesCursorSize, NesCursorSize, 0, 0)
+            : (CursorWidth, CursorHeight, CursorHotspotX, CursorHotspotY);
         s.CursorAnimate = 1;
         s.CursorAnimateIndex = _cursorFrame & 0xFF;
         (s.MouseX, s.MouseY) = Mouse;
@@ -188,22 +193,33 @@ public sealed partial class GameWorld
         s.NewEffect = _newEffect;
         s.DoEffect = _doEffect ? 1 : 0;
         s.ScreenEffectFlag = _screenEffectFlag ? 1 : 0;
-        s.ScreenB = layout.RoomTop;
-        s.ScreenH = layout.RoomBottom;
+        // the bounds initScreens gave the room's view: the NES's are 16 and 144, its screen showing
+        // them 16 lines lower
+        (s.ScreenB, s.ScreenH) = IsNes ? (NesScreenB, NesScreenH) : (layout.RoomTop, layout.RoomBottom);
+        s.NesCostumeSet = NesCostumeSetNumber;
 
-        // the palette resetPalette set: the EGA's on DOS, the C64's own
-        var palette = Palettes.ForVersion(Version);
+        // the NES's text is drawn by its own renderer, which never loads a charset (_curId)
+        s.CharsetId = IsNes ? -1 : 0;
+
+        // the palette resetPalette set: the EGA's on DOS, the C64's own; the NES's 64 colours,
+        // which leave the darkened copy empty and the shadow palette whole
+        var palette = Palettes.MemoryForVersion(Version, IsNes).Span;
         for (int i = 0; i < palette.Length; i++)
         {
-            s.CurrentPalette[i * 3] = s.DarkenPalette[i * 3] = palette[i].R;
-            s.CurrentPalette[i * 3 + 1] = s.DarkenPalette[i * 3 + 1] = palette[i].G;
-            s.CurrentPalette[i * 3 + 2] = s.DarkenPalette[i * 3 + 2] = palette[i].B;
+            s.CurrentPalette[i * 3] = palette[i].R;
+            s.CurrentPalette[i * 3 + 1] = palette[i].G;
+            s.CurrentPalette[i * 3 + 2] = palette[i].B;
+        }
+
+        if (!IsNes)
+        {
+            Array.Copy(s.CurrentPalette, s.DarkenPalette, s.CurrentPalette.Length);
         }
 
         for (int i = 0; i < 256; i++)
         {
             s.RoomPalette[i] = (byte)i;
-            s.ShadowPalette[i] = Version >= 2 && i < 16 ? (byte)i : (byte)0;
+            s.ShadowPalette[i] = IsNes || (Version >= 2 && i < 16) ? (byte)i : (byte)0;
         }
 
         for (int i = 0; i < ScummState.ActorCount; i++)
@@ -303,6 +319,14 @@ public sealed partial class GameWorld
 
         Camera.LoadFrom(s, room?.Width ?? Camera.ScreenWidth);
         SyncCameraLimits();
+
+        // the NES's costume set, loaded whichever it is (loadState's NES_loadCostumeSet)
+        if (IsNes)
+        {
+            NesCostumeSetNumber = s.NesCostumeSet & 1;
+            _nesCostumeSetChosen = true;
+        }
+
         for (int i = 0; i < ScummState.ActorCount; i++)
         {
             Actors[i].LoadFrom(s.Actors[i]);
@@ -669,6 +693,14 @@ public sealed partial class GameWorld
     private void DrawCursorImage(byte[] image)
     {
         Array.Fill(image, (byte)0xFF);
+
+        // the NES's is its tile whole, 8 by 8, its corner's colour too
+        if (IsNes)
+        {
+            NesCursorImage()?.CopyTo(image, 0);
+            return;
+        }
+
         var surface = new Maniacal.Scumm.Graphics.Surface8(CursorWidth, CursorHeight);
         surface.Fill(0xFF);
         var mouse = Mouse;

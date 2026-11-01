@@ -14,7 +14,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 4 | Sound, saves and options (V2 and V1) | Done |
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
 | 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
-| 7 | The NES | Under way: playable by its own interface, with its sound; its saves to come |
+| 7 | The NES | Under way: winnable, with its sound and saves; its title screens, and opening it, to come |
 | Later | A browser player, Amiga and Atari ST, Zak McKracken | Perhaps |
 
 ## Design
@@ -944,7 +944,31 @@ and sound. `docs/nes` documents its data. The steps:
    constant offset, which is all of the difference late in the song). Tested in
    `NesSoundTests`: an effect played and ended, the slots' priorities, and the intro's loudness
    against ScummVM's.
-7. **The walkthrough**, won in the NES release, and saves checked against ScummVM.
+7. **The walkthrough and saves (done).** The winning route plays to "You won the game!" in the
+   NES release, Syd and Bernard beside Dave as on DOS, every instruction on the way handled. The
+   route is DOS's but where the NES differs: there is no Unlock (the key is used with the door),
+   the steel security door shuts behind a kid and is opened either way, the man-eating plant is
+   "Plant" and the sealed envelope "envelope", the safe's keypad is laid out in rows of 24 pixels,
+   and the kid's line on fixing the wires comes after their sound, as Dr. Fred's alarm breaks in.
+   The test player clicks the NES's way: its verbs by their names (Get, Go To), its inventory the
+   last picked up first, the narrow rooms 16 pixels in, the camera let come to rest before a
+   click (which the NES handles a step later), and the floor sought lower where the kid stands
+   at the top of the stairs.
+
+   A save holds what ScummVM keeps for the NES: the costume set (`_NESCostumeSet`, loaded again
+   whichever it is, as `loadState`'s `NES_loadCostumeSet` does), the room's view at lines 16 to
+   144 (`initScreens`), the camera at the middle of 240 lines, the NES's 64 colours with no
+   darkened copy and the whole shadow palette, the 8 by 8 cursor tile, and no charset loaded.
+   Checked against ScummVM 2026.4.0: the route's eighteen checkpoints (`maniacnes.s31` on) load
+   there and show the same screens but for the cursor and what follows the mouse there (the
+   sentence line, a dark room's flashlight beam); a save ScummVM made itself, in the intro, loads
+   here and plays on. Tested in `WalkthroughTests` (the route) and `NesSaveTests`: a game saved and
+   restored plays on as the original, the save's NES values, and the costume set taken from the
+   save.
+8. **Opened.** The title screens ScummVM shows before the boot script (`playNESTitleScreens`,
+   two pictures, the second's sparkles and their twinkles), the save menu's restart and its
+   `Alt-F5` save script (163), and the refusal lifted, so `ManiacMansion.Open` and the tool play
+   the NES.
 
 ## Later, perhaps
 

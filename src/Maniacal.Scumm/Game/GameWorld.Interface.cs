@@ -183,9 +183,28 @@ public sealed partial class GameWorld
     /// </summary>
     private void DrawNesCursor(Surface8 screen)
     {
-        if (CurrentNesCostumeSet is not { } set)
+        if (NesCursorImage() is not { } image)
         {
             return;
+        }
+
+        var (x, y) = Mouse;
+        for (int i = 0; i < 64; i++)
+        {
+            int px = x + i % 8, py = y + i / 8;
+            if (image[i] != image[63] && px < screen.Width && py < screen.Height)
+            {
+                screen[px, py] = image[i];
+            }
+        }
+    }
+
+    /// <summary>The NES's cursor tile, 8 by 8 in the colours the animation is at, or null before the scripts choose a costume set.</summary>
+    private byte[]? NesCursorImage()
+    {
+        if (CurrentNesCostumeSet is not { } set)
+        {
+            return null;
         }
 
         int subPalette = ((_cursorFrame >> 1) & 3) == 3 ? 4 : 0;
@@ -199,15 +218,7 @@ public sealed partial class GameWorld
             }
         }
 
-        var (x, y) = Mouse;
-        for (int i = 0; i < 64; i++)
-        {
-            int px = x + i % 8, py = y + i / 8;
-            if (image[i] != image[63] && px < screen.Width && py < screen.Height)
-            {
-                screen[px, py] = image[i];
-            }
-        }
+        return image;
     }
 
     /// <summary>

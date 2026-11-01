@@ -26,7 +26,7 @@ public sealed class Camera
     }
 
     /// <summary>The width of the view of every release but the NES's, and the NES's.</summary>
-    internal const int DosScreenWidth = 320, NesScreenWidth = 256;
+    internal const int DosScreenWidth = 320, NesScreenWidth = 256, DosScreenHeight = 200, NesScreenHeight = 240;
 
     /// <summary>The width of the view in pixels (<c>_screenWidth</c>).</summary>
     internal int ScreenWidth { get; }
@@ -180,11 +180,12 @@ public sealed class Camera
 
     /// <summary>
     /// Copies the camera into a save: its centre and destination in pixels (y at the middle of the
-    /// screen, as versions 1 and 2 keep it), the strips in view, the mode and the actor followed.
+    /// screen, as versions 1 and 2 keep it: line 100, the NES's 120), the strips in view, the mode
+    /// and the actor followed.
     /// </summary>
     internal void SaveTo(Saves.ScummState s)
     {
-        const int MiddleY = 100;
+        int MiddleY = ScreenWidth == NesScreenWidth ? NesScreenHeight / 2 : DosScreenHeight / 2;
         s.CameraDestX = DestinationX;
         s.CameraDestY = MiddleY;
         s.CameraX = X;

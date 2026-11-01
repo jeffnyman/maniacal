@@ -61,7 +61,7 @@ packages are an alpha: the engine works, but its public API is still to be settl
 | DOS demo (1987) | 1 | `00.MAN` to `49.MAN`, the full release's rooms renamed | Plays its demo through |
 | DOS demo (1988) | 2 | `00.LFL` to `53.LFL`, rooms of the 1988 release | Plays its demo through |
 | Commodore 64 demo (1987) | 0 | `maniacdemo.d64`, one disk image | Its menu, the self-running demo and the hands-on one |
-| NES (1990) | 1 (NES dialect) | The cartridge, a `.nes` dump or its `.prg` | Being ported: playable by its interface, with its sound; saves to come |
+| NES (1990) | 1 (NES dialect) | The cartridge, a `.nes` dump or its `.prg` | Being ported: winnable, with its sound and saves; not opened yet |
 
 These are the English releases, and only they are played: a release in another language or for
 another platform is named and refused (`maniacal: this is Maniac Mansion (V2, German, DOS), which
@@ -244,7 +244,7 @@ The walkthrough tests play the game's winning route, a section at a time, in eve
 Police, Wendy's memoirs published, Michael's prints for Ed. With `MANIACAL_CHECKPOINTS` naming a
 folder, they save there where each section ends (and in the telescope's and Meteor Mess's
 close-ups), as ScummVM slot files for the release's target, from slot 31 on (`maniac64.s31`,
-`maniac1.s32`, ...; Bernard's own sections from slot 49, Wendy's from 52, Michael's from 55), to
+`maniac1.s32`, `maniacnes.s33`, ...; Bernard's own sections from slot 49, Wendy's from 52, Michael's from 55), to
 load in ScummVM and compare.
 
 The C64 release's disk images are found by ScummVM's names, `maniac1.d64` and `maniac2.d64`, or by
