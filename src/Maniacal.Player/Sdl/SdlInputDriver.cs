@@ -82,20 +82,6 @@ internal sealed unsafe class SdlInputDriver : IInputDriver
 
     public bool TryRead(out InputEvent inputEvent) => _queue.TryDequeue(out inputEvent);
 
-    public MouseState GetMouseState()
-    {
-        float x;
-        float y;
-        var buttons = SDL_GetMouseState(&x, &y);
-        var (fx, fy) = _graphics.ToFramebuffer(x, y);
-        return new MouseState(
-            fx,
-            fy,
-            (buttons & SDL_MouseButtonFlags.SDL_BUTTON_LMASK) != 0,
-            (buttons & SDL_MouseButtonFlags.SDL_BUTTON_RMASK) != 0,
-            (buttons & SDL_MouseButtonFlags.SDL_BUTTON_MMASK) != 0);
-    }
-
     /// <summary>Moves everything SDL has queued into the engine queue. Called by the host loop.</summary>
     public void Pump()
     {

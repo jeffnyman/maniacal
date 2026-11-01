@@ -739,6 +739,16 @@ Where it comes from:
   screen, the front door, a palette that can be kept). Nothing public was removed or changed; at
   the release `PublicAPI.Unshipped.txt` moved into `PublicAPI.Shipped.txt` again.
 
+- **The host contract used from outside.** A fourth program in `maniacal-playground`, a host of
+  its own written from the documentation alone (a display writing PNGs, scripted input, sound
+  pulled on a virtual clock), ran every release through `CreateEngine`, `Initialize` and `Tick`
+  the first time. What it had to guess is now settled. Removed, doing nothing: `IHost.
+  DeterministicTime`, which no engine reads (it came with the host layer from Daventry), and
+  `IInputDriver.GetMouseState`, which no engine calls (the mouse comes as `MouseMove` events),
+  with `MouseState` and `HeadlessInput.Mouse`, there only for it. Documented: that `ScummEngine`
+  plays one step a tick whatever `elapsed` says, its delay pacing it; which input events it reads;
+  and that the audio driver, not the source, applies the volume.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies

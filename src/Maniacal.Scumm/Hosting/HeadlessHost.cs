@@ -32,9 +32,6 @@ public sealed class HeadlessHost : IHost
     /// <inheritdoc />
     public ILog Log { get; }
 
-    /// <summary>On by default: a headless run is the same every time, whatever the machine is doing.</summary>
-    public bool DeterministicTime { get; set; } = true;
-
     /// <summary>The games' random numbers follow this seed; null for a different sequence every run.</summary>
     public int? RandomSeed { get; set; } = 1;
 
@@ -136,13 +133,10 @@ public sealed class HeadlessGraphics : IGraphicsDriver
     }
 }
 
-/// <summary>Input given by the caller: events pushed in order, and a mouse state set directly.</summary>
+/// <summary>Input given by the caller: events pushed in order.</summary>
 public sealed class HeadlessInput : IInputDriver
 {
     private readonly Queue<InputEvent> _queue = new();
-
-    /// <summary>What <see cref="GetMouseState"/> reports.</summary>
-    public MouseState Mouse { get; set; }
 
     /// <summary>Queues an event.</summary>
     public void Push(InputEvent inputEvent) => _queue.Enqueue(inputEvent);
@@ -156,9 +150,6 @@ public sealed class HeadlessInput : IInputDriver
 
     /// <inheritdoc />
     public bool TryRead(out InputEvent inputEvent) => _queue.TryDequeue(out inputEvent);
-
-    /// <inheritdoc />
-    public MouseState GetMouseState() => Mouse;
 }
 
 /// <summary>An audio output that plays nothing: the sound is there to be pulled.</summary>

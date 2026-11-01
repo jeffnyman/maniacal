@@ -1,1 +1,28 @@
 #nullable enable
+*REMOVED*Maniacal.Scumm.Hosting.HeadlessHost.DeterministicTime.get -> bool
+*REMOVED*Maniacal.Scumm.Hosting.HeadlessHost.DeterministicTime.set -> void
+*REMOVED*Maniacal.Scumm.Hosting.HeadlessInput.GetMouseState() -> Maniacal.Scumm.Input.MouseState
+*REMOVED*Maniacal.Scumm.Hosting.HeadlessInput.Mouse.get -> Maniacal.Scumm.Input.MouseState
+*REMOVED*Maniacal.Scumm.Hosting.HeadlessInput.Mouse.set -> void
+*REMOVED*Maniacal.Scumm.Hosting.IHost.DeterministicTime.get -> bool
+*REMOVED*Maniacal.Scumm.Input.IInputDriver.GetMouseState() -> Maniacal.Scumm.Input.MouseState
+*REMOVED*Maniacal.Scumm.Input.MouseState
+*REMOVED*Maniacal.Scumm.Input.MouseState.Deconstruct(out int X, out int Y, out bool LeftDown, out bool RightDown, out bool MiddleDown) -> void
+*REMOVED*Maniacal.Scumm.Input.MouseState.Equals(Maniacal.Scumm.Input.MouseState other) -> bool
+*REMOVED*Maniacal.Scumm.Input.MouseState.LeftDown.get -> bool
+*REMOVED*Maniacal.Scumm.Input.MouseState.LeftDown.init -> void
+*REMOVED*Maniacal.Scumm.Input.MouseState.MiddleDown.get -> bool
+*REMOVED*Maniacal.Scumm.Input.MouseState.MiddleDown.init -> void
+*REMOVED*Maniacal.Scumm.Input.MouseState.MouseState() -> void
+*REMOVED*Maniacal.Scumm.Input.MouseState.MouseState(int X, int Y, bool LeftDown, bool RightDown, bool MiddleDown) -> void
+*REMOVED*Maniacal.Scumm.Input.MouseState.RightDown.get -> bool
+*REMOVED*Maniacal.Scumm.Input.MouseState.RightDown.init -> void
+*REMOVED*Maniacal.Scumm.Input.MouseState.X.get -> int
+*REMOVED*Maniacal.Scumm.Input.MouseState.X.init -> void
+*REMOVED*Maniacal.Scumm.Input.MouseState.Y.get -> int
+*REMOVED*Maniacal.Scumm.Input.MouseState.Y.init -> void
+*REMOVED*override Maniacal.Scumm.Input.MouseState.GetHashCode() -> int
+*REMOVED*static Maniacal.Scumm.Input.MouseState.operator !=(Maniacal.Scumm.Input.MouseState left, Maniacal.Scumm.Input.MouseState right) -> bool
+*REMOVED*static Maniacal.Scumm.Input.MouseState.operator ==(Maniacal.Scumm.Input.MouseState left, Maniacal.Scumm.Input.MouseState right) -> bool
+*REMOVED*~override Maniacal.Scumm.Input.MouseState.Equals(object obj) -> bool
+*REMOVED*~override Maniacal.Scumm.Input.MouseState.ToString() -> string

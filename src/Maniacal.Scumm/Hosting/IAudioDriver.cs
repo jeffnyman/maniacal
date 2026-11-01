@@ -11,7 +11,8 @@ public interface IAudioDriver
 
     /// <summary>
     /// Master volume from 0 (silent) to <see cref="AudioVolume.Unity"/> (the engine's mix as is),
-    /// applied to everything the source produces. Starts at <see cref="AudioVolume.Default"/>, the
+    /// applied by the driver to everything it reads from the source (the source does not apply
+    /// it; <see cref="AudioVolume.Apply"/> does). Starts at <see cref="AudioVolume.Default"/>, the
     /// level ScummVM mixes at.
     /// </summary>
     int Volume { get; set; }

@@ -12,6 +12,13 @@ namespace Maniacal.Scumm;
 /// Maniac Mansion for a host: a step of the world each tick, the host's mouse and keys as the
 /// game's input, the screen with the cursor presented, and the sound played. Mirrors ScummVM's
 /// <c>ScummEngine::go</c> loop, which waits a step's ticks of the game's clock between steps.
+/// <para>
+/// Of the input events it reads <see cref="InputEventType.MouseMove"/> (where the mouse is),
+/// <see cref="InputEventType.MouseDown"/> of the left button (a click) and the right (a right
+/// click, which skips a cutscene), <see cref="InputEventType.KeyDown"/> (Escape, Enter, Backspace,
+/// F1 to F9 and the characters), and <see cref="InputEventType.Quit"/>; the others it passes over.
+/// Mouse positions are on the 320x200 screen it sets with <c>SetMode</c>.
+/// </para>
 /// </summary>
 public sealed class ScummEngine : Engine
 {
@@ -56,7 +63,14 @@ public sealed class ScummEngine : Engine
         _world.Boot();
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Plays one step of the game, whatever <paramref name="elapsed"/> says (this engine does not
+    /// read it): the input waiting, the step, the frame presented. The delay returned is the
+    /// step's length on the game's own clock (or a room transition frame's), so a host that calls
+    /// again after it plays at the original's speed, and one on a clock of its own, a recording,
+    /// at whatever speed it likes. <see cref="TickResult.Quit"/> once the game asks to quit.
+    /// </summary>
+    /// <param name="elapsed">Not read by this engine.</param>
     public override TickResult Tick(TimeSpan elapsed)
     {
         var world = World;
