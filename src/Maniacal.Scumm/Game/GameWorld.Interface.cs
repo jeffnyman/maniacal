@@ -316,7 +316,8 @@ public sealed partial class GameWorld
 
             // the NES's costumes come in two sets, the kids' and the rest (NES_loadCostumeSet)
             case "o2_switchCostumeSet" when IsNes:
-                NesCostumeSet = arguments[0];
+                NesCostumeSetNumber = arguments[0] & 1;
+                _nesCostumeSetChosen = true;
                 return true;
 
             case "o4_saveLoadGame":
@@ -526,7 +527,7 @@ public sealed partial class GameWorld
     }
 
     /// <summary>The costume set the NES's scripts last chose: 0 or 1.</summary>
-    internal int NesCostumeSet { get; private set; }
+    internal int NesCostumeSetNumber { get; private set; }
 
     // the NES's preposition list, from the cartridge (costume 78): five words of 8 bytes
     private const int NesPrepositions = 78, NesPrepositionLength = 8;

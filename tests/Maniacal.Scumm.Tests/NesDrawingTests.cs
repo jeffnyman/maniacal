@@ -75,6 +75,54 @@ public class NesDrawingTests
         Assert.Equal("23a7ac651734fe88871c8e8985ac099c78eacea94b8ca554b40d06e9f78be4aa", Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(room)));
     }
 
+    /// <summary>
+    /// Whole screens as ScummVM 2026.4.0 showed them in its window, to the pixel: the meteor (an
+    /// actor in the NES's costume set 1) flying over the hillside, the credits in the NES's font
+    /// over it, and the kid selection under its line of text (ScummVM's cursor aside).
+    /// </summary>
+    [Theory]
+    [InlineData(82, 33, "41d98a4421e196add4d9a517fbff339f846095b41b57532b2b24fdf475099862")]
+    [InlineData(228, 33, "4535aff331557e21c532386cfa716746d49058547d29f9be8fc5df4f2a15276c")]
+    [InlineData(682, SelectionRoom, "e789327d8495caf0aa605cf22ea9f796ca53433edf5712a87113f0bc123dc73a")]
+    public void Screens_are_drawn_as_scummvm_draws_them(int steps, int room, string hash)
+    {
+        if (Loader() is not { } loader)
+        {
+            return;
+        }
+
+        var world = new GameWorld(loader);
+        world.Boot();
+        for (int step = 0; step < steps; step++)
+        {
+            world.Step();
+        }
+
+        Assert.Equal(room, world.CurrentRoom?.Number);
+        Assert.Equal(hash, Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(world.Screen().Pixels)));
+    }
+
+    /// <summary>
+    /// An NES costume animates one limb: an animation starts at its first frame and steps through
+    /// its list, back to the first after the last (NESCostumeLoader).
+    /// </summary>
+    [Fact]
+    public void An_nes_animation_loops_through_its_frames()
+    {
+        var state = new Costumes.CostumeState();
+        state.DecodeNes(animation: 9, frames: 3);
+
+        Assert.Equal(9, state.Animation(0));
+        Assert.Equal([0, 1, 2, 0], new[] { state.Position(0), Step(), Step(), Step() });
+        Assert.Equal(Costumes.CostumeState.None, state.Position(1));
+
+        int Step()
+        {
+            state.IncreaseNes();
+            return state.Position(0);
+        }
+    }
+
     /// <summary>The NES's 64 colours, which the world shows the release with.</summary>
     [Fact]
     public void The_palette_is_the_nes_one()

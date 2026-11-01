@@ -35,9 +35,6 @@ internal sealed class NesBitmap
     // the NES's black, which the screen is cleared to (0x1D in ScummVM's NES code)
     public const byte Black = 0x1D;
 
-    // the colours of a room without its lights (drawStripNES)
-    private static ReadOnlySpan<byte> DarkPalette => [0x2D, 0x1D, 0x3D, 0x20, 0x2D, 0x1D, 0x3D, 0x20, 0x2D, 0x1D, 0x3D, 0x20, 0x2D, 0x1D, 0x3D, 0x20];
-
     private readonly byte[] _patterns;
     private readonly byte[] _palette = new byte[16];
     private readonly byte[,] _nametable = new byte[Rows, NametableWidth];
@@ -156,6 +153,9 @@ internal sealed class NesBitmap
     /// (<c>_NESStartStrip</c>): the screen is 32 tiles wide, the narrow rooms 28.
     /// </summary>
     public int StartStrip { get; }
+
+    /// <summary>A room's 16 colours, which its text is drawn in too (<c>_NESPalette[0]</c>).</summary>
+    public static byte[] RoomPalette(ReadOnlySpan<byte> room) => room.Slice(Word(room, 0x0A) + 1, 16).ToArray();
 
     /// <summary>A room's pictures, from its data and the pattern table the loader gave it.</summary>
     public static NesBitmap ForRoom(Room room)
@@ -328,7 +328,7 @@ internal sealed class NesBitmap
     /// </summary>
     private void DrawStrip(MaskedImage image, int column, int strip, int top, int rows, bool lit, bool objects)
     {
-        var palette = lit ? _palette : DarkPalette;
+        var palette = lit ? _palette : Costumes.NesCostumeTables.DarkRoomPalette;
         var nametable = objects ? _objectNametable : _nametable;
         var attributes = objects ? _objectAttributes : _attributes;
         var mask = objects ? _objectMask : _mask;

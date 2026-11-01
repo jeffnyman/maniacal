@@ -99,7 +99,7 @@ internal sealed class VerbArea
     // the interface bits of the user state (USERSTATE_IFACE_*)
     public const int ShowSentence = 0x20, ShowInventory = 0x40, ShowVerbs = 0x80;
 
-    private readonly Font _font;
+    private readonly IGlyphs _font;
     private readonly Func<int> _userState;
     private int _mouseOverVerb;
 
@@ -108,7 +108,7 @@ internal sealed class VerbArea
     /// <param name="userState">The user state, whose interface bits say what shows (<c>_userState</c>).</param>
     /// <param name="c64">Whether this is the C64's: its colours, and the sentence line and inventory a pixel right and down.</param>
     /// <param name="demo">Whether this is a demo's, whose verbs are drawn in another colour.</param>
-    public VerbArea(Font font, int top, Func<int> userState, bool c64 = false, bool demo = false)
+    public VerbArea(IGlyphs font, int top, Func<int> userState, bool c64 = false, bool demo = false)
     {
         _font = font;
         _demo = demo;

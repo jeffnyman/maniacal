@@ -108,6 +108,20 @@ public class NesPlayTests
         Assert.Equal(12, world.Verbs.Slots.Count(v => v.Id != 0));
         Assert.Equal(Dave, world.Variables[ScriptEngine.VarEgo]);
 
+        // the kids stand drawn in their costumes, from costume set 0, the kids' own
+        var screen = world.Screen();
+        var room = Graphics.RoomRenderer.Render(world.CurrentRoom!, world.StateOf);
+        foreach (var kid in world.Actors.OfType<ActorNes>().Where(a => a.InCurrentRoom && a.Visible))
+        {
+            Assert.NotNull(kid.CostumeNes);
+            Assert.NotEqual(Costumes.CostumeState.None, kid.State.Position(0));
+            int x = kid.X * 8 - world.Camera.Left + world.RoomScreenLeft, y = kid.Y * 2 + world.Layout.RoomTop;
+            Assert.Contains(Enumerable.Range(-8, 16).SelectMany(dx => Enumerable.Range(-40, 40).Select(dy => (dx, dy))),
+                d => screen[x + d.dx, y + d.dy] != room.Pixels[x + d.dx - world.RoomScreenLeft + world.Camera.Left, y + d.dy - world.Layout.RoomTop]);
+        }
+
+        Assert.Equal(0, world.NesCostumeSetNumber);
+
         var exit = world.ObjectsHere().First(o => o.X == 0 && o.Touchable);
         Assert.True(world.ClickObject(exit.Number));
         StepsTo(world, FrontOfTheHouse, 2000);

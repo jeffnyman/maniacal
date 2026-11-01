@@ -6,7 +6,7 @@ namespace Maniacal.Scumm.Graphics;
 /// pixel with bit 7 leftmost, every character 8 pixels wide. Text bytes are glyph numbers. Mirrors
 /// ScummVM's <c>CharsetRendererV2</c> (the English font) and <c>CharsetRendererV3::drawBits1</c>.
 /// </summary>
-public sealed class Font
+public sealed class Font : IGlyphs
 {
     /// <summary>How many glyphs there are: the 128 ASCII characters.</summary>
     public const int GlyphCount = 128;

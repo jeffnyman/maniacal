@@ -91,7 +91,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         Actors = new Actor[ActorCount];
         for (int i = 0; i < ActorCount; i++)
         {
-            Actors[i] = Version == 0 ? new ActorV0(i, this) : new Actor(i, this);
+            Actors[i] = Version == 0 ? new ActorV0(i, this) : loader.Index.IsNes ? new ActorNes(i, this) : new Actor(i, this);
 
             // resetScumm: version 0 and 1 actors, and the demos', start in the costume of their
             // number; version 0 and 1 actors with their own talk colours; version 0's names are the
@@ -122,7 +122,9 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             }
         }
 
-        var font = Font.English(Version, IsDemo);
+        IGlyphs font = IsNes && loader.Load(ResourceType.Costume, NesFontTable) is { } translation
+            ? NesFont.Load(translation, () => CurrentRoom)
+            : Font.English(Version, IsDemo);
         Messages = new MessageLine(font, Engine, n => n is > 0 and < ActorCount ? Actors[n] : null, NameOf, VerbName);
         Verbs = new VerbArea(font, Layout.RoomBottom, () => Engine.Interface, c64: Version == 0, demo: IsDemo);
 
@@ -218,6 +220,29 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
     bool IActorWorld.IsNes => IsNes;
 
+    NesCostume? IActorWorld.LoadCostumeNes(int costume)
+    {
+        if (!_costumesNes.TryGetValue(costume, out var loaded))
+        {
+            loaded = costume < NesCostumeTables.Lookup.Length && _loader.Load(ResourceType.Costume, costume) is { } data ? NesCostume.Parse(costume, data) : null;
+            _costumesNes[costume] = loaded;
+        }
+
+        return loaded;
+    }
+
+    private readonly Dictionary<int, NesCostume?> _costumesNes = [];
+
+    // the NES's two costume sets, loaded when the scripts first choose them
+    private readonly NesCostumeSet?[] _nesCostumeSets = new NesCostumeSet?[2];
+
+    /// <summary>The costume set the NES's scripts chose last (<see cref="NesCostumeSetNumber"/>), or null before they chose one.</summary>
+    private NesCostumeSet? CurrentNesCostumeSet => _nesCostumeSetChosen
+        ? _nesCostumeSets[NesCostumeSetNumber] ??= NesCostumeSet.Load(NesCostumeSetNumber, n => _loader.Load(ResourceType.Costume, n))
+        : null;
+
+    private bool _nesCostumeSetChosen;
+
     int IActorWorld.BoxCount => CurrentRoom?.WalkBoxes.Count ?? 0;
 
     BoxCorners IActorWorld.BoxCorners(int box) => Rooms.BoxCorners.Of(CurrentRoom!.WalkBoxes.Boxes[box]);
@@ -296,6 +321,12 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
     internal int RoomScreenLeft => CurrentRoom is { NesStartStrip: > 0 } ? NesNarrowRoomShift : 0;
 
     private const int NesNarrowRoomShift = 16;
+
+    // the NES's font finds its characters' tiles through this costume (CharsetRendererNES's _trTable)
+    private const int NesFontTable = 77;
+
+    // the NES's text sits under 16 lines left empty at the top of its screen (initScreens)
+    private int TextTop => IsNes ? Layout.RoomTop - MessageLine.Height : 0;
 
     /// <summary>
     /// One step of the main loop, in the order of <c>scummLoop</c> for these versions: count the
@@ -916,9 +947,9 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
                 blank.Fill(NesBitmap.Black);
             }
 
-            for (int y = 0; y < MessageLine.Height && !IsNes; y++)
+            for (int y = 0; y < MessageLine.Height; y++)
             {
-                Messages.Text.Row(y).CopyTo(blank.Row(y));
+                Messages.Text.Row(y).CopyTo(blank.Row(TextTop + y));
             }
 
             return blank;
@@ -947,6 +978,30 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             CostumeFrame frame;
             int box = actor.Walkbox;
             int mask = box < room.WalkBoxes.Count ? room.WalkBoxes.Boxes[box].Mask : 0;
+            if (actor is ActorNes nes)
+            {
+                // the NES draws its sprites straight onto the view (NESCostumeRenderer), the
+                // figure facing right 8 pixels to the left (prepareDrawActorCostume)
+                if (nes.CostumeNes is not { } costumeNes || CurrentNesCostumeSet is not { } set
+                    || actor.State.Position(0) == CostumeState.None || actor.State.Animation(0) == CostumeState.None)
+                {
+                    continue;
+                }
+
+                int nesX = actor.X * 8 - Camera.Left - (actor.Facing == 90 ? 8 : 0);
+                int nesY = (actor.Y - actor.Elevation) * 2;
+                int frameNumber = costumeNes.Frame(actor.State.Animation(0), actor.State.Position(0));
+                bool nesBehind = box == BoxGeometry.NoBox || mask != 0;
+                var (nesLeft, nesRight) = NesCostumeRenderer.Draw(view, set, set.Sprites(costumeNes.Number, frameNumber), nesX, nesY,
+                    flipped: Actor.NewDirToOldDir(actor.Facing) == CostumeRenderer.Right, colors: (lights & LightActorBasePalette) != 0, nesBehind);
+                if (nesRight > 0 && nesLeft < Camera.ScreenWidth)
+                {
+                    _actorStrips[actor.Number] = (Math.Max(nesLeft, 0) / 8 + Camera.StartStrip, (Math.Min(nesRight, Camera.ScreenWidth) + Camera.Left) / 8);
+                }
+
+                continue;
+            }
+
             if (actor is ActorV0 c64)
             {
                 // version 0 skips hidden kids, and the mask's low 2 bits are its layer (prepareDrawActorCostume)
@@ -981,10 +1036,9 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
 
         var screen = RoomView.Screen(view, layout, RoomScreenLeft, IsNes ? NesBitmap.Black : (byte)0);
 
-        // the NES's text is drawn in its own font, not yet
-        for (int y = 0; y < MessageLine.Height && y < layout.RoomTop && !IsNes; y++)
+        for (int y = 0; y < MessageLine.Height && y < layout.RoomTop; y++)
         {
-            Messages.Text.Row(y).CopyTo(screen.Row(y));
+            Messages.Text.Row(y).CopyTo(screen.Row(TextTop + y));
         }
 
         return screen;

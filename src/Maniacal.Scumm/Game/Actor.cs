@@ -12,6 +12,9 @@ internal interface IActorWorld
     /// <summary>Whether the release is the NES's, whose actors differ a little.</summary>
     bool IsNes => false;
 
+    /// <summary>The NES: a costume, or null when there is none of that number.</summary>
+    Costumes.NesCostume? LoadCostumeNes(int costume) => null;
+
     int CurrentRoom { get; }
 
     int Version { get; }
@@ -326,13 +329,22 @@ internal class Actor
     /// <summary>Starts a frame in the current direction, when the actor is in the current room. Mirrors <c>startAnimActor</c>.</summary>
     public virtual void StartAnim(int frame)
     {
-        if (InCurrentRoom && Costume is { } costume)
+        if (InCurrentRoom && CostumeReady)
         {
             _animProgress = 0;
-            State.Decode(costume, OldDirection + frame * 4);
+            DecodeAnimation(OldDirection + frame * 4);
             Frame = frame;
         }
     }
+
+    /// <summary>Whether the actor has a costume to animate (loading it when first asked).</summary>
+    protected virtual bool CostumeReady => Costume is not null;
+
+    /// <summary>Starts an animation on the limbs it lists. Mirrors <c>costumeDecodeData</c>.</summary>
+    protected virtual void DecodeAnimation(int animation) => State.Decode(Costume!, animation);
+
+    /// <summary>One step of every limb's animation; true when a picture changed. Mirrors <c>increaseAnims</c>.</summary>
+    protected virtual bool IncreaseAnimations() => State.Increase(Costume!);
 
     /// <summary>
     /// Turns to a facing at once. Every limb whose animation is for another direction, or another
@@ -347,7 +359,7 @@ internal class Actor
         }
 
         Facing = direction;
-        if (Costume is not { } costume)
+        if (!CostumeReady)
         {
             return;
         }
@@ -367,7 +379,7 @@ internal class Actor
             }
 
             Frame = animation >> 2;
-            State.Decode(costume, oldDirection + Frame * 4);
+            DecodeAnimation(oldDirection + Frame * 4);
         }
     }
 
@@ -409,7 +421,7 @@ internal class Actor
     /// <summary>One frame of animation: every <see cref="AnimSpeed"/> + 1 frames the limbs step on. Mirrors <c>animateCostume</c>.</summary>
     public virtual void AnimateCostume()
     {
-        if (Costume is not { } costume)
+        if (!CostumeReady)
         {
             return;
         }
@@ -417,7 +429,7 @@ internal class Actor
         if (++_animProgress >= AnimSpeed)
         {
             _animProgress = 0;
-            State.Increase(costume);
+            IncreaseAnimations();
         }
     }
 

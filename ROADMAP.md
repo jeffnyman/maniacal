@@ -14,7 +14,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 4 | Sound, saves and options (V2 and V1) | Done |
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
 | 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
-| 7 | The NES | Started: the cartridge is read, its scripts run, its rooms are drawn |
+| 7 | The NES | Under way: the cartridge read, its scripts run, its rooms, actors and text drawn |
 | Later | A browser player, Amiga and Atari ST, Zak McKracken | Perhaps |
 
 ## Design
@@ -872,9 +872,33 @@ and sound. `docs/nes` documents its data. The steps:
    the dark room, the screen's layout and the narrow rooms' place, and the intro's room as
    ScummVM showed it. The title screens ScummVM shows before the boot script
    (`playNESTitleScreens`, two pictures and the second's sparkles, `gfx_nes.cpp`) are still to
-   come, with the text and the actors.
-4. **Costumes and the font.** `NESCostumeRenderer` and the costume parts in `54.LFL`
-   (`v1MMNEScostTables`), the NES font and its translation.
+   come.
+4. **Costumes and the font (done).** An NES costume (`NesCostume`) is one limb whose animations,
+   `frame * 4 + direction` as elsewhere, are lists of the costume set's frames; `CostumeState`
+   steps through them, back to the first after the last (`NESCostumeLoader`). The two costume
+   sets, the kids' and the rest, which the scripts choose with `switchCostumeSet`, hold each
+   frame's 8x8 sprites (their places, tiles, sub-palettes and mirroring), the tiles and the 16
+   colours (`NesCostumeSet`, from costume slots 25 to 36). `ActorNes` animates them through
+   three hooks `Actor` now has (whether the costume is ready, decoding an animation, stepping
+   the animations), and `NesCostumeRenderer` draws the sprites straight onto the room's view as
+   `NESCostumeRenderer::drawLimb` does: a figure facing right mirrored and 8 pixels to the left,
+   a sprite crossing the view's edge left out, colour 0 not drawn, the room's mask kept in front,
+   and without the light's colours the dark palette. The costume numbers' places in the sets,
+   the sets' slots and the two dark palettes come from ScummVM's source through
+   `tools/port_nes_costumes.py`.
+
+   The font (`NesFont`) draws each character, 8 by 8, from the room graphics' tiles through the
+   translation table in costume 77, whole and in the room's palette: the
+   third sub-palette for colour 0, the fourth for 1 (`CharsetRendererNES`). The text area is the
+   NES's, lines 16 to 32 on its black, the text 16 pixels in and wrapping at 256; nobody's text
+   is colour 0, and the speakers' take turns between 0 and 1 (`actorTalk`'s `_NES_talkColor`).
+   The message line and the verb area draw through a small glyph interface the old font also
+   has, so the public `Font` is unchanged.
+
+   Checked against ScummVM 2026.4.0's window: the whole intro, the meteor flying and the credits
+   over the hillside, matched to the pixel, and the kid selection with its line of text but for
+   ScummVM's cursor. Tested in `NesDrawingTests` (those screens, and the NES's animation) and
+   `NesPlayTests` (the kids drawn in the driveway in their set).
 5. **The interface.** The NES's verbs, inventory and cursor, and its input.
 6. **Sound.** `player_nes.cpp`, the NES's sound chip (APU) and its music.
 7. **The walkthrough**, won in the NES release, and saves checked against ScummVM.

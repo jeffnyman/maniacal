@@ -104,6 +104,44 @@ internal sealed class CostumeState
         }
     }
 
+    /// <summary>
+    /// The NES: an animation on its one limb, from the first of its <paramref name="frames"/>
+    /// frames. Mirrors <c>NESCostumeLoader::costumeDecodeData</c>.
+    /// </summary>
+    public void DecodeNes(int animation, int frames)
+    {
+        _position[0] = 0;
+        _start[0] = 0;
+        _end[0] = frames;
+        _animation[0] = animation;
+    }
+
+    /// <summary>
+    /// The NES: one step of each limb's animation, back to its start after its last frame; true
+    /// when a frame changed. Mirrors <c>NESCostumeLoader::increaseAnims</c>.
+    /// </summary>
+    public bool IncreaseNes()
+    {
+        bool changed = false;
+        for (int limb = 0; limb < Limbs; limb++)
+        {
+            if (_position[limb] == None)
+            {
+                continue;
+            }
+
+            int old = _position[limb]++;
+            if (_position[limb] >= _end[limb])
+            {
+                _position[limb] = _start[limb];
+            }
+
+            changed |= _position[limb] != old;
+        }
+
+        return changed;
+    }
+
     /// <summary>One animation step for every limb with a command; true when some limb's picture changed. Mirrors <c>increaseAnims</c>.</summary>
     public bool Increase(Costume costume)
     {

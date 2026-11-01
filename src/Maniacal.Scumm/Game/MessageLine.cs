@@ -28,7 +28,13 @@ internal sealed class MessageLine
 
     // the engine's character count (VAR_CHARCOUNT of ScummEngine_v2::setupScummVars)
 
-    private readonly Font _font;
+    private readonly IGlyphs _font;
+
+    // the NES's text: 256 wide, drawn 16 pixels in, on its black, its colour flipping as the
+    // speaker changes (printChar, actorTalk's _NES_talkColor)
+    private readonly bool _nes;
+    private readonly int _width;
+    private int _nesTalkColor, _nesLastTalkingActor;
     private readonly ScriptEngine _engine;
     private readonly Func<int, Actor?> _actorOf;
     private readonly Func<int, string> _nameOf;
@@ -50,19 +56,30 @@ internal sealed class MessageLine
     /// interpreter doing the same; the colour itself, as saved, stays the script's.
     /// </summary>
     private byte ShownColor(int color)
-        => _engine.Version == 1 && !_engine.IsNes ? Palettes.ManiacV1ToEga[color & 0x0F] : (byte)color;
+        => _engine.Version == 1 && !_nes ? Palettes.ManiacV1ToEga[color & 0x0F] : (byte)color;
 
-    public MessageLine(Font font, ScriptEngine engine, Func<int, Actor?> actorOf, Func<int, string> nameOf, Func<int, string> verbNameOf)
+    public MessageLine(IGlyphs font, ScriptEngine engine, Func<int, Actor?> actorOf, Func<int, string> nameOf, Func<int, string> verbNameOf)
     {
         _font = font;
+        _nes = engine.IsNes;
+        _width = _nes ? NesWidth : Width;
+        Text = new Surface8(_width, Height);
+        if (_nes)
+        {
+            Text.Fill(NesBitmap.Black);
+        }
+
         _engine = engine;
         _actorOf = actorOf;
         _nameOf = nameOf;
         _verbNameOf = verbNameOf;
     }
 
+    /// <summary>The NES's text area is as wide as its screen; its text starts 16 pixels in.</summary>
+    public const int NesWidth = 256, NesLeft = 16;
+
     /// <summary>The text area as it is drawn now.</summary>
-    public Surface8 Text { get; } = new(Width, Height);
+    public Surface8 Text { get; }
 
     /// <summary>0 for none, 0xFF while a message (or part of one) is to show, 1 once it has all shown. Mirrors <c>_haveMsg</c>.</summary>
     public int HaveMessage { get; private set; }
@@ -188,6 +205,22 @@ internal sealed class MessageLine
         }
 
         _color = TalkingActor == NoActor ? StringColor : _actorOf(TalkingActor)!.TalkColor;
+
+        // the NES: nobody's text in colour 0, and the speakers' in turn 0 and 1 (actorTalk)
+        if (_nes && TalkingActor == NoActor)
+        {
+            _color = 0;
+        }
+        else if (_nes)
+        {
+            if (_nesLastTalkingActor != TalkingActor)
+            {
+                _nesTalkColor ^= 1;
+            }
+
+            _nesLastTalkingActor = TalkingActor;
+            _color = _nesTalkColor;
+        }
         _position = 0;
         TalkDelay = 0;
         HaveMessage = 0xFF;
@@ -247,16 +280,21 @@ internal sealed class MessageLine
                 continue;
             }
 
-            if (_nextLeft >= Width)
+            if (_nextLeft >= _width)
             {
                 LineBreak();
             }
 
             // CharsetRendererV3::printChar skips a character that would not fit, and a filler (@)
-            // takes no room, though it counts towards the message's time
+            // takes no room, though it counts towards the message's time; the NES's printChar
+            // draws it 16 pixels in, as far as the text area goes
             if (c != '@')
             {
-                if (_nextLeft + Font.CharWidth <= Width && c < Font.GlyphCount)
+                if (_nes)
+                {
+                    _font.DrawGlyph(Text, c, _nextLeft + NesLeft, _nextTop, ShownColor(_color));
+                }
+                else if (_nextLeft + Font.CharWidth <= Width && c < Font.GlyphCount)
                 {
                     _font.DrawGlyph(Text, c, _nextLeft, _nextTop, ShownColor(_color));
                 }
@@ -375,7 +413,7 @@ internal sealed class MessageLine
     /// <summary>Mirrors <c>restoreCharsetBg</c>: the text area is black again, and the next character goes top left.</summary>
     private void Clear()
     {
-        Text.Fill(0);
+        Text.Fill(_nes ? NesBitmap.Black : (byte)0);
         _nextLeft = 0;
         _nextTop = 0;
     }
