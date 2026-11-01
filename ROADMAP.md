@@ -15,7 +15,9 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
 | 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
 | 7 | The NES | Done: the American cartridge winnable, with its title screens, sound and saves, opened by the library and the tool |
-| Later | A browser player, Amiga and Atari ST, Zak McKracken | Perhaps |
+| 8 | The Atari ST | Next, for the 1.0 |
+| 9 | The Amiga | For the 1.0, after the Atari ST |
+| Later | A browser player, Zak McKracken | Perhaps |
 
 ## Design
 
@@ -996,11 +998,53 @@ and sound. `docs/nes` documents its data. The steps:
    refused) and `ManiacMansionTests` (the NES opened and played, its saves refused by the DOS
    release and the other way round).
 
+## Phase 8: the Atari ST
+
+The Atari ST release (1988), in English, played as ScummVM plays it, for the 1.0. It is the
+enhanced DOS game, version 2, on one 720 KB floppy: `00.LFL` to `54.LFL` (ScummVM's index MD5
+`0c331637...`, 1988 bytes), a small `MANIAC.PRG` and a solutions file. Where ScummVM treats it
+apart from DOS (`_game.platform == kPlatformAtariST`) is little, so most of the engine is reused.
+The steps:
+
+1. **The disk.** A reader for the `.st` image, an ordinary FAT12 floppy, giving its files as a
+   folder does, as the C64's `.d64` images are read (`GameImages.Unpack`); the room files found
+   under any case, and on the disk or copied off it. The release named as ScummVM names it
+   ("V2, English, Atari ST"), and refused until the steps below are done.
+2. **Pictures and the interface.** The Amiga's palette, which ScummVM gives the Atari ST too
+   (`resetPalette`, `tableAmigaPalette`), through `tools/port_palettes.py`; the ST's cursor
+   (`setBuiltinCursor`, `cursor.cpp`); anything else the ST's screens show differently. Checked
+   against ScummVM's window, the intro, the kid selection and rooms to the pixel.
+3. **Sound.** ScummVM plays the ST's sounds with version 2's player (`Player_V2`), which
+   Maniacal has, the sound resources lacking DOS's AdLib part (the resource reading of `sound.cpp`). Checked
+   against ScummVM's own output, recorded as the NES's was.
+4. **The walkthrough and saves**, won in the ST release, the checkpoints loaded in ScummVM and
+   ScummVM's own ST saves loaded here; then the refusal lifted, `ManiacMansion.Open` and the tool
+   playing the ST, its saves in a folder of their own.
+
+## Phase 9: the Amiga
+
+The Amiga release (1988), in English, played as ScummVM plays it, for the 1.0, after the Atari
+ST. It is the enhanced game, version 2, on two 880 KB floppies (`.adf`): "Maniac Disk 1" holds
+the index (ScummVM's MD5 `e781230d...`) and ten rooms, "Maniac Disk 2" the other 43, room 44 on
+both, under a `rooms` folder (ScummVM's `SearchMan.addSubDirectoryMatching(gameDataDir, "rooms")`).
+The steps:
+
+1. **The disks.** A reader for AmigaDOS floppies (`.adf`, the old and fast file systems), both
+   disks of the release read as one folder; the release named, and refused until the steps below
+   are done.
+2. **Pictures and the interface.** The Amiga palette (shared with the Atari ST in Phase 8), and
+   what ScummVM does only for the Amiga's Maniac Mansion: room changes without the fade-in
+   (`gfx.cpp`'s `transitionEffect` and `fadeIn` branches), its verb colours (`vars.cpp`), its
+   cursor, and anything else its screens show differently. Checked against ScummVM's window.
+3. **Sound.** `Player_V2A`, the Amiga's own player (`players/player_v2a.cpp`, about 2,000 lines),
+   many of its sounds written one by one as their own classes, ported with its tables through a
+   generator and checked against ScummVM's own recorded output. Likely a few steps of its own.
+4. **The walkthrough and saves**, as for the Atari ST; then the refusal lifted.
+
 ## Later, perhaps
 
 - The CGA and Hercules color maps of `setV1ColorTable` and `resetPalette`.
 - A browser player: a host for the browser (WebAssembly), as the SDL host is for the desktop.
-- Amiga and Atari ST V2 data, with `Player_V2A`.
 - Zak McKracken V1/V2, on the same engine.
 - The NES's costumes in the inspector, drawn from its costume sets.
 - The European NES cartridge, English as the American, once tested.
