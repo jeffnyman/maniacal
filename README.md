@@ -21,8 +21,9 @@ the same engine generations and would come nearly for free, but, at least for ri
 
 ## Screenshots
 
-Taken by the headless player from the games' own data, at their native 320×200, from saves the
-walkthrough tests make along their routes: the same three scenes in each release.
+Taken by the headless player from the games' own data, at their native 320×200 (the NES's
+256×240), from saves the walkthrough tests make along their routes: the same three scenes in each
+release.
 
 <table>
 <tr><th colspan="3">Commodore 64 (V0)</th></tr>
@@ -42,6 +43,12 @@ walkthrough tests make along their routes: the same three scenes in each release
 <td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/v2-front-porch.png" width="280" alt="The front of the mansion"><br>The front of the mansion</td>
 <td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/v2-green-tentacle.png" width="280" alt="Green Tentacle's room"><br>Green Tentacle's room</td>
 <td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/v2-weird-ed.png" width="280" alt="Weird Ed's room"><br>Weird Ed's room</td>
+</tr>
+<tr><th colspan="3">NES (1990)</th></tr>
+<tr>
+<td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/nes-front-porch.png" width="256" alt="The front of the mansion"><br>The front of the mansion</td>
+<td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/nes-green-tentacle.png" width="256" alt="Green Tentacle's room"><br>Green Tentacle's room</td>
+<td align="center" valign="top"><img src="https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/screenshots/nes-weird-ed.png" width="256" alt="Weird Ed's room"><br>Weird Ed's room</td>
 </tr>
 </table>
 
