@@ -266,8 +266,9 @@ load in ScummVM and compare.
 The C64 release's disk images are found by ScummVM's names, `maniac1.d64` and `maniac2.d64`, or by
 the bytes each disk starts with. The NES cartridge is found by its contents, under any name ending
 in `.nes` (a dump with its iNES header) or `.prg` (the program data alone, as ScummVM wants it).
-The Atari ST's disk is read where it is, a `.st` image under any name (ScummVM wants its files
-copied off it).
+The Atari ST's disk is read where it is, a `.st` image under any name, and the Amiga's two, `.adf`
+images under any names (ScummVM wants their files copied off them); the Amiga release is named,
+and refused until it is played.
 
 ## Documentation
 

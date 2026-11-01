@@ -16,7 +16,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
 | 7 | The NES | Done: the American cartridge winnable, with its title screens, sound and saves, opened by the library and the tool |
 | 8 | The Atari ST | Done: winnable every way, drawn and heard as in ScummVM, opened by the library and the tool |
-| 9 | The Amiga | For the 1.0, after the Atari ST |
+| 9 | The Amiga | Under way, for the 1.0: its disks read, the release named |
 | Later | A browser player, Zak McKracken | Perhaps |
 
 ## Design
@@ -1074,13 +1074,28 @@ The steps:
 
 The Amiga release (1988), in English, played as ScummVM plays it, for the 1.0, after the Atari
 ST. It is the enhanced game, version 2, on two 880 KB floppies (`.adf`): "Maniac Disk 1" holds
-the index (ScummVM's MD5 `e781230d...`) and ten rooms, "Maniac Disk 2" the other 43, room 44 on
+the index (ScummVM's MD5 `e781230d...`) and nine rooms, "Maniac Disk 2" 45 rooms, room 44 on
 both, under a `rooms` folder (ScummVM's `SearchMan.addSubDirectoryMatching(gameDataDir, "rooms")`).
 The steps:
 
-1. **The disks.** A reader for AmigaDOS floppies (`.adf`, the old and fast file systems), both
-   disks of the release read as one folder; the release named, and refused until the steps below
-   are done.
+1. **The disks (done).** `AdfDiskImage` reads AmigaDOS floppy images (`.adf`), the original
+   file system and the fast one: from the root block in the middle of the disk, each directory's
+   hash table and chains, each file's data blocks from its header's list and its extension lists
+   (the original file system's blocks with their own headers, the fast one's whole). Every `.adf`
+   in a folder is read, the disks together as one folder, a file on two taken from the first,
+   and the room files under `rooms` found by their own names too, as ScummVM's search path finds
+   them; `GameImages.Unpack` takes them after the Atari ST's disk. The release is named as
+   ScummVM names it, "Maniac Mansion (V2, English, Amiga)" (index MD5 `e781230d...`), and refused
+   for now: "the Amiga release is not supported yet".
+
+   Between them the disks hold `00.LFL` to `53.LFL`, room 44 on both and the same. The costumes
+   are the 1988 DOS release's; 12 scripts and 6 rooms differ; every sound differs, in the Amiga's
+   own format (step 3). Every room, script, sound and costume the index names reads as DOS's do
+   (script 134 and sounds 1, 2, 47 to 49 and 53 point at nothing whole in both), but for sound 55,
+   the ending music again: its entry is two bytes before the next resource, its length word
+   nonsense (step 3). Tested in `AdfDiskImageTests`: two disks, one of each file system, read as
+   one folder (a hash chain, an extension list, a file on both), other disks not taken for the
+   game, and the release's disks.
 2. **Pictures and the interface.** The Amiga palette (shared with the Atari ST in Phase 8), and
    what ScummVM does only for the Amiga's Maniac Mansion: room changes without the fade-in
    (`gfx.cpp`'s `transitionEffect` and `fadeIn` branches), its verb colours (`vars.cpp`), its
