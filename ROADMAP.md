@@ -879,6 +879,15 @@ Where it comes from:
   2026.4.0, given the same save, goes to the same title, the same to the pixel. A save made
   during the tune's first time through plays it again instead. Tested (`DemoTests`).
 
+- **Played on Linux and macOS.** The build workflow's runners have no game data, so the game
+  itself had been played on Windows only. On Linux (Ubuntu 24.04 under WSL 2), with the game
+  files: every test passes, the packages packed there give the console app the same rooms and
+  pixels after 600 steps as on Windows for all nine releases, the tool installs from them, and
+  the player's window shows the game with its sound through WSLg. A Wayland compositor places
+  windows itself, so the window is not centred there (an X11 one is). On macOS the 0.4.1-alpha
+  tool, installed from nuget.org, plays with its graphics, music and sound, and the Dock shows
+  the mansion.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies
