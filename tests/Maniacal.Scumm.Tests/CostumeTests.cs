@@ -72,9 +72,9 @@ public class CostumeTests
     }
 
     [Theory]
-    [InlineData(V1Folder)]
-    [InlineData(V2Folder)]
-    public void Facing_left_mirrors_facing_right(string folder)
+    [InlineData(V1Folder, 7)]
+    [InlineData(V2Folder, 0)]
+    public void Facing_left_mirrors_facing_right(string folder, int shift)
     {
         if (Open(folder) is not { } loader)
         {
@@ -89,10 +89,14 @@ public class CostumeTests
         var left = leftFrame.Pixels;
         var right = rightFrame.Pixels;
 
-        // mirrored, a cel covers -x - width + 1 to -x (paintCelByleRLE draws from x leftwards), so
-        // the figure's columns are the other way round about the actor's column itself; checked
-        // against ScummVM 2026.4.0, where a figure a column further left differed by 546 pixels
-        Assert.Equal(right.Width - 1 - rightFrame.OriginX, leftFrame.OriginX);
+        // mirrored, a version 2 cel covers -x - width + 1 to -x (paintCelByleRLE draws from x
+        // leftwards, a pixel a column), so the figure's columns are the other way round about the
+        // actor's column itself; a version 1 cel's columns are eight pixels wide, each filled
+        // rightwards (byleRLEDecode_C64), so it covers -x - width + 8 to -x + 7, seven pixels
+        // further right. Checked against ScummVM 2026.4.0: in version 2 a figure a column further
+        // left differed by 546 pixels; in version 1 one seven pixels further left differed in the
+        // 1987 demo's meteor and in Syd and Razor right after a load
+        Assert.Equal(right.Width - 1 - rightFrame.OriginX - shift, leftFrame.OriginX);
         Assert.Equal(right.Width, left.Width);
         Assert.Equal(right.Height, left.Height);
         for (int y = 0; y < left.Height; y++)

@@ -259,10 +259,12 @@ public class GameStartTests
     /// speaking kid's mouth is a frame on at step 300. Re-pinned again when mirrored figures came
     /// to be placed as ScummVM places them, Syd and Razor (facing left) a column to the right, and
     /// version 1's text shown through its colour table; a save of this screen loaded in ScummVM
-    /// 2026.4.0 shows the same screen in version 2.
+    /// 2026.4.0 shows the same screen in version 2. Re-pinned when version 1's mirrored figures
+    /// came to be placed seven pixels further right, as its eight-pixel columns are drawn; a save of
+    /// the driveway loaded in ScummVM 2026.4.0 then showed the same screen in version 1 too.
     /// </summary>
     [Theory]
-    [InlineData(V1Folder, "503b7325d80bcfd42eee813aeb75ab74")]
+    [InlineData(V1Folder, "66eb03590f39437d5dc70dbf9cc0fc13")]
     [InlineData(V2Folder, "c7f4e748cb9fa36a80360a82b101aec7")]
     public void The_start_screen_is_stable(string folder, string md5)
     {

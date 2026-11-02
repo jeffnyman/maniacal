@@ -119,9 +119,12 @@ internal static class CostumeRenderer
             moveX += cel.MoveX;
             moveY -= cel.MoveY;
 
-            // mirrored, the cel's columns run leftwards from -x, so it covers -x - width + 1 to -x
-            // (paintCelByleRLE: rect.left = x - width, rect.right = x, drawing from x)
-            int left = toRight ? x : -x - cel.Width + 1;
+            // mirrored, the cel's columns run leftwards from -x (paintCelByleRLECommon: compData.x
+            // = x - xMoveCur, stepping by scaleXStep -1). Version 2's columns are a pixel wide, so it
+            // covers -x - width + 1 to -x; version 1's (the C64 format, byleRLEDecode_C64) are eight
+            // pixels wide, each still filled rightwards from where it starts (LINE writes p to
+            // p + 7), so it covers -x - width + 8 to -x + 7
+            int left = toRight ? x : costume.IsVersion1 ? -x - cel.Width + 8 : -x - cel.Width + 1;
             parts.Add((DrawCel(costume, cel, palette, !toRight), left, y));
         }
 

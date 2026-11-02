@@ -904,12 +904,23 @@ Where it comes from:
   moves past the break. `IsDemo`'s documentation, met on the way, said "one of the DOS demos":
   it is true of the C64's too.
 
+- **Version 1's mirrored figures, seven pixels to the right.** The two differences the comparison
+  with ScummVM 2026.4.0 had left in version 1, the 1987 demo's meteor a movement step from
+  ScummVM's and Syd and Razor a strip apart right after a load, were one: a figure facing left.
+  Version 1's costumes are the C64's format (`_format == 0x57`), whose columns are eight pixels
+  wide; mirrored, `paintCelByleRLECommon` starts at the actor's x less the cel's offset and
+  steps left a column at a time, but `byleRLEDecode_C64` still fills each column rightwards from
+  its start (`LINE` writes offsets 0 to 7), so a mirrored cel covers `-x - width + 8` to `-x + 7`.
+  The port placed it as version 2's, whose columns are a pixel wide (`-x - width + 1` to `-x`),
+  seven pixels to the left. The meteor flies facing left and Syd and Razor face Dave; once the
+  kids turned to face front, the screens agreed, which is why it showed only for a second or
+  two. Now all 24 captures of the 1987 demo's first 100 seconds match a step to the pixel (the
+  30 pixels in the corner of one were this too, not the twinkling star), and the driveway save
+  loaded in both shows the same screen from the first capture, but for ScummVM's cursor at the
+  real mouse. The NES, which runs on version 1, draws its figures otherwise and is unchanged.
+
 ### Next, before a 1.0
 
-- What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies
-  a movement step apart from ScummVM's at one moment; right after a load, Syd and Razor turning
-  to face left are drawn a strip apart for a second or two. Both are about how version 1 moves
-  and animates actors, not about drawing them; the twinkling star differs too, being random.
 - Verb names: the programs used from outside found verbs only as numbers. The DOS releases' names
   live in their own scripts (`verbOps` in the boot script), so this waits until it is wanted.
 - At 1.0: an empty `VersionSuffix`, `PublicAPI.Unshipped.txt` moved into
