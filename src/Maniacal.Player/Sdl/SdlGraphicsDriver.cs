@@ -226,6 +226,36 @@ internal sealed unsafe class SdlGraphicsDriver : IGraphicsDriver, IDisposable
         return (Math.Clamp(x, 0, _width - 1), Math.Clamp(y, 0, _height - 1));
     }
 
+    /// <summary>
+    /// Moves the system's pointer to the middle of a framebuffer pixel, as a cursor steered from
+    /// the keyboard is, so that the pointer and the game's cursor stay together.
+    /// </summary>
+    public void WarpPointer(int x, int y)
+    {
+        if (_width == 0 || _height == 0 || _target.w == 0 || _target.h == 0)
+        {
+            return;
+        }
+
+        float windowX = _target.x + (x + 0.5f) * _target.w / _width;
+        float windowY = _target.y + (y + 0.5f) * _target.h / _height;
+
+        // the target is in the surface's pixels, the pointer in window coordinates (see ToFramebuffer)
+        int winW;
+        int winH;
+        if (SDL_GetWindowSize(_window, &winW, &winH) && winW > 0 && winH > 0)
+        {
+            var surface = SDL_GetWindowSurface(_window);
+            if (surface is not null && surface->w > 0 && surface->h > 0)
+            {
+                windowX = windowX * winW / surface->w;
+                windowY = windowY * winH / surface->h;
+            }
+        }
+
+        SDL_WarpMouseInWindow(_window, windowX, windowY);
+    }
+
     public void Dispose()
     {
         DestroyFrame();

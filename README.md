@@ -121,7 +121,9 @@ a whole scale; `--fullscreen`, `--scale N` (1 to 8), `--speaker` for the PC spea
 `--copy-protection` change how. A verb is clicked, then an object;
 clicking the object again, or clicking the sentence line, carries the sentence out, as in the
 original. The right button, Escape or F4 skip a cutscene, the period key skips a line of speech,
-and F5 opens the game's save screen. The NES plays as it did: its two title screens first (a
+and F5 opens the game's save screen. Without a mouse, as the original allowed, the arrow keys or
+the numpad's 2, 4, 6 and 8 steer the cursor (faster while held), the numpad's 7, 9, 1 and 3 put it
+in a corner, and its 5 clicks. The NES plays as it did: its two title screens first (a
 click or Escape skips each), a click on an object carries the sentence out at once, Shift-B also
 skips a cutscene, and Space or F5 opens its own save screen. Saves go in a `Maniacal/saves` folder
 under the user's application data (`%APPDATA%` on Windows, `~/.config` on Linux and macOS), in a

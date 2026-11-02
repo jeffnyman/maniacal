@@ -831,6 +831,17 @@ Where it comes from:
   `(Commodore 64 Demo)`, `(NES)`, `(Atari ST)`, `(Amiga)`. The volume shown there after a change
   now follows that title; it followed the window's first title, `Maniacal`, dropping the game's.
 
+- **The cursor steered from the keyboard.** As the original DOS interpreter allowed (its
+  reference card: the arrow keys or the numpad move the cursor, 5 clicks, 1, 3, 7 and 9 jump to
+  the corners), the player turns those keys into the mouse's moves and clicks, the system's
+  pointer moved along with it, so the game is none the wiser and a real mouse works beside them.
+  A press moves the cursor 2 pixels and each repeat while held a pixel more, up to 8. The numpad
+  is known by its keys' places, so Num Lock does not matter; its digits were never typed for the
+  game, and the digits above the letters still are, Enter stays the game's (the 1988 release's
+  save screen takes a name). ScummVM's engine has none of it (its virtual mouse is the frontend's),
+  so this is the player's, not the library's; and the original's Shift+M, switching the mouse
+  off, is not needed.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies

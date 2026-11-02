@@ -69,7 +69,11 @@ internal sealed unsafe class SdlInputDriver : IInputDriver
     private readonly Queue<InputEvent> _queue = new();
     private readonly SdlGraphicsDriver _graphics;
     private readonly SdlAudioDriver _audio;
+    private readonly KeyboardPointer _pointer = new();
     private int _volumeBeforeMute;
+
+    // where the game's cursor is, in the framebuffer, as the mouse or the keys last put it
+    private int _mouseX = 160, _mouseY = 100;
 
     public SdlInputDriver(SdlGraphicsDriver graphics, SdlAudioDriver audio)
     {
@@ -142,6 +146,19 @@ internal sealed unsafe class SdlInputDriver : IInputDriver
                         break;
                     }
 
+                    // the arrow keys and the numpad steer the cursor (KeyboardPointer); the numpad's
+                    // keys are known by where they are, Num Lock on or off
+                    var steering = KeyboardPointer.Numpad(sdlEvent.key.scancode) ?? sdlEvent.key.key;
+                    if (KeyboardPointer.Steers(steering) && (sdlEvent.key.mod & (SDL_Keymod.SDL_KMOD_CTRL | SDL_Keymod.SDL_KMOD_ALT)) == 0)
+                    {
+                        if (sdlEvent.key.down)
+                        {
+                            Steer(steering, sdlEvent.key.repeat);
+                        }
+
+                        break;
+                    }
+
                     var key = TranslateKey(sdlEvent.key.key);
                     var modifiers = TranslateModifiers(sdlEvent.key.mod);
                     var ascii = ToAscii(sdlEvent.key.key, sdlEvent.key.mod);
@@ -154,6 +171,7 @@ internal sealed unsafe class SdlInputDriver : IInputDriver
                 case SDL_EventType.SDL_EVENT_MOUSE_MOTION:
                 {
                     var (x, y) = _graphics.ToFramebuffer(sdlEvent.motion.x, sdlEvent.motion.y);
+                    (_mouseX, _mouseY) = (x, y);
                     _queue.Enqueue(InputEvent.MouseMove(x, y));
                     break;
                 }
@@ -178,6 +196,26 @@ internal sealed unsafe class SdlInputDriver : IInputDriver
                     break;
                 }
             }
+        }
+    }
+
+    // a steering key pressed: the cursor moved, the system's pointer with it, or a click where it is
+    private void Steer(SDL_Keycode key, bool repeat)
+    {
+        int width = Math.Max(1, _graphics.Width), height = Math.Max(1, _graphics.Height);
+        var (action, x, y) = _pointer.Press(key, repeat, Math.Min(_mouseX, width - 1), Math.Min(_mouseY, height - 1), width, height);
+        switch (action)
+        {
+            case KeyboardPointer.Action.Move:
+                (_mouseX, _mouseY) = (x, y);
+                _queue.Enqueue(InputEvent.MouseMove(x, y));
+                _graphics.WarpPointer(x, y);
+                break;
+            case KeyboardPointer.Action.Click:
+                _queue.Enqueue(InputEvent.MouseMove(x, y));
+                _queue.Enqueue(InputEvent.MouseDown(MouseButton.Left, x, y));
+                _queue.Enqueue(InputEvent.MouseUp(MouseButton.Left, x, y));
+                break;
         }
     }
 
