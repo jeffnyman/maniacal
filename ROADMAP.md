@@ -919,10 +919,28 @@ Where it comes from:
   loaded in both shows the same screen from the first capture, but for ScummVM's cursor at the
   real mouse. The NES, which runs on version 1, draws its figures otherwise and is unchanged.
 
+- **The verbs' names.** The programs used from outside found objects' verbs only as numbers;
+  `GameInspector.Verbs` lists the numbers a release names, and `VerbName(verb)` gives the name
+  shown on screen. The numbers mean the same in every release (9 Push, 13 Walk to, 15 What is);
+  the names are each release's: every one but the C64's sets its verbs up in global script 164,
+  clearing the verb area and making each with its number, place and name (`o2_verbOps`), so the
+  inspector decodes that script's new-verb instructions and drops the `@` fillers; the C64's
+  engine has them built in, so they come from ScummVM's table (`v0VerbTable_English`, ported by
+  `tools/port_v0_verbs.py`). The NES names 13 "Go To" and 14 "Get", and has no Fix, Unlock or What
+  is; the DOS demos name all fifteen, though they never show them. Script 164 is the one place:
+  other scripts lend verb slots for the title's text (verb 3, scripts 9 and 173; the NES's 120),
+  the kids' names on the new-kid screen (20 to 22, script 165) and the save screen's games (35 to
+  38, room 50). Numbers in objects' tables with no name are none a player picks, and the
+  documentation says what they are: 255 matches any verb the object has no code for (on the C64
+  that is 15, What is), 253 is code the scripts run on an object, 16 locks a door or a padlock
+  (`setStateLocked`, then Close), and the NES's objects still answer the Fix and Unlock it has no
+  verbs for. Tested on all nine releases, and against the names the game itself shows on the
+  driveway in the 1988 release, the C64's and the NES's. `RoomAtlas` in the playground, built
+  against the repository with `use-local.ps1`, now lists "Open, Close, Unlock, Use, Walk to, #16"
+  for the front door.
+
 ### Next, before a 1.0
 
-- Verb names: the programs used from outside found verbs only as numbers. The DOS releases' names
-  live in their own scripts (`verbOps` in the boot script), so this waits until it is wanted.
 - At 1.0: an empty `VersionSuffix`, `PublicAPI.Unshipped.txt` moved into
   `PublicAPI.Shipped.txt`, and, once it is on nuget.org, the baseline moved to 1.0.0.
 

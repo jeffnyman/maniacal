@@ -1,1 +1,3 @@
 #nullable enable
+Maniacal.Scumm.Inspection.GameInspector.VerbName(int verb) -> string?
+Maniacal.Scumm.Inspection.GameInspector.Verbs.get -> System.Collections.Generic.IReadOnlyList<int>!

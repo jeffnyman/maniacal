@@ -214,7 +214,15 @@ public sealed class GameInspector(ResourceLoader loader)
     // the C64's clips: walking right, and standing facing left (then right, front and back)
     private const int V0WalkRight = 1, V0StandLeft = 4;
 
-    private IReadOnlyList<int>? _rooms, _scripts, _costumes;
+    // the global script every release but the C64's runs to set up its verbs: the verb area
+    // cleared, then each verb made with its number, place and name (o2_verbOps)
+    private const int VerbScript = 164;
+
+    // the verbs' fillers, which keep their names a width on screen
+    private const char VerbFiller = '@';
+
+    private IReadOnlyList<int>? _rooms, _scripts, _costumes, _verbs;
+    private SortedDictionary<int, string>? _verbNames;
 
     /// <summary>The SCUMM version of the release: 0 for the C64, 1 and 2 for DOS.</summary>
     public int Version => loader.Index.Version;
@@ -230,6 +238,28 @@ public sealed class GameInspector(ResourceLoader loader)
 
     /// <summary>The numbers of the release's costumes, in order: those <see cref="Costume"/> answers.</summary>
     public IReadOnlyList<int> Costumes => _costumes ??= Numbers(ResourceType.Costume, HoldsCostume);
+
+    /// <summary>
+    /// The numbers of the verbs the release gives a name, in order: those <see cref="VerbName"/>
+    /// answers. They are the numbers an object's <see cref="ObjectInfo.Verbs"/> use, the same in
+    /// every release: 9 Push, 13 Walk to, 15 What is, and so on.
+    /// </summary>
+    public IReadOnlyList<int> Verbs => _verbs ??= [.. VerbNames.Keys];
+
+    /// <summary>
+    /// The name a verb shows on screen, as the release names it (the NES's 13 is "Go To" where the
+    /// others have "Walk to"), or null for a number the release gives no name. These are read from
+    /// the script the game runs to set up its verbs, and for the C64 from ScummVM's table of its
+    /// verbs (<c>v0VerbTable_English</c>), as its engine has them built in.
+    /// <para>
+    /// Some numbers in objects' verb tables are no verb a player picks, and have no name: 255
+    /// matches any verb the object has no code of its own for (on the C64 that is 15, What is,
+    /// which has its name); 253 is code the game's scripts run on an object; and 16 locks a door
+    /// or a padlock, only ever done by a script. The NES has no Unlock (8) or Fix (6) to pick,
+    /// though some of its objects still answer them.
+    /// </para>
+    /// </summary>
+    public string? VerbName(int verb) => VerbNames.GetValueOrDefault(verb);
 
     /// <summary>A room's picture with its objects, or null if there is no such room.</summary>
     public RoomPicture? Room(int number, RoomObjects objects = RoomObjects.Initial)
@@ -442,6 +472,44 @@ public sealed class GameInspector(ResourceLoader loader)
     }
 
     private static KeyNotFoundException NoCostume(int number) => new($"There is no costume {number}");
+
+    // the verbs' names by number: the C64's from ScummVM's table, the others' from the new-verb
+    // instructions of the script that sets them up, without their fillers
+    private SortedDictionary<int, string> VerbNames => _verbNames ??= ReadVerbNames();
+
+    private SortedDictionary<int, string> ReadVerbNames()
+    {
+        var names = new SortedDictionary<int, string>();
+        if (Version == 0)
+        {
+            foreach (var (id, _, _, name) in Game.V0Verbs.English)
+            {
+                names[id] = name;
+            }
+
+            return names;
+        }
+
+        if (!loader.IsReadable(ResourceType.Script, VerbScript) || loader.Load(ResourceType.Script, VerbScript) is not { } script)
+        {
+            return names;
+        }
+
+        // the script's code starts after the 4-byte resource header; o2_verbOps makes a verb when
+        // its first operand is a verb number (0 deletes a slot's verb, 0xFF only moves one), its
+        // name the last operand
+        var decoder = new ScriptDecoder(Version, loader.Index.IsNes);
+        foreach (var instruction in decoder.DecodeReachable(script, [4]).Values)
+        {
+            if (instruction.Handler == "o2_verbOps"
+                && instruction.Operands is [{ Kind: OperandKind.Constant, Value: > 0 and < 0xFF } verb, .., { Kind: OperandKind.Text, Text: { } text }])
+            {
+                names[verb.Value] = System.Text.Encoding.Latin1.GetString(text).Replace(VerbFiller, ' ').Trim();
+            }
+        }
+
+        return names;
+    }
 
     /// <summary>
     /// Decodes what execution can reach from the entries; the bytes between are lines without

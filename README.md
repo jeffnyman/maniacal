@@ -225,8 +225,8 @@ is used from one thread at a time, but its `Audio` may be read from another, as 
 device's callback reads it; separate worlds share nothing and may run on threads of their own.
 
 It also looks inside a release without playing it, as the player's `--room`, `--costume`,
-`--script` and `--view` do: room pictures with their objects, costumes' figures, scripts decoded,
-and a room's screen with figures standing in it.
+`--script` and `--view` do: room pictures with their objects, the verbs' names, costumes'
+figures, scripts decoded, and a room's screen with figures standing in it.
 
 ```csharp
 var inspector = ManiacMansion.Open(folder).Inspect();
@@ -234,6 +234,11 @@ foreach (int number in inspector.Rooms)
 {
     var room = inspector.Room(number)!;
     Console.WriteLine($"Room {number}: {room.Width}x{room.Height}, {room.Objects.Count} objects");
+    foreach (var obj in room.Objects)
+    {
+        // "front door: Open, Close, Unlock, Use, Walk to, 16"; 16, 253 and 255 are no verb a player picks
+        Console.WriteLine($"  {obj.Name}: {string.Join(", ", obj.Verbs.Select(v => inspector.VerbName(v.Verb) ?? $"{v.Verb}"))}");
+    }
 }
 
 foreach (var line in inspector.Script(4)!.Lines)

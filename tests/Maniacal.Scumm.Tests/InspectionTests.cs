@@ -148,4 +148,86 @@ public class InspectionTests
         Assert.Throws<KeyNotFoundException>(() => inspector.View(12, null, [new StandingActor(77, 10, 10, Facing.Front)]));
         Assert.Null(inspector.View(99));
     }
+
+    // the verbs by number as the DOS releases, their demos, the Atari ST and the Amiga name them;
+    // the C64's and the NES's differ
+    private const string DosVerbs = "1 Open, 2 Close, 3 Give, 4 Turn on, 5 Turn off, 6 Fix, 7 New kid, 8 Unlock, 9 Push, 10 Pull, 11 Use, 12 Read, 13 Walk to, 14 Pick up, 15 What is";
+    private const string C64Verbs = "1 Open, 2 Close, 3 Give, 4 Turn on, 5 Turn off, 6 Fix, 7 New Kid, 8 Unlock, 9 Push, 10 Pull, 11 Use, 12 Read, 13 Walk to, 14 Pick up, 15 What is";
+    private const string NesVerbs = "1 Open, 2 Close, 3 Give, 4 Turn On, 5 Turn Off, 7 New Kid, 9 Push, 10 Pull, 11 Use, 12 Read, 13 Go To, 14 Get";
+
+    private static string Named(GameInspector inspector) => string.Join(", ", inspector.Verbs.Select(v => $"{v} {inspector.VerbName(v)}"));
+
+    /// <summary>
+    /// Every release names its verbs, by the numbers objects' verb tables use: the C64's from
+    /// ScummVM's table, the others' from the script that sets them up (164), the DOS demos' too,
+    /// though they never show them. The NES has no Fix, Unlock or What is, and its own names.
+    /// Found by a program written against the package, which could list objects' verbs only as numbers.
+    /// </summary>
+    [Theory]
+    [InlineData(WalkthroughTests.V2, DosVerbs)]
+    [InlineData(WalkthroughTests.V1, DosVerbs)]
+    [InlineData(WalkthroughTests.AtariSt, DosVerbs)]
+    [InlineData(WalkthroughTests.Amiga, DosVerbs)]
+    [InlineData(WalkthroughTests.V1Demo, DosVerbs)]
+    [InlineData(WalkthroughTests.V2Demo, DosVerbs)]
+    [InlineData(WalkthroughTests.C64, C64Verbs)]
+    [InlineData(WalkthroughTests.C64Demo, C64Verbs)]
+    [InlineData(WalkthroughTests.Nes, NesVerbs)]
+    public void Verbs_have_the_names_their_release_gives_them(string folder, string named)
+    {
+        if (GameFolders.Find(folder) is not { } path)
+        {
+            return;
+        }
+
+        var inspector = ManiacMansion.Open(path).Inspect();
+        Assert.Equal(named, Named(inspector));
+        Assert.Null(inspector.VerbName(0));
+        Assert.Null(inspector.VerbName(255));
+    }
+
+    /// <summary>
+    /// The names are the ones the game shows once it is played to the driveway, its verbs set up
+    /// by its own scripts (or, on the C64, its engine), the fillers that keep them a width aside.
+    /// </summary>
+    [Theory]
+    [InlineData(WalkthroughTests.V2)]
+    [InlineData(WalkthroughTests.C64)]
+    [InlineData(WalkthroughTests.Nes)]
+    public void Verb_names_are_those_the_game_shows(string folder)
+    {
+        if (WalkthroughTests.Start(folder) is not { } player || GameFolders.Find(folder) is not { } path)
+        {
+            return;
+        }
+
+        var inspector = ManiacMansion.Open(path).Inspect();
+        var shown = player.World.Verbs.Slots
+            .Where(v => v is not null && v.Id != 0)
+            .ToDictionary(v => v.Id, v => System.Text.Encoding.Latin1.GetString(v.Name).TrimEnd('\0').Replace('@', ' ').Trim());
+        Assert.Equal(shown.Keys.Order(), inspector.Verbs);
+        Assert.All(shown, v => Assert.Equal(v.Value, inspector.VerbName(v.Key)));
+    }
+
+    /// <summary>
+    /// The numbers in objects' verb tables that have no name are none a player picks: 255 matches
+    /// any verb, 253 is code the scripts run on an object, 16 locks a door or padlock, and the
+    /// NES's objects still answer the Fix and Unlock it has no verbs for.
+    /// </summary>
+    [Theory]
+    [InlineData(WalkthroughTests.V2, new[] { 16, 253, 255 })]
+    [InlineData(WalkthroughTests.V1, new[] { 16, 255 })]
+    [InlineData(WalkthroughTests.C64, new[] { 16 })]
+    [InlineData(WalkthroughTests.Nes, new[] { 6, 8, 16, 253, 255 })]
+    public void The_unnamed_verbs_in_objects_tables_are_none_a_player_picks(string folder, int[] unnamed)
+    {
+        if (GameFolders.Find(folder) is not { } path)
+        {
+            return;
+        }
+
+        var inspector = ManiacMansion.Open(path).Inspect();
+        var answered = inspector.Rooms.SelectMany(r => inspector.Room(r)!.Objects).SelectMany(o => o.Verbs).Select(v => (int)v.Verb).Distinct();
+        Assert.Equal(unnamed, answered.Where(v => inspector.VerbName(v) is null).Order());
+    }
 }
