@@ -943,8 +943,8 @@ Where it comes from:
   (`GameInspector.Verbs` and `VerbName`), version 1's left-facing figures placed as ScummVM places
   them, and packing compared with the last release. It adds to the public API and changes none of
   it, so code written against 0.4.x builds and runs as it was; a minor version, not a patch. At the
-  release `PublicAPI.Unshipped.txt` moved into `PublicAPI.Shipped.txt`; once it is on nuget.org,
-  the baseline moves to 0.5.0-alpha.
+  release `PublicAPI.Unshipped.txt` moved into `PublicAPI.Shipped.txt`, and once it was on
+  nuget.org the baseline moved to 0.5.0-alpha.
 
 ### Next, before a 1.0
 
