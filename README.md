@@ -340,7 +340,7 @@ write them upon the table of thine heart."<br>
 **Maniacal**, A Player for *Maniac Mansion*\
 Copyright (C) 2026 [Jeff Nyman][owner]
 
-[![GNU General Public License version 3](assets/gplv3-127x51.png)][GNU General Public License]
+[![GNU General Public License version 3](https://raw.githubusercontent.com/jeffnyman/maniacal/main/assets/gplv3-127x51.png)][GNU General Public License]
 
 > This program is free software: you can redistribute it and/or modify
 > it under the terms of the [GNU General Public License] as published by
