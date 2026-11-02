@@ -888,6 +888,22 @@ Where it comes from:
   tool, installed from nuget.org, plays with its graphics, music and sound, and the Dock shows
   the mansion.
 
+- **A breaking change fails the pack.** Package validation, on since the first release, now has
+  a baseline: `Maniacal.Scumm`'s `PackageValidationBaselineVersion` is 0.4.1-alpha, the last
+  release, and `dotnet pack` compares the library with that package from nuget.org, failing on
+  a public member removed or changed since. The build workflow and the publish workflow both
+  pack, so a break fails a push and a release tag alike. The public API analyzer alone could not
+  catch it: `PublicAPI.Shipped.txt` is a file in the repository, and a change can edit it along
+  with the code. Tried in a copy of the repository: `ManiacMansion.IsDemo` taken out, and its
+  line with it, built and passed the analyzer; the pack failed with `CP0002: Member 'bool
+  Maniacal.Scumm.ManiacMansion.IsDemo.get' exists on [Baseline] ... but not on ...`. At each
+  release from now on, the baseline moves to that release, as `PublicAPI.Unshipped.txt` moves
+  into `PublicAPI.Shipped.txt`. A break made on purpose (before 1.0, or for a 2.0) is recorded by
+  packing once with `-p:ApiCompatGenerateSuppressionFile=true`, which writes
+  `CompatibilitySuppressions.xml` beside the project for review; it goes when the baseline
+  moves past the break. `IsDemo`'s documentation, met on the way, said "one of the DOS demos":
+  it is true of the C64's too.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies
@@ -896,8 +912,8 @@ Where it comes from:
   and animates actors, not about drawing them; the twinkling star differs too, being random.
 - Verb names: the programs used from outside found verbs only as numbers. The DOS releases' names
   live in their own scripts (`verbOps` in the boot script), so this waits until it is wanted.
-- At 1.0, move `PublicAPI.Unshipped.txt` into `PublicAPI.Shipped.txt` and set package
-  validation's baseline (`PackageValidationBaselineVersion`), so a breaking change fails the build.
+- At 1.0: an empty `VersionSuffix`, `PublicAPI.Unshipped.txt` moved into
+  `PublicAPI.Shipped.txt`, and, once it is on nuget.org, the baseline moved to 1.0.0.
 
 ## Phase 7: the NES
 

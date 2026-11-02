@@ -45,7 +45,10 @@ public sealed class ManiacMansion
     /// <summary>The release's SCUMM version: 0 for the Commodore 64, 1 for the 1987 DOS release and the NES's, 2 for the 1988 one.</summary>
     public int Version => _found.Version;
 
-    /// <summary>Whether the release is one of the DOS demos, which run themselves.</summary>
+    /// <summary>
+    /// Whether the release is one of the demos: the two DOS demos, which play themselves, or the
+    /// C64's, which starts on a menu of its own.
+    /// </summary>
     public bool IsDemo => _found.IsDemo;
 
     /// <summary>
