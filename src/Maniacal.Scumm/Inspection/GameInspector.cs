@@ -223,7 +223,7 @@ public sealed class GameInspector(ResourceLoader loader)
     public ReadOnlyMemory<Rgb> Palette => Palettes.MemoryForVersion(Version, loader.Index.IsNes, loader.HasAmigaColors);
 
     /// <summary>The numbers of the release's rooms, in order: those <see cref="Room"/> and <see cref="RoomScripts"/> answer.</summary>
-    public IReadOnlyList<int> Rooms => _rooms ??= Numbers(ResourceType.Room, _ => true);
+    public IReadOnlyList<int> Rooms => _rooms ??= Numbers(ResourceType.Room, n => LoadRoom(n) is not null);
 
     /// <summary>The numbers of the release's global scripts, in order: those <see cref="Script"/> answers.</summary>
     public IReadOnlyList<int> Scripts => _scripts ??= Numbers(ResourceType.Script, _ => true);
@@ -234,7 +234,7 @@ public sealed class GameInspector(ResourceLoader loader)
     /// <summary>A room's picture with its objects, or null if there is no such room.</summary>
     public RoomPicture? Room(int number, RoomObjects objects = RoomObjects.Initial)
     {
-        if (!loader.IsReadable(ResourceType.Room, number) || loader.LoadRoom(number) is not { } room)
+        if (LoadRoom(number) is not { } room)
         {
             return null;
         }
@@ -325,7 +325,7 @@ public sealed class GameInspector(ResourceLoader loader)
     /// <summary>A room's entry and exit scripts and its objects' verb scripts decoded, or null if there is no such room.</summary>
     public IReadOnlyList<ScriptListing>? RoomScripts(int number)
     {
-        if (!loader.IsReadable(ResourceType.Room, number) || loader.LoadRoom(number) is not { } room)
+        if (LoadRoom(number) is not { } room)
         {
             return null;
         }
@@ -359,7 +359,7 @@ public sealed class GameInspector(ResourceLoader loader)
     /// </summary>
     public RoomScreen? View(int number, int? cameraX = null, IReadOnlyList<StandingActor>? actors = null)
     {
-        if (!loader.IsReadable(ResourceType.Room, number) || loader.LoadRoom(number) is not { } room)
+        if (LoadRoom(number) is not { } room)
         {
             return null;
         }
@@ -412,6 +412,28 @@ public sealed class GameInspector(ResourceLoader loader)
     /// </summary>
     private bool HoldsCostume(int number)
         => Version == 0 || (!loader.Index.IsNes && loader.Load(ResourceType.Costume, number) is { } data && CostumeData.IsCostume(data.Span));
+
+    /// <summary>
+    /// A readable room entry's room, or null when its bytes are no room: the C64 demo's rooms 30,
+    /// 40, 42, 46 and 51 are files holding only costumes its actors wear, after leftovers where the
+    /// room would be, and the game never goes there.
+    /// </summary>
+    private Room? LoadRoom(int number)
+    {
+        if (!loader.IsReadable(ResourceType.Room, number))
+        {
+            return null;
+        }
+
+        try
+        {
+            return loader.LoadRoom(number);
+        }
+        catch (Exception ex) when (ex is InvalidDataException or ArgumentOutOfRangeException)
+        {
+            return null;
+        }
+    }
 
     private int InitialState(int obj)
     {

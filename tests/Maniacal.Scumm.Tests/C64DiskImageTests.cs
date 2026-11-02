@@ -67,17 +67,28 @@ public class C64DiskImageTests
     }
 
     [Fact]
-    public void Only_rooms_with_resources_have_files()
+    public void Only_rooms_with_resources_on_the_disks_have_files()
     {
         var (disk1, disk2) = Disks();
+
+        // every room on the first disk, at track 1, but 51, which the index puts on a third disk
+        for (int room = 2; room < 55; room++)
+        {
+            disk1[RoomDisks + room] = (byte)'1';
+            disk1[RoomPlaces + 2 * room + 1] = 1;
+        }
+
+        disk1[RoomDisks + 51] = 3;
         var image = C64DiskImage.Open(new MemoryGameContainer("c64").Add("maniac1.d64", disk1).Add("maniac2.d64", disk2))!;
 
         Assert.True(image.Exists("00.LFL"));
         Assert.True(image.Exists("52.lfl"));
+        Assert.False(image.Exists("51.LFL"));
         Assert.False(image.Exists("53.LFL"));
         Assert.False(image.Exists("55.LFL"));
-        Assert.Equal(53, image.EnumerateFiles().Count());
+        Assert.Equal(52, image.EnumerateFiles().Count());
         Assert.Throws<FileNotFoundException>(() => image.Open("53.LFL"));
+        Assert.Throws<FileNotFoundException>(() => image.Open("51.LFL"));
     }
 
     /// <summary>Disks named otherwise are told apart by the words they start with.</summary>

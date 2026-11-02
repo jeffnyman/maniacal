@@ -801,6 +801,20 @@ Where it comes from:
   `MouseState`). At the release `PublicAPI.Unshipped.txt` moved into `PublicAPI.Shipped.txt`,
   its removals taken out.
 
+- **The fourth release used from outside.** The five programs in `maniacal-playground` moved to
+  0.4.0-alpha with one change: the recorder's host dropped `GetMouseState` and
+  `DeterministicTime`, as the trimmed host contract asks (the records with init properties asked
+  nothing, the programs only reading them). Run on all nine releases, they found two bugs, both
+  in the C64 demo and both fixed. Its index names rooms on a second disk the demo does not come
+  with, and rooms whose files hold only costumes its actors wear (30, 40, 42, 46 and 51), so the
+  inspector's lists of rooms and scripts threw; the disk image now has no file for a room on a
+  disk it lacks, and the inspector lists only the rooms that are rooms. And F5, which opens the
+  C64's save screen (script 2, in room 50 on that second disk), threw from `Step`; in the demo it
+  does nothing. The NES's kid selection, picked by size and order as the others are, has its own:
+  portraits 32 by 40, Dave, Razor, Bernard, Syd, Wendy, Jeff and Michael, START 64 by 24. Telling
+  it apart found `DetectedGame.PlatformName` documented as `dos` or `c64` only; it names all five
+  of ScummVM's codes now (`nes`, not the description's `NES`).
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies
@@ -809,9 +823,6 @@ Where it comes from:
   and animates actors, not about drawing them; the twinkling star differs too, being random.
 - Verb names: the programs used from outside found verbs only as numbers. The DOS releases' names
   live in their own scripts (`verbOps` in the boot script), so this waits until it is wanted.
-- Move the programs in `maniacal-playground` to 0.4.0-alpha, drop their workarounds, and use what
-  was added for them, to see that it helped; the records' init properties and the trimmed host
-  contract will need their small changes there.
 - At 1.0, move `PublicAPI.Unshipped.txt` into `PublicAPI.Shipped.txt` and set package
   validation's baseline (`PackageValidationBaselineVersion`), so a breaking change fails the build.
 

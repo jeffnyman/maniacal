@@ -97,14 +97,16 @@ internal sealed class C64DiskImage : IGameContainer
         yield return LflFile.NameOf(0);
         for (int room = 1; room < Rooms; room++)
         {
-            if (RoomResources(room) > 0)
+            if (RoomResources(room) > 0 && IsOnTheDisks(room))
             {
                 yield return LflFile.NameOf(room);
             }
         }
     }
 
-    public bool Exists(string name) => Number(name) is { } room && (room == 0 || RoomResources(room) > 0);
+    // a room is there when it has resources and its disk is one of these: the demo's index names
+    // rooms on a second disk it does not come with
+    public bool Exists(string name) => Number(name) is { } room && (room == 0 || (RoomResources(room) > 0 && IsOnTheDisks(room)));
 
     public long GetLength(string name) => File(name).Length;
 
@@ -133,6 +135,12 @@ internal sealed class C64DiskImage : IGameContainer
             : null;
 
     private int RoomResources(int room) => (_demo ? C64DiskTables.DemoResourcesPerFile : C64DiskTables.ResourcesPerFile)[room];
+
+    // the index names the disk as a character, '1' or '2' (openDisk)
+    private int DiskOf(int room) => _roomDisks[room] is (byte)'1' or (byte)'2' ? _roomDisks[room] - '0' : _roomDisks[room];
+
+    private bool IsOnTheDisks(int room)
+        => DiskOf(room) >= 1 && DiskOf(room) <= _disks.Length && _roomTracks[room] < C64DiskTables.TrackStarts.Length;
 
     /// <summary>
     /// The index, as the classic reader expects it: the second disk's signature, the object flags,
@@ -192,9 +200,8 @@ internal sealed class C64DiskImage : IGameContainer
     /// </summary>
     private byte[] ExtractRoom(int room)
     {
-        // the index names the disk as a character, '1' or '2' (openDisk)
-        int diskNumber = _roomDisks[room] is (byte)'1' or (byte)'2' ? _roomDisks[room] - '0' : _roomDisks[room];
-        if (diskNumber < 1 || diskNumber > _disks.Length || _roomTracks[room] >= C64DiskTables.TrackStarts.Length)
+        int diskNumber = DiskOf(room);
+        if (!IsOnTheDisks(room))
         {
             throw new InvalidDataException($"Room {room} is on disk {diskNumber}, track {_roomTracks[room]}, which the disks do not have.");
         }

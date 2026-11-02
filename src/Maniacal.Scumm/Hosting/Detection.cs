@@ -20,7 +20,10 @@ public sealed record DetectedGame
     /// <summary>The ISO language code, if known: <c>en</c>.</summary>
     public string? Language { get; init; }
 
-    /// <summary>The original platform, if known: <c>dos</c> or <c>c64</c>.</summary>
+    /// <summary>
+    /// The original platform, if known, as ScummVM's code for it: <c>dos</c>, <c>c64</c>, <c>nes</c>,
+    /// <c>atari</c> (the Atari ST) or <c>amiga</c>. <see cref="ManiacMansion.Description"/> names it in words.
+    /// </summary>
     public string? PlatformName { get; init; }
 
     /// <summary>The version notes and, for anything but DOS, the platform: what tells two detections of one folder apart.</summary>

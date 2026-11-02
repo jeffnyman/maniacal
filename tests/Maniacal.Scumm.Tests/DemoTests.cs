@@ -188,6 +188,54 @@ public class DemoTests
         Assert.Equal(45, world.CurrentRoom?.Number);
     }
 
+    /// <summary>
+    /// The C64 demo's index names rooms on a second disk the demo does not come with (room 4 is on
+    /// disk 2, track 6), and rooms whose files hold only costumes (30, 40, 42, 46 and 51): the
+    /// inspector lists the rooms and scripts there are, and those are not among them.
+    /// </summary>
+    [Fact]
+    public void The_c64_demo_lists_only_the_rooms_on_its_disk()
+    {
+        if (GameFolders.Find(WalkthroughTests.C64Demo) is not { } path)
+        {
+            return;
+        }
+
+        var game = ManiacMansion.Open(path);
+        var inspector = game.Inspect();
+
+        Assert.Empty(inspector.Rooms.Intersect([4, 30, 40, 42, 46, 51]));
+        Assert.Contains(45, inspector.Rooms);
+        Assert.Null(inspector.Room(30));
+        Assert.All(inspector.Rooms, room => Assert.NotNull(inspector.Room(room)));
+        Assert.All(inspector.Scripts, script => Assert.NotNull(inspector.Script(script)));
+    }
+
+    /// <summary>
+    /// F5 opens the C64's save screen, script 2, which the demo's index puts in room 50 on the
+    /// second disk: in the demo it does nothing, and the demo plays on.
+    /// </summary>
+    [Fact]
+    public void F5_does_nothing_in_the_c64_demo()
+    {
+        if (Open(WalkthroughTests.C64Demo) is not { } world)
+        {
+            return;
+        }
+
+        world.Boot();
+        Steps(world, 300);
+        world.ClickObject(world.ObjectsHere().Where(o => o.Touchable).OrderBy(o => o.Y).First().Number);
+        Steps(world, 300);
+        int room = world.CurrentRoom!.Number;
+
+        world.PressKey(GameWorld.KeyF1 + 4);
+        Steps(world, 30);
+
+        Assert.Equal(room, world.CurrentRoom?.Number);
+        Assert.DoesNotContain(world.RunningScripts(), s => s.Kind == ScriptKind.Global && s.Number == 2);
+    }
+
     /// <summary>The 1987 demo's font has the 1988 release's apostrophe, as ScummVM's charset gives it.</summary>
     [Fact]
     public void The_1987_demo_has_the_1988_apostrophe()

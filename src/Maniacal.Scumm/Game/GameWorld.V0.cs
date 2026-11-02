@@ -1,4 +1,5 @@
 using System.Text;
+using Maniacal.Scumm.Resources;
 using Maniacal.Scumm.Scripts;
 using Maniacal.Scumm.View;
 
@@ -579,10 +580,15 @@ public sealed partial class GameWorld
         _key = 0;
 
         // ScummEngine_v2::processKeyboard on the C64: F5 opens the game's own save screen, F7 skips a
-        // cutscene; in the demo F7 goes back to its menu instead, from anywhere but the title room
+        // cutscene; in the demo F7 goes back to its menu instead, from anywhere but the title room.
+        // The demo's save screen is in room 50, on the second disk it does not come with: there F5
+        // does nothing
         if (key == KeyF5)
         {
-            Engine.RunScript(V0SaveScreenScript);
+            if (_loader.IsReadable(ResourceType.Script, V0SaveScreenScript))
+            {
+                Engine.RunScript(V0SaveScreenScript);
+            }
         }
         else if (key == KeyF7 && IsDemo)
         {
