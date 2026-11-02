@@ -34,6 +34,7 @@ internal sealed unsafe class SdlGraphicsDriver : IGraphicsDriver, IDisposable
         }
 
         _window = SdlException.ThrowIfNull(SDL_CreateWindow(title, 320 * _scale, 200 * _scale, flags), "SDL_CreateWindow");
+        WindowIcon.Set(_window);
     }
 
     public int Width => _width;

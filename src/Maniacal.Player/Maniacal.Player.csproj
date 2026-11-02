@@ -9,6 +9,8 @@
     <ToolCommandName>maniacal</ToolCommandName>
     <!-- a tool installed under a newer runtime should still start -->
     <RollForward>Major</RollForward>
+    <!-- the house, on the executable on Windows; the window's icon is the same file, embedded -->
+    <ApplicationIcon>maniac-mansion-house.ico</ApplicationIcon>
     <Description>Command line player for Maniac Mansion (Commodore 64, DOS 1987 and 1988, NES, Atari ST, Amiga): dotnet tool install -g Maniacal, then maniacal &lt;game folder&gt;.</Description>
   </PropertyGroup>
 
@@ -22,5 +24,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Maniacal.Scumm\Maniacal.Scumm.csproj" />
     <PackageReference Include="ppy.SDL3-CS" />
+    <EmbeddedResource Include="maniac-mansion-house.ico" LogicalName="Maniacal.Player.maniac-mansion-house.ico" />
   </ItemGroup>
 </Project>

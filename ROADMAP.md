@@ -815,6 +815,11 @@ Where it comes from:
   it apart found `DetectedGame.PlatformName` documented as `dos` or `c64` only; it names all five
   of ScummVM's codes now (`nes`, not the description's `NES`).
 
+- **An icon.** The player's window and, on Windows, its executable show the mansion on its hill
+  (`src/Maniacal.Player/maniac-mansion-house.ico`). The window's is read from the icon embedded
+  in the player, its 32-bit images given to SDL (`SDL_SetWindowIcon`), the largest as the icon
+  and the smaller as its other sizes; the executable's is `ApplicationIcon`.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies
