@@ -45,7 +45,7 @@ internal static class Program
         bool listOnly = false;
         bool fullscreen = false;
         bool verbose = false;
-        int scale = 3;
+        int? scale = null;
         int? frames = null;
         int? room = null;
         int? costume = null;
@@ -837,7 +837,8 @@ internal static class Program
 
             Playing:
               --fullscreen          start in full screen
-              --scale N             the window N times the screen (320x200, the NES's 256x240), 1 to 8 (3)
+              --scale N             the window N times the screen (320x200, the NES's 256x240), 1 to 8
+                                    (the most that fits in three quarters of the display)
               --speaker             the PC speaker's sound, not the PCjr's (DOS releases)
               --copy-protection     keep the security door's code (bypassed, as in ScummVM)
               --list                name the release found, and stop

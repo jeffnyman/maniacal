@@ -820,6 +820,12 @@ Where it comes from:
   in the player, its 32-bit images given to SDL (`SDL_SetWindowIcon`), the largest as the icon
   and the smaller as its other sizes; the executable's is `ApplicationIcon`.
 
+- **A window sized for the display.** Without `--scale`, the window opens at the largest whole
+  scale (up to 8) that fits in three quarters of the display's usable area, where it opened at
+  3 whatever the display: 640x400 on a small laptop, 960x600 at 1080p, 1600x1000 at 1440p (the
+  NES at 2, 3 and 4). A display with scaling counts at the size it shows, as SDL measures it.
+  `--scale N` still sets it, shrunk only when it would not fit at all.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies

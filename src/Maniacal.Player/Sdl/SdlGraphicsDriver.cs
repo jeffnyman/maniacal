@@ -12,7 +12,9 @@ namespace Maniacal.Player.Sdl;
 /// </summary>
 internal sealed unsafe class SdlGraphicsDriver : IGraphicsDriver, IDisposable
 {
-    private readonly int _scale;
+    private const int MaxScale = 8, InitialScale = 3;
+
+    private readonly int? _scale;
     private SDL_Window* _window;
     private SDL_Surface* _frame;
     private SDL_Palette* _palette;
@@ -22,10 +24,10 @@ internal sealed unsafe class SdlGraphicsDriver : IGraphicsDriver, IDisposable
 
     private readonly string _title;
 
-    public SdlGraphicsDriver(string title, int scale, bool fullscreen, bool aspectRatioCorrection)
+    public SdlGraphicsDriver(string title, int? scale, bool fullscreen, bool aspectRatioCorrection)
     {
         _title = title;
-        _scale = Math.Max(1, scale);
+        _scale = scale is { } given ? Math.Max(1, given) : null;
         AspectRatioCorrection = aspectRatioCorrection;
         var flags = SDL_WindowFlags.SDL_WINDOW_RESIZABLE;
         if (fullscreen)
@@ -33,7 +35,7 @@ internal sealed unsafe class SdlGraphicsDriver : IGraphicsDriver, IDisposable
             flags |= SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
         }
 
-        _window = SdlException.ThrowIfNull(SDL_CreateWindow(title, 320 * _scale, 200 * _scale, flags), "SDL_CreateWindow");
+        _window = SdlException.ThrowIfNull(SDL_CreateWindow(title, 320 * (_scale ?? InitialScale), 200 * (_scale ?? InitialScale), flags), "SDL_CreateWindow");
         WindowIcon.Set(_window);
     }
 
@@ -64,24 +66,36 @@ internal sealed unsafe class SdlGraphicsDriver : IGraphicsDriver, IDisposable
         _palette = SdlException.ThrowIfNull(SDL_CreateSurfacePalette(_frame), "SDL_CreateSurfacePalette");
         SdlException.ThrowIfFalse(SDL_SetWindowMinimumSize(_window, width, height), "SDL_SetWindowMinimumSize");
 
-        // a new mode gets the window at its natural size, shrunk to fit the display and centred
-        // again (resizing keeps the top left corner, which left the 640x480 games off centre);
-        // a size the user chose is kept otherwise
+        // a new mode gets the window at its natural size for the display and centred again
+        // (resizing keeps the top left corner, which left the 640x480 games off centre); a size
+        // the user chose is kept otherwise
         if (changed && !IsFullscreen)
         {
-            int scale = _scale;
             var bounds = new SDL_Rect();
-            if (SDL_GetDisplayUsableBounds(SDL_GetDisplayForWindow(_window), &bounds))
-            {
-                while (scale > 1 && (width * scale > bounds.w || height * scale > bounds.h))
-                {
-                    scale--;
-                }
-            }
+            int scale = SDL_GetDisplayUsableBounds(SDL_GetDisplayForWindow(_window), &bounds)
+                ? WindowScale(width, height, bounds.w, bounds.h, _scale)
+                : _scale ?? InitialScale;
 
             SdlException.ThrowIfFalse(SDL_SetWindowSize(_window, width * scale, height * scale), "SDL_SetWindowSize");
             SdlException.ThrowIfFalse(SDL_SetWindowPosition(_window, (int)SDL_WINDOWPOS_CENTERED, (int)SDL_WINDOWPOS_CENTERED), "SDL_SetWindowPosition");
         }
+    }
+
+    /// <summary>
+    /// The window's scale on a display of a usable size: the one given, made smaller until the
+    /// window fits; or, none given, the largest whole scale (up to 8) that fits in three quarters
+    /// of the display, so each pixel of the game stays the same size. Never less than 1.
+    /// </summary>
+    internal static int WindowScale(int width, int height, int displayWidth, int displayHeight, int? scale)
+    {
+        int fit = scale ?? MaxScale;
+        (int roomWidth, int roomHeight) = scale is null ? (displayWidth * 3 / 4, displayHeight * 3 / 4) : (displayWidth, displayHeight);
+        while (fit > 1 && (width * fit > roomWidth || height * fit > roomHeight))
+        {
+            fit--;
+        }
+
+        return fit;
     }
 
     public void SetPalette(ReadOnlySpan<Rgb> colors, int start = 0)

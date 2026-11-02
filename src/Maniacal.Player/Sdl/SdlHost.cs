@@ -12,8 +12,11 @@ public sealed class SdlHostOptions
 {
     public string Title { get; init; } = "Maniacal";
 
-    /// <summary>Integer scale factor for the window's initial size; the window can be resized afterwards.</summary>
-    public int Scale { get; init; } = 3;
+    /// <summary>
+    /// Integer scale factor for the window's initial size, or null for the largest that fits in
+    /// three quarters of the display; the window can be resized afterwards.
+    /// </summary>
+    public int? Scale { get; init; }
 
     /// <summary>Starts in full screen. Alt+Enter and F11 switch between full screen and the window at any time.</summary>
     public bool Fullscreen { get; init; }
