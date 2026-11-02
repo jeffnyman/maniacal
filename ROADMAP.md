@@ -869,6 +869,16 @@ Where it comes from:
   The public API did not change (`PublicAPI.Unshipped.txt` stayed empty), so code written
   against 0.4.0-alpha builds and runs as it was; hence a patch, not 0.5.0.
 
+- **The fifth release used from outside.** The playground moved to 0.4.1-alpha without a change
+  and ran on all nine releases: the C64 demo's inspector and F5 work now. Its save round trip,
+  which had not got that far on the demo before, found that a save made at the demo's menu loads
+  into a game that leaves for the title at once, where the game it was saved from waits on. Not
+  a bug: the menu waits while its tune plays (script 1 loops on variable 8, whether a sound is
+  running) and goes to the title after the second time through; a load stops every sound, as
+  ScummVM's does, and the C64 starts none again, so the loaded game finds the tune over. ScummVM
+  2026.4.0, given the same save, goes to the same title, the same to the pixel. A save made
+  during the tune's first time through plays it again instead. Tested (`DemoTests`).
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies

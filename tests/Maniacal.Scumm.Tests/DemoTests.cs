@@ -15,6 +15,10 @@ public class DemoTests
 {
     private const string V1Demo = WalkthroughTests.V1Demo, V2Demo = WalkthroughTests.V2Demo;
 
+    // the C64 demo's menu: 1 while its tune plays the first time, so it plays again; 0 the second
+    // time, after which the menu goes to the title
+    private const int MenuTuneAgain = 92;
+
     private static GameWorld? Open(string folder)
         => GameFolders.Find(folder) is { } path ? new GameWorld(ResourceLoader.Open(new DirectoryGameContainer(path))) : null;
 
@@ -234,6 +238,43 @@ public class DemoTests
 
         Assert.Equal(room, world.CurrentRoom?.Number);
         Assert.DoesNotContain(world.RunningScripts(), s => s.Kind == ScriptKind.Global && s.Number == 2);
+    }
+
+    /// <summary>
+    /// The C64 demo's menu waits while its tune plays (script 1 loops on variable 8, whether a
+    /// sound is running), plays it a second time, and then goes to the title (room 33). A load
+    /// stops every sound, as ScummVM's does, and the C64 starts none again: a save made at the
+    /// menu during the second time loads into a game whose tune has ended, and it goes to the
+    /// title at once, where the
+    /// game it was saved from waits on. Checked against ScummVM 2026.4.0, which loads the same
+    /// save to the same title, to the pixel.
+    /// </summary>
+    [Fact]
+    public void A_save_made_at_the_c64_demos_menu_loads_with_its_tune_ended()
+    {
+        if (Open(WalkthroughTests.C64Demo) is not { } world)
+        {
+            return;
+        }
+
+        // the tune's second time through (from step 303, to the title at 590); a save made during
+        // the first loads into a game that plays it again
+        world.Boot();
+        Steps(world, 400);
+        Assert.Equal(45, world.CurrentRoom?.Number);
+        Assert.Equal(0, world.Engine.Variables[MenuTuneAgain]);
+        Assert.Equal(1, world.Engine.Variables[world.Engine.Vars.IsSoundRunning]);
+        var save = world.Save("menu", new DateTime(2026, 11, 2));
+
+        var loaded = Open(WalkthroughTests.C64Demo)!;
+        loaded.Load(save);
+        loaded.Step();
+        Assert.Equal(0, loaded.Engine.Variables[loaded.Engine.Vars.IsSoundRunning]);
+
+        Steps(world, 20);
+        Steps(loaded, 19);
+        Assert.Equal(45, world.CurrentRoom?.Number);
+        Assert.Equal(33, loaded.CurrentRoom?.Number);
     }
 
     /// <summary>The 1987 demo's font has the 1988 release's apostrophe, as ScummVM's charset gives it.</summary>
