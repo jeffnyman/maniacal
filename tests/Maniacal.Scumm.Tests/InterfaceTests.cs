@@ -434,4 +434,35 @@ public class PlayingTests
         host.Continue(engine, 1);
         Assert.Equal(1, ((ScummEngine)engine).World.Engine.Variables[GameWorld.VarKeypress]);
     }
+
+    /// <summary>The window's title names the release as a player knows it.</summary>
+    [Theory]
+    [InlineData(WalkthroughTests.V2, "DOS Enhanced")]
+    [InlineData(WalkthroughTests.V1, "DOS Original")]
+    [InlineData(WalkthroughTests.V2Demo, "DOS Enhanced Demo")]
+    [InlineData(WalkthroughTests.V1Demo, "DOS Original Demo")]
+    [InlineData(WalkthroughTests.C64, "Commodore 64")]
+    [InlineData(WalkthroughTests.C64Demo, "Commodore 64 Demo")]
+    [InlineData(WalkthroughTests.Nes, "NES")]
+    [InlineData(WalkthroughTests.AtariSt, "Atari ST")]
+    [InlineData(WalkthroughTests.Amiga, "Amiga")]
+    public void The_title_names_the_release(string folder, string release)
+    {
+        if (GameFolders.Find(folder) is not { } path)
+        {
+            return;
+        }
+
+        var container = new DirectoryGameContainer(path);
+        var host = new HeadlessHost();
+        using var engine = new ScummEngineProvider().Create(host, container, new ScummEngineProvider().Detect(container)[0]);
+        engine.Initialize();
+
+        Assert.Equal($"Maniacal - Maniac Mansion ({release})", host.Graphics.Title);
+    }
+
+    /// <summary>A release detection says nothing more of is named by its title alone.</summary>
+    [Fact]
+    public void A_release_without_notes_is_named_by_its_title()
+        => Assert.Equal("Maniacal - Maniac Mansion", ScummEngine.WindowTitle(new DetectedGame { EngineId = "scumm", GameId = "maniac", Title = "Maniac Mansion" }));
 }

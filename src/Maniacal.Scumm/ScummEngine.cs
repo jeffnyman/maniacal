@@ -49,6 +49,29 @@ public sealed class ScummEngine : Engine
     public GameWorld World => _world ?? throw new InvalidOperationException("The engine is not initialized.");
 
     /// <summary>
+    /// The window's title: the game and, after it, the release in words, as a player knows it:
+    /// <c>Maniacal - Maniac Mansion (DOS Enhanced)</c>, <c>(Commodore 64)</c>, <c>(NES)</c>.
+    /// </summary>
+    internal static string WindowTitle(DetectedGame detected)
+    {
+        string release = (detected.PlatformName?.ToLowerInvariant(), detected.Extra) switch
+        {
+            ("c64", "C64 Demo") => "Commodore 64 Demo",
+            ("c64", _) => "Commodore 64",
+            ("nes", _) => "NES",
+            ("atari", _) => "Atari ST",
+            ("amiga", _) => "Amiga",
+            (_, "V1") => "DOS Original",
+            (_, "V1 Demo") => "DOS Original Demo",
+            (_, "V2") => "DOS Enhanced",
+            (_, "V2 Demo") => "DOS Enhanced Demo",
+            (_, var extra) => extra ?? string.Empty,
+        };
+
+        return release.Length == 0 ? $"Maniacal - {detected.Title}" : $"Maniacal - {detected.Title} ({release})";
+    }
+
+    /// <summary>
     /// Opens the release, sets the display and the sound going, and boots the game. Throws
     /// <see cref="NotSupportedException"/>, <see cref="FileNotFoundException"/> or
     /// <see cref="InvalidDataException"/> as <see cref="ResourceLoader.Open"/> does.
@@ -62,7 +85,7 @@ public sealed class ScummEngine : Engine
         };
         _world.Engine.CopyProtection = CopyProtection;
         Host.Graphics.SetMode(_world.Layout.Width, _world.Layout.Height);
-        Host.Graphics.SetTitle($"Maniacal - {Detected.Title}");
+        Host.Graphics.SetTitle(WindowTitle(Detected));
         Host.Graphics.SetPalette(_world.Palette.Span);
         StartAudio(_world);
         _world.Boot();

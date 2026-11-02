@@ -826,6 +826,11 @@ Where it comes from:
   NES at 2, 3 and 4). A display with scaling counts at the size it shows, as SDL measures it.
   `--scale N` still sets it, shrunk only when it would not fit at all.
 
+- **The release in the title bar.** The window's title names the release as a player knows it:
+  `Maniacal - Maniac Mansion (DOS Enhanced)`, `(DOS Original)`, their demos', `(Commodore 64)`,
+  `(Commodore 64 Demo)`, `(NES)`, `(Atari ST)`, `(Amiga)`. The volume shown there after a change
+  now follows that title; it followed the window's first title, `Maniacal`, dropping the game's.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies
