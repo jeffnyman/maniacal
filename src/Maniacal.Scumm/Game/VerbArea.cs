@@ -382,6 +382,26 @@ internal sealed class VerbArea
         DrawString(sentence[..end], _offset, Top + _offset, Width - 1 + _offset, _textColor);
     }
 
+    /// <summary>
+    /// Shows a line of the interpreter's on the sentence line, up to so many characters not
+    /// counting fillers, in a colour, whatever the interface shows. Mirrors the sentence-line half
+    /// of <c>printMessageAndPause</c>.
+    /// </summary>
+    public void DrawLine(ReadOnlySpan<byte> text, int chars, int color)
+    {
+        int length = 0, end = 0;
+        while (end < text.Length && text[end] != 0 && (text[end] == '@' || ++length <= chars))
+        {
+            end++;
+        }
+
+        ClearLine();
+        DrawString(text[..end], _offset, Top + _offset, Width - 1 + _offset, color);
+    }
+
+    /// <summary>Clears the sentence line. Mirrors <c>restoreBackground(sentenceline)</c>.</summary>
+    public void ClearLine() => Pixels.FillRect(_boxes[SentenceLine].Rect, 0);
+
     // the NES's sentence line: on with any of the interface, two lines from 16 pixels in, a break after 30 characters
     private void DrawNesSentence(ReadOnlySpan<byte> sentence)
     {

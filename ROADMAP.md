@@ -849,6 +849,21 @@ Where it comes from:
   item shown at the top left, top right, bottom left or bottom right into the sentence. Both were
   ported already; the inventory's are tested now, on those four releases.
 
+- **The interpreter's own keys.** The original interpreters kept some keys from the scripts, and
+  ScummVM has them with the original interface; Maniacal had none, and the game's own script
+  restarted at once on F8. Now, but on the NES: Space pauses, "Game paused, press SPACE to
+  continue." on the sentence line in colour 13 (the C64's 16) and the snail for a cursor (the
+  DOS and C64 releases', the Amiga's and the Atari ST's, ported by `tools/port_cursors.py`), or,
+  in the demos, ScummVM's banner across the room; F8 asks "Are you sure you want to restart?
+  (y/n)" at the top in colour 4, Y restarting after the room fades; F6 turns the sound off and on,
+  saying so. The pause and the question stand the game still, its clock and sound with it, until
+  a key or a click, which goes no further; the step they interrupted then goes on, as ScummVM's
+  loop does after `printMessageAndPause`. Version 2 shows its sentence again after a pause;
+  version 1 and the C64 leave the line clear, as ScummVM has it. Ctrl+C and Alt+X quit the
+  engine. Against ScummVM 2026.4.0's window, a save loaded in both and the same keys posted to
+  it: the pause (snail and all), the question, "Sounds Off" and the demo's banner are the same
+  to the pixel. F1 to F3, which switch the kids, are the game's scripts', and worked already.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies

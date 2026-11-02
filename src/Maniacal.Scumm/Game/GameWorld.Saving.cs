@@ -86,8 +86,10 @@ public sealed partial class GameWorld
             throw new InvalidDataException("The save does not fit this release: it is damaged, or another release's.", ex);
         }
 
-        // a load ends the NES's title screens, as one at the start leaves them out
+        // a load ends the NES's title screens, as one at the start leaves them out, and any wait
+        // on a message of the interpreter's
         _titles = null;
+        EndBanner();
         Restore(read.State);
         AfterLoad(read.State);
         return read.Info;

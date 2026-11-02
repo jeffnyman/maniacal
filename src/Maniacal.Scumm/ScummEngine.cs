@@ -16,7 +16,8 @@ namespace Maniacal.Scumm;
 /// Of the input events it reads <see cref="InputEventType.MouseMove"/> (where the mouse is),
 /// <see cref="InputEventType.MouseDown"/> of the left button (a click) and the right (a right
 /// click, which skips a cutscene), <see cref="InputEventType.KeyDown"/> (Escape, Enter, Backspace,
-/// F1 to F9 and the characters), and <see cref="InputEventType.Quit"/>; the others it passes over.
+/// F1 to F9 and the characters; Ctrl+C and Alt+X quit, as in ScummVM), and
+/// <see cref="InputEventType.Quit"/>; the others it passes over.
 /// Mouse positions are on the screen it sets with <c>SetMode</c>: 320x200, or the NES's 256x240.
 /// </para>
 /// <para>
@@ -114,6 +115,9 @@ public sealed class ScummEngine : Engine
                 case InputEventType.MouseDown when input.Button is MouseButton.Left or MouseButton.Right:
                     world.Click(input.X, input.Y, right: input.Button == MouseButton.Right);
                     break;
+                // Ctrl+C and Alt+X quit, as ScummVM has them (processKeyboard)
+                case InputEventType.KeyDown when IsQuitKey(input):
+                    return TickResult.Quit;
                 case InputEventType.KeyDown when KeyCode(input) is { } key:
                     world.PressKey(key);
                     break;
@@ -178,6 +182,13 @@ public sealed class ScummEngine : Engine
         {
             Host.Log.Warning("maniacal.sound", $"Audio output unavailable, running silent: {ex.Message}");
         }
+    }
+
+    // Ctrl+C or Alt+X, and no other modifier but the locks
+    private static bool IsQuitKey(InputEvent input)
+    {
+        var held = input.Modifiers & (KeyModifiers.Ctrl | KeyModifiers.Alt | KeyModifiers.Shift | KeyModifiers.Meta);
+        return (input.Key == (Key)'c' && held == KeyModifiers.Ctrl) || (input.Key == (Key)'x' && held == KeyModifiers.Alt);
     }
 
     /// <summary>

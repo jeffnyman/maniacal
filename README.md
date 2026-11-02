@@ -121,7 +121,8 @@ a whole scale; `--fullscreen`, `--scale N` (1 to 8), `--speaker` for the PC spea
 `--copy-protection` change how. A verb is clicked, then an object;
 clicking the object again, or clicking the sentence line, carries the sentence out, as in the
 original. The right button, Escape or F4 skip a cutscene, the period key skips a line of speech,
-and F5 opens the game's save screen. The keyboard works the verbs and the inventory as the
+and F5 opens the game's save screen. F1, F2 and F3 switch to Dave and the two other kids; Space
+pauses until a key; F8 asks before restarting; F6 turns the sound off and on; Ctrl+C quits. The keyboard works the verbs and the inventory as the
 original's did: the letters from Q to B in three rows pick the verbs where they sit on the screen,
 U and J scroll the inventory, and I, O, K and L pick its four items shown. Without a mouse, as the original allowed, the arrow keys or
 the numpad's 2, 4, 6 and 8 steer the cursor (faster while held), the numpad's 7, 9, 1 and 3 put it

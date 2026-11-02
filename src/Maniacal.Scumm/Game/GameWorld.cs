@@ -125,6 +125,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
         IGlyphs font = IsNes && loader.Load(ResourceType.Costume, NesFontTable) is { } translation
             ? NesFont.Load(translation, () => CurrentRoom)
             : Font.English(Version, IsDemo);
+        _font = font;
         Messages = new MessageLine(font, Engine, n => n is > 0 and < ActorCount ? Actors[n] : null, NameOf, VerbName);
         Verbs = new VerbArea(font, Layout.RoomBottom, () => Engine.Interface, c64: Version == 0, demo: IsDemo, nes: IsNes);
 
@@ -414,6 +415,22 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             RunBootScript();
         }
 
+        // a message the interpreter shows waits for a key or a click, the game standing still; the
+        // step it interrupted then goes on (printMessageAndPause)
+        if (_banner != Banner.None)
+        {
+            if (StepBanner())
+            {
+                FinishStep(_bannerEgo);
+            }
+            else
+            {
+                Steps++;
+            }
+
+            return;
+        }
+
         int oldEgo = Engine.Variables[ScriptEngine.VarEgo];
 
         // ScummEngine_v0::scummLoop: whether the last sound started still plays
@@ -439,6 +456,21 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             ProcessInput();
         }
 
+        // a key of the interpreter's may have put a message up: the rest waits for its answer
+        if (_banner != Banner.None)
+        {
+            _bannerEgo = oldEgo;
+            Steps++;
+            return;
+        }
+
+        FinishStep(oldEgo);
+    }
+
+    // the step after the input: the scripts, the sentences, the actors, the camera, the screen and
+    // the sound (the rest of scummLoop)
+    private void FinishStep(int oldEgo)
+    {
         // scummLoop_updateScummVars: the camera's column, whether a message shows, the mouse in the room
         Engine.Variables[VarCameraPosX] = Camera.X >> 3;
         Engine.Variables[ScriptEngine.VarHaveMessage] = Messages.HaveMessage;
@@ -530,6 +562,7 @@ public sealed partial class GameWorld : IScriptHost, IActorWorld
             Verbs.Pixels.Row(y).CopyTo(screen.Row(Verbs.Top + y));
         }
 
+        DrawBanner(screen);
         return screen;
     }
 

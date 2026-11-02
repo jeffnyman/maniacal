@@ -31,10 +31,43 @@ public sealed class ClockedSource : IAudioSource
     /// <summary>True while the engine clocks the audio itself because the host reads none.</summary>
     public bool IsSelfClocked => _selfClocked;
 
+    /// <summary>
+    /// While set, the sound stands still: a read gives silence and the players do not move on, as
+    /// ScummVM's mixer is paused with the engine (<c>pauseEngine</c>).
+    /// </summary>
+    internal bool Paused
+    {
+        get => Volatile.Read(ref _paused);
+        set => Volatile.Write(ref _paused, value);
+    }
+
+    /// <summary>
+    /// While set, the players go on but are not heard, as ScummVM mutes its music when the
+    /// original's F6 turns the sounds off (<c>scummLoop_handleSound</c>).
+    /// </summary>
+    internal bool Muted
+    {
+        get => Volatile.Read(ref _muted);
+        set => Volatile.Write(ref _muted, value);
+    }
+
+    private bool _paused, _muted;
+
     /// <inheritdoc />
     public void Read(Span<short> interleavedStereo)
     {
+        if (Paused)
+        {
+            interleavedStereo.Clear();
+            return;
+        }
+
         _inner.Read(interleavedStereo);
+        if (Muted)
+        {
+            interleavedStereo.Clear();
+        }
+
         Interlocked.Add(ref _framesRendered, interleavedStereo.Length / 2);
     }
 

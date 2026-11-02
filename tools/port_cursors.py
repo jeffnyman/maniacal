@@ -1,8 +1,10 @@
 """Generates CursorImages.g.cs from ScummVM's engines/scumm/cursor.cpp.
 
-Keeps the cursor pictures setBuiltinCursor copies whole for Maniac Mansion's releases, rather
-than drawing them: the Atari ST's (atari_main_cursor), 16 by 16, 0x0F where the cursor's colour
-goes and 0xFF where it is clear. Run from the repository root:
+Keeps the cursor pictures ScummVM copies whole for Maniac Mansion's releases, rather than
+drawing them: the Atari ST's (atari_main_cursor, setBuiltinCursor), 16 by 16, and the snails shown
+while the game is paused (setSnailCursor): the DOS and C64 releases' (c64_dos_snail_cursor), 24 by
+21, and the Amiga's and the Atari ST's, 16 by 16. 0xFF is clear; in the Atari ST's cursor and the
+DOS and C64 snail, 0x0F takes the cursor's colour. Run from the repository root:
 
     python tools/port_cursors.py ../scummvm/engines/scumm/cursor.cpp > src/Maniacal.Scumm/Game/CursorImages.g.cs
 """
@@ -11,7 +13,10 @@ import re
 import sys
 
 CURSORS = [
-    ("atari_main_cursor", "AtariSt", "The Atari ST's cursor, 16 by 16, its hotspot at (8, 8) (<c>atari_main_cursor</c>)."),
+    ("atari_main_cursor", "AtariSt", 16, 16, "The Atari ST's cursor, 16 by 16, its hotspot at (8, 8) (<c>atari_main_cursor</c>)."),
+    ("c64_dos_snail_cursor", "Snail", 24, 21, "The DOS and C64 releases' snail, 24 by 21, its hotspot at (11, 10) (<c>c64_dos_snail_cursor</c>)."),
+    ("amiga_snail_cursor", "AmigaSnail", 16, 16, "The Amiga's snail, 16 by 16, its hotspot at (7, 7) (<c>amiga_snail_cursor</c>)."),
+    ("atari_snail_cursor", "AtariStSnail", 16, 16, "The Atari ST's snail, 16 by 16, its hotspot at (8, 8) (<c>atari_snail_cursor</c>)."),
 ]
 
 
@@ -29,20 +34,20 @@ def main(path):
         "internal static class CursorImages",
         "{",
     ]
-    for i, (name, field, summary) in enumerate(CURSORS):
+    for i, (name, field, width, height, summary) in enumerate(CURSORS):
         match = re.search(r"\b" + name + r"\[\]\s*=\s*\{(.*?)\};", source, re.DOTALL)
         if match is None:
             sys.exit(f"{name} not found")
         values = [int(v, 16) for v in re.findall(r"0x([0-9A-Fa-f]{2})", match.group(1))]
-        if len(values) != 256:
-            sys.exit(f"{name} has {len(values)} bytes, not 256")
+        if len(values) != width * height:
+            sys.exit(f"{name} has {len(values)} bytes, not {width * height}")
         if i > 0:
             out.append("")
         out.append(f"    /// <summary>{summary}</summary>")
         out.append(f"    public static readonly byte[] {field} =")
         out.append("    [")
-        for start in range(0, 256, 16):
-            out.append("        " + " ".join(f"0x{v:02X}," for v in values[start : start + 16]))
+        for start in range(0, width * height, width):
+            out.append("        " + " ".join(f"0x{v:02X}," for v in values[start : start + width]))
         out.append("    ];")
     out.append("}")
     sys.stdout.write("\n".join(out) + "\n")

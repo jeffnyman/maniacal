@@ -138,6 +138,13 @@ public sealed partial class GameWorld
             return;
         }
 
+        // paused, the snail (printMessageAndPause's setSnailCursor)
+        if (_banner == Banner.Pause)
+        {
+            DrawSnail(screen);
+            return;
+        }
+
         byte color = (Version == 0 ? CursorColorsV0 : CursorColors)[(_cursorFrame >> 1) & 3];
         var (x, y) = Mouse;
 
@@ -835,6 +842,13 @@ public sealed partial class GameWorld
         if (IsNes && key is ' ' or KeyF5)
         {
             Engine.RunScript(NesSaveMenuScript);
+            return;
+        }
+
+        // Space, F8 and F6 are the interpreter's, and go no further (ScummEngine::processKeyboard)
+        if (InterpreterKey(key))
+        {
+            _input = 0;
             return;
         }
 

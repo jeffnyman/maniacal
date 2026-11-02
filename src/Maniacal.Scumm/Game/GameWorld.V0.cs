@@ -605,6 +605,13 @@ public sealed partial class GameWorld
             key = KeyEscape;
         }
 
+        // Space, F8 and F6 are the interpreter's (ScummEngine::processKeyboard)
+        if (InterpreterKey(key))
+        {
+            _input = 0;
+            return;
+        }
+
         if (key is >= KeyF1 and < KeyF1 + 3)
         {
             SwitchKid(key - KeyF1);
