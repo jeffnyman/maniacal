@@ -167,9 +167,6 @@ Maniacal.Scumm.Graphics.Surface8.this[int x, int y].get -> byte
 Maniacal.Scumm.Graphics.Surface8.this[int x, int y].set -> void
 Maniacal.Scumm.Hosting.AudioVolume
 Maniacal.Scumm.Hosting.DetectedGame
-Maniacal.Scumm.Hosting.DetectedGame.Deconstruct(out string! EngineId, out string! GameId, out string! Title, out string? Extra, out string? Language, out string? PlatformName) -> void
-Maniacal.Scumm.Hosting.DetectedGame.DetectedGame(Maniacal.Scumm.Hosting.DetectedGame! original) -> void
-Maniacal.Scumm.Hosting.DetectedGame.DetectedGame(string! EngineId, string! GameId, string! Title, string? Extra = null, string? Language = null, string? PlatformName = null) -> void
 Maniacal.Scumm.Hosting.DetectedGame.EngineId.get -> string!
 Maniacal.Scumm.Hosting.DetectedGame.EngineId.init -> void
 Maniacal.Scumm.Hosting.DetectedGame.Extra.get -> string?
@@ -220,8 +217,6 @@ Maniacal.Scumm.Hosting.HeadlessGraphics.Width.get -> int
 Maniacal.Scumm.Hosting.HeadlessHost
 Maniacal.Scumm.Hosting.HeadlessHost.Audio.get -> Maniacal.Scumm.Hosting.HeadlessAudio!
 Maniacal.Scumm.Hosting.HeadlessHost.Continue(Maniacal.Scumm.Hosting.Engine! engine, int maxTicks) -> int
-Maniacal.Scumm.Hosting.HeadlessHost.DeterministicTime.get -> bool
-Maniacal.Scumm.Hosting.HeadlessHost.DeterministicTime.set -> void
 Maniacal.Scumm.Hosting.HeadlessHost.Graphics.get -> Maniacal.Scumm.Hosting.HeadlessGraphics!
 Maniacal.Scumm.Hosting.HeadlessHost.HeadlessHost(Maniacal.Scumm.Hosting.ILog? log = null, Maniacal.Scumm.Storage.ISaveStore? saves = null) -> void
 Maniacal.Scumm.Hosting.HeadlessHost.Input.get -> Maniacal.Scumm.Hosting.HeadlessInput!
@@ -233,10 +228,7 @@ Maniacal.Scumm.Hosting.HeadlessHost.Saves.get -> Maniacal.Scumm.Storage.ISaveSto
 Maniacal.Scumm.Hosting.HeadlessHost.TickInterval.get -> System.TimeSpan
 Maniacal.Scumm.Hosting.HeadlessHost.TickInterval.set -> void
 Maniacal.Scumm.Hosting.HeadlessInput
-Maniacal.Scumm.Hosting.HeadlessInput.GetMouseState() -> Maniacal.Scumm.Input.MouseState
 Maniacal.Scumm.Hosting.HeadlessInput.HeadlessInput() -> void
-Maniacal.Scumm.Hosting.HeadlessInput.Mouse.get -> Maniacal.Scumm.Input.MouseState
-Maniacal.Scumm.Hosting.HeadlessInput.Mouse.set -> void
 Maniacal.Scumm.Hosting.HeadlessInput.Push(Maniacal.Scumm.Input.InputEvent inputEvent) -> void
 Maniacal.Scumm.Hosting.HeadlessInput.PushKey(Maniacal.Scumm.Input.Key key, Maniacal.Scumm.Input.KeyModifiers modifiers = Maniacal.Scumm.Input.KeyModifiers.None, char ascii = '\0') -> void
 Maniacal.Scumm.Hosting.HeadlessInput.TryRead(out Maniacal.Scumm.Input.InputEvent inputEvent) -> bool
@@ -254,7 +246,6 @@ Maniacal.Scumm.Hosting.IEngineProvider.Detect(Maniacal.Scumm.Storage.IGameContai
 Maniacal.Scumm.Hosting.IEngineProvider.Id.get -> string!
 Maniacal.Scumm.Hosting.IHost
 Maniacal.Scumm.Hosting.IHost.Audio.get -> Maniacal.Scumm.Hosting.IAudioDriver!
-Maniacal.Scumm.Hosting.IHost.DeterministicTime.get -> bool
 Maniacal.Scumm.Hosting.IHost.Graphics.get -> Maniacal.Scumm.Graphics.IGraphicsDriver!
 Maniacal.Scumm.Hosting.IHost.Input.get -> Maniacal.Scumm.Input.IInputDriver!
 Maniacal.Scumm.Hosting.IHost.Log.get -> Maniacal.Scumm.Hosting.ILog!
@@ -284,7 +275,6 @@ Maniacal.Scumm.Hosting.TickResult.Equals(Maniacal.Scumm.Hosting.TickResult other
 Maniacal.Scumm.Hosting.TickResult.TickResult() -> void
 Maniacal.Scumm.Hosting.TickResult.TickResult(bool Continue, System.TimeSpan Delay) -> void
 Maniacal.Scumm.Input.IInputDriver
-Maniacal.Scumm.Input.IInputDriver.GetMouseState() -> Maniacal.Scumm.Input.MouseState
 Maniacal.Scumm.Input.IInputDriver.TryRead(out Maniacal.Scumm.Input.InputEvent inputEvent) -> bool
 Maniacal.Scumm.Input.InputEvent
 Maniacal.Scumm.Input.InputEvent.Ascii.get -> char
@@ -455,21 +445,6 @@ Maniacal.Scumm.Input.MouseButton.Left = 1 -> Maniacal.Scumm.Input.MouseButton
 Maniacal.Scumm.Input.MouseButton.Middle = 3 -> Maniacal.Scumm.Input.MouseButton
 Maniacal.Scumm.Input.MouseButton.None = 0 -> Maniacal.Scumm.Input.MouseButton
 Maniacal.Scumm.Input.MouseButton.Right = 2 -> Maniacal.Scumm.Input.MouseButton
-Maniacal.Scumm.Input.MouseState
-Maniacal.Scumm.Input.MouseState.Deconstruct(out int X, out int Y, out bool LeftDown, out bool RightDown, out bool MiddleDown) -> void
-Maniacal.Scumm.Input.MouseState.Equals(Maniacal.Scumm.Input.MouseState other) -> bool
-Maniacal.Scumm.Input.MouseState.LeftDown.get -> bool
-Maniacal.Scumm.Input.MouseState.LeftDown.init -> void
-Maniacal.Scumm.Input.MouseState.MiddleDown.get -> bool
-Maniacal.Scumm.Input.MouseState.MiddleDown.init -> void
-Maniacal.Scumm.Input.MouseState.MouseState() -> void
-Maniacal.Scumm.Input.MouseState.MouseState(int X, int Y, bool LeftDown, bool RightDown, bool MiddleDown) -> void
-Maniacal.Scumm.Input.MouseState.RightDown.get -> bool
-Maniacal.Scumm.Input.MouseState.RightDown.init -> void
-Maniacal.Scumm.Input.MouseState.X.get -> int
-Maniacal.Scumm.Input.MouseState.X.init -> void
-Maniacal.Scumm.Input.MouseState.Y.get -> int
-Maniacal.Scumm.Input.MouseState.Y.init -> void
 Maniacal.Scumm.Inspection.CostumeFigures
 Maniacal.Scumm.Inspection.CostumeFigures.<Clone>$() -> Maniacal.Scumm.Inspection.CostumeFigures!
 Maniacal.Scumm.Inspection.CostumeFigures.Animations.get -> int
@@ -630,13 +605,11 @@ Maniacal.Scumm.Rooms.VerbEntry.VerbEntry(byte Verb, int Offset) -> void
 Maniacal.Scumm.Saves.SaveFile
 Maniacal.Scumm.Saves.SaveInfo
 Maniacal.Scumm.Saves.SaveInfo.<Clone>$() -> Maniacal.Scumm.Saves.SaveInfo!
-Maniacal.Scumm.Saves.SaveInfo.Deconstruct(out string! Name, out int Version, out System.TimeSpan PlayTime, out System.DateTime? Saved) -> void
 Maniacal.Scumm.Saves.SaveInfo.Equals(Maniacal.Scumm.Saves.SaveInfo? other) -> bool
 Maniacal.Scumm.Saves.SaveInfo.Name.get -> string!
 Maniacal.Scumm.Saves.SaveInfo.Name.init -> void
 Maniacal.Scumm.Saves.SaveInfo.PlayTime.get -> System.TimeSpan
 Maniacal.Scumm.Saves.SaveInfo.PlayTime.init -> void
-Maniacal.Scumm.Saves.SaveInfo.SaveInfo(string! Name, int Version, System.TimeSpan PlayTime, System.DateTime? Saved) -> void
 Maniacal.Scumm.Saves.SaveInfo.Saved.get -> System.DateTime?
 Maniacal.Scumm.Saves.SaveInfo.Saved.init -> void
 Maniacal.Scumm.Saves.SaveInfo.Version.get -> int
@@ -764,9 +737,6 @@ override Maniacal.Scumm.Hosting.TickResult.GetHashCode() -> int
 ~override Maniacal.Scumm.Input.InputEvent.Equals(object obj) -> bool
 override Maniacal.Scumm.Input.InputEvent.GetHashCode() -> int
 ~override Maniacal.Scumm.Input.InputEvent.ToString() -> string
-~override Maniacal.Scumm.Input.MouseState.Equals(object obj) -> bool
-override Maniacal.Scumm.Input.MouseState.GetHashCode() -> int
-~override Maniacal.Scumm.Input.MouseState.ToString() -> string
 override Maniacal.Scumm.Inspection.CostumeFigures.Equals(object? obj) -> bool
 override Maniacal.Scumm.Inspection.CostumeFigures.GetHashCode() -> int
 override Maniacal.Scumm.Inspection.CostumeFigures.ToString() -> string!
@@ -801,7 +771,6 @@ override Maniacal.Scumm.Saves.SaveInfo.ToString() -> string!
 override Maniacal.Scumm.ScummEngine.Dispose() -> void
 override Maniacal.Scumm.ScummEngine.Initialize() -> void
 override Maniacal.Scumm.ScummEngine.Tick(System.TimeSpan elapsed) -> Maniacal.Scumm.Hosting.TickResult
-override sealed Maniacal.Scumm.Hosting.DetectedGame.ToString() -> string!
 static Maniacal.Scumm.Costumes.CostumeFrame.operator !=(Maniacal.Scumm.Costumes.CostumeFrame? left, Maniacal.Scumm.Costumes.CostumeFrame? right) -> bool
 static Maniacal.Scumm.Costumes.CostumeFrame.operator ==(Maniacal.Scumm.Costumes.CostumeFrame? left, Maniacal.Scumm.Costumes.CostumeFrame? right) -> bool
 static Maniacal.Scumm.Game.ActorInfo.operator !=(Maniacal.Scumm.Game.ActorInfo left, Maniacal.Scumm.Game.ActorInfo right) -> bool
@@ -848,8 +817,6 @@ static Maniacal.Scumm.Input.InputEvent.MouseUp(Maniacal.Scumm.Input.MouseButton 
 static Maniacal.Scumm.Input.InputEvent.Quit.get -> Maniacal.Scumm.Input.InputEvent
 static Maniacal.Scumm.Input.InputEvent.operator !=(Maniacal.Scumm.Input.InputEvent left, Maniacal.Scumm.Input.InputEvent right) -> bool
 static Maniacal.Scumm.Input.InputEvent.operator ==(Maniacal.Scumm.Input.InputEvent left, Maniacal.Scumm.Input.InputEvent right) -> bool
-static Maniacal.Scumm.Input.MouseState.operator !=(Maniacal.Scumm.Input.MouseState left, Maniacal.Scumm.Input.MouseState right) -> bool
-static Maniacal.Scumm.Input.MouseState.operator ==(Maniacal.Scumm.Input.MouseState left, Maniacal.Scumm.Input.MouseState right) -> bool
 static Maniacal.Scumm.Inspection.CostumeFigures.operator !=(Maniacal.Scumm.Inspection.CostumeFigures? left, Maniacal.Scumm.Inspection.CostumeFigures? right) -> bool
 static Maniacal.Scumm.Inspection.CostumeFigures.operator ==(Maniacal.Scumm.Inspection.CostumeFigures? left, Maniacal.Scumm.Inspection.CostumeFigures? right) -> bool
 static Maniacal.Scumm.Inspection.ObjectInfo.operator !=(Maniacal.Scumm.Inspection.ObjectInfo? left, Maniacal.Scumm.Inspection.ObjectInfo? right) -> bool
@@ -881,8 +848,11 @@ static Maniacal.Scumm.Storage.SaveCompression.Unwrap(System.IO.Stream! stream) -
 static readonly Maniacal.Scumm.Graphics.Rgb.Black -> Maniacal.Scumm.Graphics.Rgb
 static readonly Maniacal.Scumm.Graphics.Rgb.White -> Maniacal.Scumm.Graphics.Rgb
 static readonly Maniacal.Scumm.Hosting.NullLog.Instance -> Maniacal.Scumm.Hosting.NullLog!
-virtual Maniacal.Scumm.Hosting.DetectedGame.<Clone>$() -> Maniacal.Scumm.Hosting.DetectedGame!
-virtual Maniacal.Scumm.Hosting.DetectedGame.EqualityContract.get -> System.Type!
-virtual Maniacal.Scumm.Hosting.DetectedGame.Equals(Maniacal.Scumm.Hosting.DetectedGame? other) -> bool
-virtual Maniacal.Scumm.Hosting.DetectedGame.PrintMembers(System.Text.StringBuilder! builder) -> bool
 virtual Maniacal.Scumm.Hosting.Engine.Dispose() -> void
+Maniacal.Scumm.Hosting.DetectedGame.<Clone>$() -> Maniacal.Scumm.Hosting.DetectedGame!
+Maniacal.Scumm.Hosting.DetectedGame.DetectedGame() -> void
+Maniacal.Scumm.Hosting.DetectedGame.Equals(Maniacal.Scumm.Hosting.DetectedGame? other) -> bool
+Maniacal.Scumm.Saves.SaveInfo.SaveInfo() -> void
+override Maniacal.Scumm.Hosting.DetectedGame.ToString() -> string!
+static Maniacal.Scumm.Graphics.Palettes.Amiga.get -> System.ReadOnlySpan<Maniacal.Scumm.Graphics.Rgb>
+static Maniacal.Scumm.Graphics.Palettes.Nes.get -> System.ReadOnlySpan<Maniacal.Scumm.Graphics.Rgb>

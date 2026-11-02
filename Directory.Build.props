@@ -26,11 +26,11 @@
     <RepositoryUrl>https://github.com/jeffnyman/maniacal</RepositoryUrl>
     <PackageProjectUrl>https://github.com/jeffnyman/maniacal</PackageProjectUrl>
     <!-- dotnet pack -p:VersionSuffix=alpha.2 for the next prerelease; an empty suffix is a release -->
-    <VersionPrefix>0.3.0</VersionPrefix>
+    <VersionPrefix>0.4.0</VersionPrefix>
     <VersionSuffix>alpha</VersionSuffix>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>scumm;maniac-mansion;lucasfilm;c64;adventure;interpreter;scummvm;retro;games</PackageTags>
-    <PackageReleaseNotes>Third prerelease. Nothing public is removed or changed since 0.2.0-alpha; the new API is added. New: ManiacMansion, a front door that opens a release from its folder (Open, then Play, Inspect or CreateEngine); GameInspector.Rooms, Scripts, Costumes and Palette; GameWorld.ReadAudio, SampleRate, ObjectsHere, ClickObject and Palette. Changed: only the English releases for the Commodore 64 and DOS are played, and others are refused with a NotSupportedException that names them; the 1987 and 1988 DOS demos now play; the inspector answers null, not an exception, for the index's empty slots and its entries that point at nothing. Fixed in all three releases, checked against ScummVM: a script that starts a cutscene goes on after it; left-facing figures are drawn in the right column; the 1987 release's messages have their proper colours. The maniacal tool has --help, --version, one-line errors and exit codes, and keeps each release's saves in a folder of its own: saves made before are in saves/maniac, to be moved by hand.</PackageReleaseNotes>
+    <PackageReleaseNotes>Fourth prerelease. Breaking: DetectedGame and SaveInfo are records with init properties, no longer positional (make them with { ... }); the host contract drops what no engine read: IHost.DeterministicTime, IInputDriver.GetMouseState, HeadlessInput.Mouse and GetMouseState, and MouseState. New: the NES release (the American cartridge, a .nes dump or its .prg), with its title screens, sound and own save screen; the Atari ST release, from its .st disk image; the Amiga release, from its two .adf disk images, with its own sound in stereo; the C64 demo; Palettes.Nes and Palettes.Amiga. Every release is won by the walkthrough tests, and its saves load in ScummVM 2026.4.0 and the other way round. Fixed: a save made with another release is refused, by name, before the world is touched; save errors are InvalidDataException; the MD5 lookup is built once whatever the thread. The maniacal tool plays every release, keeping their saves in maniac/nes, maniac/atari and maniac/amiga.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsPackable)' == 'true'">

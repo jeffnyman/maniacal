@@ -13,7 +13,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 3 | The interpreter (V2 and V1) | Done |
 | 4 | Sound, saves and options (V2 and V1) | Done |
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
-| 6 | A release of its own | 0.3.0-alpha, the API used from outside and made easier; then a 1.0 |
+| 6 | A release of its own | 0.4.0-alpha, every English release played; then a 1.0 |
 | 7 | The NES | Done: the American cartridge winnable, with its title screens, sound and saves, opened by the library and the tool |
 | 8 | The Atari ST | Done: winnable every way, drawn and heard as in ScummVM, opened by the library and the tool |
 | 9 | The Amiga | Done: winnable every way, drawn and heard as in ScummVM, opened by the library and the tool |
@@ -543,7 +543,7 @@ Where it comes from:
 - `docs/c64-engine` is the authority here: `interpreter/script_engine.asm`, `include/opcode_handlers.inc`,
   `walkboxes/`, `ui/sentence_action.asm`, `sound/sid_voice_controller.asm`.
 
-## Phase 6: a release of its own (0.3.0-alpha)
+## Phase 6: a release of its own (0.4.0-alpha)
 
 - **Standing alone.** The host contract, screen surfaces, PNG and WAV writing, game folders, save stores, the audio sources and the SDL host came from Daventry's packages
   (0.1.0-alpha); they are now Maniacal's own, as `Maniacal.Scumm`'s `Hosting`, `Input`,
@@ -793,6 +793,14 @@ Where it comes from:
   are tested (`DemoTests`); against ScummVM's window, its menu is the same but for the cursor and
   the intro it falls to the same to the pixel.
 
+- **The fourth release.** 0.4.0-alpha carries everything since 0.3.0-alpha: the NES, the Atari
+  ST and the Amiga (Phases 7 to 9), the C64 demo, saves refused by name when another release made
+  them, and the two changes made for a 1.0 that break code written against 0.3.0-alpha:
+  `DetectedGame` and `SaveInfo` are records with init properties, and the host contract drops
+  the members no engine read (`IHost.DeterministicTime`, `IInputDriver.GetMouseState`,
+  `MouseState`). At the release `PublicAPI.Unshipped.txt` moved into `PublicAPI.Shipped.txt`,
+  its removals taken out.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies
@@ -801,8 +809,9 @@ Where it comes from:
   and animates actors, not about drawing them; the twinkling star differs too, being random.
 - Verb names: the programs used from outside found verbs only as numbers. The DOS releases' names
   live in their own scripts (`verbOps` in the boot script), so this waits until it is wanted.
-- Move the programs in `maniacal-playground` to 0.3.0-alpha, drop their workarounds, and use what
-  was added for them, to see that it helped.
+- Move the programs in `maniacal-playground` to 0.4.0-alpha, drop their workarounds, and use what
+  was added for them, to see that it helped; the records' init properties and the trimmed host
+  contract will need their small changes there.
 - At 1.0, move `PublicAPI.Unshipped.txt` into `PublicAPI.Shipped.txt` and set package
   validation's baseline (`PackageValidationBaselineVersion`), so a breaking change fails the build.
 
