@@ -856,3 +856,5 @@ Maniacal.Scumm.Saves.SaveInfo.SaveInfo() -> void
 override Maniacal.Scumm.Hosting.DetectedGame.ToString() -> string!
 static Maniacal.Scumm.Graphics.Palettes.Amiga.get -> System.ReadOnlySpan<Maniacal.Scumm.Graphics.Rgb>
 static Maniacal.Scumm.Graphics.Palettes.Nes.get -> System.ReadOnlySpan<Maniacal.Scumm.Graphics.Rgb>
+Maniacal.Scumm.Inspection.GameInspector.VerbName(int verb) -> string?
+Maniacal.Scumm.Inspection.GameInspector.Verbs.get -> System.Collections.Generic.IReadOnlyList<int>!
