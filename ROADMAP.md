@@ -13,7 +13,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 3 | The interpreter (V2 and V1) | Done |
 | 4 | Sound, saves and options (V2 and V1) | Done |
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
-| 6 | A release of its own | 0.4.0-alpha, every English release played; then a 1.0 |
+| 6 | A release of its own | 0.4.1-alpha, every English release played; then a 1.0 |
 | 7 | The NES | Done: the American cartridge winnable, with its title screens, sound and saves, opened by the library and the tool |
 | 8 | The Atari ST | Done: winnable every way, drawn and heard as in ScummVM, opened by the library and the tool |
 | 9 | The Amiga | Done: winnable every way, drawn and heard as in ScummVM, opened by the library and the tool |
@@ -543,7 +543,7 @@ Where it comes from:
 - `docs/c64-engine` is the authority here: `interpreter/script_engine.asm`, `include/opcode_handlers.inc`,
   `walkboxes/`, `ui/sentence_action.asm`, `sound/sid_voice_controller.asm`.
 
-## Phase 6: a release of its own (0.4.0-alpha)
+## Phase 6: a release of its own (0.4.1-alpha)
 
 - **Standing alone.** The host contract, screen surfaces, PNG and WAV writing, game folders, save stores, the audio sources and the SDL host came from Daventry's packages
   (0.1.0-alpha); they are now Maniacal's own, as `Maniacal.Scumm`'s `Hosting`, `Input`,
@@ -863,6 +863,11 @@ Where it comes from:
   engine. Against ScummVM 2026.4.0's window, a save loaded in both and the same keys posted to
   it: the pause (snail and all), the question, "Sounds Off" and the demo's banner are the same
   to the pixel. F1 to F3, which switch the kids, are the game's scripts', and worked already.
+
+- **The fifth release.** 0.4.1-alpha carries everything since 0.4.0-alpha: the C64 demo's two
+  fixes, the player's icon, window size, title and keyboard cursor, and the interpreter's keys.
+  The public API did not change (`PublicAPI.Unshipped.txt` stayed empty), so code written
+  against 0.4.0-alpha builds and runs as it was; hence a patch, not 0.5.0.
 
 ### Next, before a 1.0
 

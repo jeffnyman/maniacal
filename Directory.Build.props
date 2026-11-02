@@ -26,11 +26,11 @@
     <RepositoryUrl>https://github.com/jeffnyman/maniacal</RepositoryUrl>
     <PackageProjectUrl>https://github.com/jeffnyman/maniacal</PackageProjectUrl>
     <!-- dotnet pack -p:VersionSuffix=alpha.2 for the next prerelease; an empty suffix is a release -->
-    <VersionPrefix>0.4.0</VersionPrefix>
+    <VersionPrefix>0.4.1</VersionPrefix>
     <VersionSuffix>alpha</VersionSuffix>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>scumm;maniac-mansion;lucasfilm;c64;adventure;interpreter;scummvm;retro;games</PackageTags>
-    <PackageReleaseNotes>Fourth prerelease. Breaking: DetectedGame and SaveInfo are records with init properties, no longer positional (make them with { ... }); the host contract drops what no engine read: IHost.DeterministicTime, IInputDriver.GetMouseState, HeadlessInput.Mouse and GetMouseState, and MouseState. New: the NES release (the American cartridge, a .nes dump or its .prg), with its title screens, sound and own save screen; the Atari ST release, from its .st disk image; the Amiga release, from its two .adf disk images, with its own sound in stereo; the C64 demo; Palettes.Nes and Palettes.Amiga. Every release is won by the walkthrough tests, and its saves load in ScummVM 2026.4.0 and the other way round. Fixed: a save made with another release is refused, by name, before the world is touched; save errors are InvalidDataException; the MD5 lookup is built once whatever the thread. The maniacal tool plays every release, keeping their saves in maniac/nes, maniac/atari and maniac/amiga.</PackageReleaseNotes>
+    <PackageReleaseNotes>Fifth prerelease; the public API is 0.4.0-alpha's. New: the keys the original interpreters kept for themselves, as ScummVM has them (but on the NES): Space pauses, the game, its clock and sound standing still until a key or a click; F8 asks before restarting; F6 turns the sound off and on; Ctrl+C and Alt+X quit. Fixed: in the C64 demo, the inspector lists only its rooms (not those on the disk it lacks, nor costume-only rooms), and F5 does nothing instead of throwing. The maniacal tool has the mansion for its icon, opens its window as large as fits the display, names the release in its title bar, and steers the cursor from the arrow keys and the numpad (5 clicks; 1, 3, 7 and 9 jump to the corners).</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
