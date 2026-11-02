@@ -3,8 +3,8 @@
 </h1>
 
 <p align="center">
-  <a href="https://github.com/jeffnyman/maniacal/actions/workflows/build.yml"><img src="https://github.com/jeffnyman/maniacal/actions/workflows/build.yml/badge.svg" alt="Build"></a>
-  <a href="https://www.nuget.org/packages/Maniacal"><img src="https://img.shields.io/nuget/vpre/Maniacal.svg" alt="NuGet"></a>
+  <a href="https://github.com/jeffnyman/maniacal/actions/workflows/build.yml"><img src="https://img.shields.io/github/actions/workflow/status/jeffnyman/maniacal/build.yml?branch=main&style=for-the-badge&label=build" alt="Build"></a>
+  <a href="https://www.nuget.org/packages/Maniacal"><img src="https://img.shields.io/nuget/vpre/Maniacal?style=for-the-badge&label=nuget" alt="NuGet"></a>
 </p>
 
 <p align="center">
