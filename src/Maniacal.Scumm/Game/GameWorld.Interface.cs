@@ -684,7 +684,7 @@ public sealed partial class GameWorld
     /// The kid takes an object from the room: a copy of its code goes into the inventory, the kid
     /// owns it, and its state turns its image on and makes it untouchable. Mirrors <c>o2_pickupObject</c>.
     /// </summary>
-    private void PickUp(int obj)
+    internal void PickUp(int obj)
     {
         if (CurrentRoom?.FindObject(obj) is not { } code || WhereIs(obj) == 1)
         {

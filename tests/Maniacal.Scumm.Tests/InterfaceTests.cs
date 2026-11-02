@@ -435,6 +435,69 @@ public class PlayingTests
         Assert.Equal(1, ((ScummEngine)engine).World.Engine.Variables[GameWorld.VarKeypress]);
     }
 
+    /// <summary>
+    /// The keys on the right of the keyboard work the inventory, as the original's reference card
+    /// has them and ScummVM's checkExecVerbs does: U and J scroll it by a row, I, O, K and L pick the
+    /// item at the top left, top right, bottom left and bottom right of the four shown.
+    /// </summary>
+    [Theory]
+    [InlineData(WalkthroughTests.V2)]
+    [InlineData(WalkthroughTests.V1)]
+    [InlineData(WalkthroughTests.AtariSt)]
+    [InlineData(WalkthroughTests.Amiga)]
+    public void The_inventory_keys_scroll_and_pick(string folder)
+    {
+        if (WalkthroughTests.Start(folder) is not { } player)
+        {
+            return;
+        }
+
+        var world = player.World;
+        int ego = world.Engine.Variables[ScriptEngine.VarEgo];
+
+        // on the porch, six of its objects given to the kid, as picking them up would
+        player.Leave(left: true);
+        foreach (var obj in world.ObjectsHere())
+        {
+            if (world.InventoryCount(ego) < 6)
+            {
+                world.PickUp(obj.Number);
+            }
+        }
+
+        Assert.Equal(6, world.InventoryCount(ego));
+        void Press(char key)
+        {
+            world.PressKey(key);
+            for (int i = 0; i < 5; i++)
+            {
+                world.Step();
+            }
+        }
+
+        // down a row, and no further with six: four show from the third
+        Press('j');
+        Assert.Equal(2, world.Verbs.InventoryOffset);
+        Press('j');
+        Assert.Equal(2, world.Verbs.InventoryOffset);
+
+        // with a verb chosen (X, Read), the sentence takes the item at the bottom right of those
+        // shown, the sixth
+        Press('x');
+        Press('l');
+        Assert.Equal(world.FindInventory(ego, 6), world.Engine.Variables[GameWorld.VarSentenceObject1]);
+
+        // up again, and the top right is the second
+        Press('u');
+        Assert.Equal(0, world.Verbs.InventoryOffset);
+        Press('o');
+        Assert.Equal(world.FindInventory(ego, 2), world.Engine.Variables[GameWorld.VarSentenceObject1]);
+        Press('i');
+        Assert.Equal(world.FindInventory(ego, 1), world.Engine.Variables[GameWorld.VarSentenceObject1]);
+        Press('k');
+        Assert.Equal(world.FindInventory(ego, 3), world.Engine.Variables[GameWorld.VarSentenceObject1]);
+    }
+
     /// <summary>The window's title names the release as a player knows it.</summary>
     [Theory]
     [InlineData(WalkthroughTests.V2, "DOS Enhanced")]

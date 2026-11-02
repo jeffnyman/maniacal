@@ -842,6 +842,13 @@ Where it comes from:
   so this is the player's, not the library's; and the original's Shift+M, switching the mouse
   off, is not needed.
 
+- **The verbs' and the inventory's keys, checked.** The DOS, Atari ST and Amiga releases give
+  their verbs the keys of the grid they sit in (Q, W, E, R, T over A, S, D, F, G over Z, X, C, V,
+  B), from the game's own data, and Maniacal matches a key press to them as ScummVM does; the
+  inventory's keys are ScummVM's (`checkExecVerbs`): U and J scroll a row, I, O, K and L put the
+  item shown at the top left, top right, bottom left or bottom right into the sentence. Both were
+  ported already; the inventory's are tested now, on those four releases.
+
 ### Next, before a 1.0
 
 - What the comparison with ScummVM 2026.4.0 left in version 1: in the 1987 demo the meteor flies
