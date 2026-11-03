@@ -1316,6 +1316,7 @@ A patch release for the packages' page on nuget.org alone; the player and the li
   in it, an image from a host nuget.org does not show, or a relative link.
 - The packages carry the player's icon, the mansion (`assets/icon.png`, the 128-pixel image of
   `maniac-mansion-house.ico`), as Daventry's carry the crown.
+- Published (2026-11-03); the library's baseline is 1.0.1 since.
 
 ## Later, perhaps
 
