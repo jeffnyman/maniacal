@@ -1304,6 +1304,19 @@ The steps:
    `maniac/amiga`. Tested in the walkthrough tests (the ending's screen in `WalkthroughTests`),
    `SaveGameTests`, `DetectionTests` and `ManiacMansionTests`.
 
+## 1.0.1: the page on nuget.org
+
+A patch release for the packages' page on nuget.org alone; the player and the library are
+1.0.0's, and the library is checked against 1.0.0 when packed.
+
+- nuget.org renders a package's README as Markdown alone, and drops the HTML GitHub's README
+  uses: 1.0.0's page lost its title, badges, screenshots and author. The packages carry
+  `NUGET.md` now, the README in Markdown (the screenshot table one small table for each
+  release, the links into the repository made links to GitHub). `NugetReadmeTests` fails on HTML
+  in it, an image from a host nuget.org does not show, or a relative link.
+- The packages carry the player's icon, the mansion (`assets/icon.png`, the 128-pixel image of
+  `maniac-mansion-house.ico`), as Daventry's carry the crown.
+
 ## Later, perhaps
 
 - The CGA and Hercules color maps of `setV1ColorTable` and `resetPalette`.
