@@ -953,7 +953,7 @@ Where it comes from:
   changes none of it, and package validation fails the pack if a public member is removed or
   changed. Nothing has changed since 0.5.0-alpha but the version: `VersionSuffix` is empty, the
   README installs without `--prerelease`, and `PublicAPI.Unshipped.txt` had nothing to move.
-  Once it is on nuget.org, the baseline moves to 1.0.0.
+  Once it was on nuget.org, the baseline moved to 1.0.0.
 
 ## Phase 7: the NES
 
