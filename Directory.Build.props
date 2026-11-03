@@ -26,11 +26,11 @@
     <RepositoryUrl>https://github.com/jeffnyman/maniacal</RepositoryUrl>
     <PackageProjectUrl>https://github.com/jeffnyman/maniacal</PackageProjectUrl>
     <!-- dotnet pack -p:VersionSuffix=alpha.2 for the next prerelease; an empty suffix is a release -->
-    <VersionPrefix>0.5.0</VersionPrefix>
-    <VersionSuffix>alpha</VersionSuffix>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionSuffix></VersionSuffix>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>scumm;maniac-mansion;lucasfilm;c64;adventure;interpreter;scummvm;retro;games</PackageTags>
-    <PackageReleaseNotes>Sixth prerelease; code written against 0.4.x builds and runs as it was. New: GameInspector.Verbs and VerbName(verb), the names a release shows its verbs by, for the numbers objects' verb tables use (the NES has its own, and no Fix, Unlock or What is); numbers that are no verb a player picks (16, 253, 255) have none. Fixed: in the 1987 DOS release and its demo, a figure facing left was drawn seven pixels too far left (the meteor, and Syd and Razor facing Dave); it is placed as ScummVM places it. Packing now compares the library with the last release on nuget.org, so a public member removed or changed fails the build.</PackageReleaseNotes>
+    <PackageReleaseNotes>The first release: the public API is promised, and follows semantic versioning, so a 1.x adds to it and changes none of it. Plays every English release ScummVM knows, from the title screen to the end: the Commodore 64 release and its demo, the 1987 DOS release and its demo, the 1988 DOS release, the American NES cartridge, the Atari ST and the Amiga; saves made in each load in ScummVM. Code written against 0.5.0-alpha builds and runs as it was; nothing has changed since it but the version.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsPackable)' == 'true'">

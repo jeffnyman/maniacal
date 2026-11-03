@@ -13,7 +13,7 @@ in this repository; [docs/building-an-interpreter.md](docs/building-an-interpret
 | 3 | The interpreter (V2 and V1) | Done |
 | 4 | Sound, saves and options (V2 and V1) | Done |
 | 5 | The Commodore 64 (V0), and the walkthrough won every way in every release | Done |
-| 6 | A release of its own | 0.5.0-alpha, every English release played; then a 1.0 |
+| 6 | A release of its own | Done: 1.0.0, every English release played |
 | 7 | The NES | Done: the American cartridge winnable, with its title screens, sound and saves, opened by the library and the tool |
 | 8 | The Atari ST | Done: winnable every way, drawn and heard as in ScummVM, opened by the library and the tool |
 | 9 | The Amiga | Done: winnable every way, drawn and heard as in ScummVM, opened by the library and the tool |
@@ -543,7 +543,7 @@ Where it comes from:
 - `docs/c64-engine` is the authority here: `interpreter/script_engine.asm`, `include/opcode_handlers.inc`,
   `walkboxes/`, `ui/sentence_action.asm`, `sound/sid_voice_controller.asm`.
 
-## Phase 6: a release of its own (0.5.0-alpha)
+## Phase 6: a release of its own (1.0.0)
 
 - **Standing alone.** The host contract, screen surfaces, PNG and WAV writing, game folders, save stores, the audio sources and the SDL host came from Daventry's packages
   (0.1.0-alpha); they are now Maniacal's own, as `Maniacal.Scumm`'s `Hosting`, `Input`,
@@ -946,10 +946,14 @@ Where it comes from:
   release `PublicAPI.Unshipped.txt` moved into `PublicAPI.Shipped.txt`, and once it was on
   nuget.org the baseline moved to 0.5.0-alpha.
 
-### Next, before a 1.0
-
-- At 1.0: an empty `VersionSuffix`, `PublicAPI.Unshipped.txt` moved into
-  `PublicAPI.Shipped.txt`, and, once it is on nuget.org, the baseline moved to 1.0.0.
+- **The 1.0 release.** 1.0.0 is 0.5.0-alpha with its public API promised: the API was settled
+  at 0.2.0-alpha, the breaks held for a 1.0 went out in 0.4.0-alpha, and 0.4.1-alpha and
+  0.5.0-alpha only added to it, the playground's five programs moving through both unchanged but
+  for the verbs' names. From here it follows semantic versioning: a 1.x adds to the API and
+  changes none of it, and package validation fails the pack if a public member is removed or
+  changed. Nothing has changed since 0.5.0-alpha but the version: `VersionSuffix` is empty, the
+  README installs without `--prerelease`, and `PublicAPI.Unshipped.txt` had nothing to move.
+  Once it is on nuget.org, the baseline moves to 1.0.0.
 
 ## Phase 7: the NES
 

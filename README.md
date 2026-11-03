@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/jeffnyman/maniacal/actions/workflows/build.yml"><img src="https://img.shields.io/github/actions/workflow/status/jeffnyman/maniacal/build.yml?branch=main&style=for-the-badge&label=build" alt="Build"></a>
-  <a href="https://www.nuget.org/packages/Maniacal"><img src="https://img.shields.io/nuget/vpre/Maniacal?style=for-the-badge&label=nuget" alt="NuGet"></a>
+  <a href="https://www.nuget.org/packages/Maniacal"><img src="https://img.shields.io/nuget/v/Maniacal?style=for-the-badge&label=nuget" alt="NuGet"></a>
 </p>
 
 <p align="center">
@@ -72,7 +72,8 @@ Wendy's memoirs and Michael's photographs) in the C64, DOS, Atari ST and Amiga r
 way on the NES, and the saves they make along the way, loaded in ScummVM, show the same screen but for
 the cursor and what the mouse is over there. (ScummVM itself stops at the Atari ST's ending, on
 its ending music's length; Maniacal plays it through.) The
-packages are an alpha: the engine works, but its public API is still to be settled before a 1.0.
+packages are at 1.0: the public API is settled and follows semantic versioning, so a 1.x adds to
+it and changes none of it.
 
 | Release | SCUMM version | Data | State |
 |---|---|---|---|
@@ -117,25 +118,46 @@ What works, in every release:
 ### Playing
 
 `maniacal <game folder>` plays in a window, as large as fits in three quarters of the display at
-a whole scale; `--fullscreen`, `--scale N` (1 to 8), `--speaker` for the PC speaker's sound and
-`--copy-protection` change how. A verb is clicked, then an object;
-clicking the object again, or clicking the sentence line, carries the sentence out, as in the
-original. The right button, Escape or F4 skip a cutscene, the period key skips a line of speech,
-and F5 opens the game's save screen. F1, F2 and F3 switch to Dave and the two other kids; Space
-pauses until a key; F8 asks before restarting; F6 turns the sound off and on; Ctrl+C quits. The keyboard works the verbs and the inventory as the
-original's did: the letters from Q to B in three rows pick the verbs where they sit on the screen,
-U and J scroll the inventory, and I, O, K and L pick its four items shown. Without a mouse, as the original allowed, the arrow keys or
-the numpad's 2, 4, 6 and 8 steer the cursor (faster while held), the numpad's 7, 9, 1 and 3 put it
-in a corner, and its 5 clicks. The NES plays as it did: its two title screens first (a
-click or Escape skips each), a click on an object carries the sentence out at once, Shift-B also
-skips a cutscene, and Space or F5 opens its own save screen. Saves go in a `Maniacal/saves` folder
-under the user's application data (`%APPDATA%` on Windows, `~/.config` on Linux and macOS), in a
-folder for each release, `maniac/c64`, `maniac/v1`, `maniac/v2`, `maniac/nes`, `maniac/atari` and `maniac/amiga`: the releases'
-saves do not fit one another,
-and their files have ScummVM's names (`maniac.s01` and so on), so each release keeps its own.
-Saves made with 0.1.0-alpha or 0.2.0-alpha are in `maniac` itself; a save does not say which
-release made it, so move them by hand into the release's folder. `maniacal --help` lists
-everything, and `maniacal --version` names the version.
+a whole scale. `maniacal --help` lists everything, and `maniacal --version` names the version.
+
+| Option | What it does |
+|---|---|
+| `--fullscreen` | Plays on the whole display. |
+| `--scale N` | Draws at a scale of 1 to 8. |
+| `--speaker` | Plays the DOS sound as the PC speaker made it, not the PCjr. |
+| `--copy-protection` | Keeps the steel security door's code from the manual. |
+
+As in the original, a verb is clicked, then an object; clicking the object again, or clicking the
+sentence line, carries the sentence out.
+
+| Key | What it does |
+|---|---|
+| Right button, Escape, F4 | Skips a cutscene. |
+| Period | Skips a line of speech. |
+| F1, F2, F3 | Switch to Dave and the two other kids. |
+| F5 | Opens the game's save screen. |
+| Space | Pauses until a key. |
+| F6 | Turns the sound off and on. |
+| F8 | Asks before restarting. |
+| Ctrl+C, Alt+X | Quit. |
+
+The keyboard works the verbs and the inventory as the original's did:
+
+- The letters from Q to B, in three rows, pick the verbs where they sit on the screen.
+- U and J scroll the inventory; I, O, K and L pick its four items shown.
+- Without a mouse, the arrow keys or the numpad's 2, 4, 6 and 8 steer the cursor (faster while
+  held), the numpad's 7, 9, 1 and 3 put it in a corner, and its 5 clicks.
+
+The NES plays as it did: its two title screens come first (a click or Escape skips each), a click
+on an object carries the sentence out at once, Shift-B also skips a cutscene, and Space or F5
+opens its own save screen.
+
+Saves go in a `Maniacal/saves` folder under the user's application data (`%APPDATA%` on Windows,
+`~/.config` on Linux and macOS), in a folder for each release: `maniac/c64`, `maniac/v1`,
+`maniac/v2`, `maniac/nes`, `maniac/atari` and `maniac/amiga`. The releases' saves do not fit one
+another, and their files have ScummVM's names (`maniac.s01` and so on), so each release keeps its
+own. Saves made with 0.1.0-alpha or 0.2.0-alpha are in `maniac` itself; a save does not say which
+release made it, so move them by hand into the release's folder.
 
 ### Looking inside
 
@@ -187,12 +209,12 @@ host layer they were taken from and adapted. Beyond the .NET SDK, the only depen
 The player is a dotnet tool, and the interpreter a library, on nuget.org (both need .NET 10):
 
 ```
-dotnet tool install -g Maniacal --prerelease
+dotnet tool install -g Maniacal
 maniacal <game folder>
 ```
 
 ```
-dotnet add package Maniacal.Scumm --prerelease
+dotnet add package Maniacal.Scumm
 ```
 
 `maniacal` plays in a window (SDL3); `--run` plays headless, for screenshots and recordings. The
@@ -255,7 +277,7 @@ engine that plays the release in its window.
 `artifacts/packages` and checks the packages as a consumer would: a console app restores
 `Maniacal.Scumm` from that feed and plays each game headless, and the tool, installed from it,
 lists the game and takes a screenshot. The build workflow builds, tests and packs every push; the
-publish workflow pushes the packages to nuget.org for a tag such as `v0.1.0-alpha`.
+publish workflow pushes the packages to nuget.org for a tag such as `v1.0.0`.
 
 ## Building and running
 
