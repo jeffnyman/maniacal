@@ -64,6 +64,56 @@ release.
 </tr>
 </table>
 
+## Installing
+
+The player is a dotnet tool, and the interpreter a library, both on nuget.org. There is no
+download to unzip: the player is installed and run from a terminal (PowerShell or Windows
+Terminal on Windows, Terminal on macOS) with .NET's own `dotnet` command.
+
+### The player
+
+1. Install the .NET 10 SDK, once, from [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/10.0)
+   (the SDK, not just the runtime: installing a tool needs the SDK). From a terminal instead:
+   `winget install Microsoft.DotNet.SDK.10` on Windows, `brew install --cask dotnet-sdk` on macOS
+   with Homebrew; on Linux, see
+   [Install .NET on Linux](https://learn.microsoft.com/dotnet/core/install/linux) for your
+   distribution. `dotnet --version` should then print 10 or later.
+2. Install the player:
+
+   ```
+   dotnet tool install -g Maniacal
+   ```
+
+3. Play, pointing it at the folder that holds a release's files (see [Game data](#game-data)):
+
+   ```
+   maniacal <game folder>
+   ```
+
+If the terminal says `maniacal` is not found, open a new one: the first tool installed adds
+.NET's tools folder (`%USERPROFILE%\.dotnet\tools`, `~/.dotnet/tools`) to the path, and a
+terminal already open does not see that. On macOS and Linux with zsh, if a new terminal still
+does not find it, `dotnet tool install` printed the line to add to `~/.zprofile`.
+
+`dotnet tool update -g Maniacal` moves to the latest release, and `dotnet tool uninstall -g
+Maniacal` removes it. `maniacal --help` lists the options.
+
+### The library
+
+```
+dotnet add package Maniacal.Scumm
+```
+
+## Game data
+
+Maniacal ships no game data. Point it at a folder holding a release.
+
+The C64 release's disk images are found by ScummVM's names, `maniac1.d64` and `maniac2.d64`, or by
+the bytes each disk starts with. The NES cartridge is found by its contents, under any name ending
+in `.nes` (a dump with its iNES header) or `.prg` (the program data alone, as ScummVM wants it).
+The Atari ST's disk is read where it is, a `.st` image under any name, and the Amiga's two, `.adf`
+images under any names (ScummVM wants their files copied off them).
+
 ## Status
 
 All six releases play from the title screen to "You won the game!". The walkthrough tests win
@@ -183,69 +233,9 @@ The other languages, the European NES cartridge, and the other Atari ST release 
 the NES's costumes in the inspector.
 [ROADMAP.md](ROADMAP.md) gives the order of work, done and to come.
 
-## Layout
+## Using the library
 
-| Path | What it is |
-|---|---|
-| `src/Maniacal.Scumm` | The interpreter: detection, resources, script VM, rooms, actors, walkboxes, costumes, verbs, text, sound, saves. |
-| `src/Maniacal.Player` | The `maniacal` command line player on the SDL host. |
-| `tests/Maniacal.Scumm.Tests` | Unit tests, and tests that run against the real game data when it is present. |
-| `tools` | Generators that port tables from the ScummVM source (`port_md5_table.py`, `port_fonts.py`, `port_opcodes.py`, `port_sound_tables.py`, `port_disk_tables.py`, `port_palettes.py`, `port_v0_verbs.py`, `port_v0_actors.py`, `port_sid_tables.py`, `port_transitions.py`). |
-| `docs` | How Maniac Mansion works and how an interpreter for it is built: the commented C64 engine, the game's scripts, the boot loader, the NES data, and the game itself. Start at [docs/README.md](docs/README.md). |
-| `assets/screenshots` | The screenshots above. |
-| `tools/PackageSmoke` | The packages' consumer check (see Installing). |
-| `.github/workflows` | The build workflow (every push) and the publish workflow (a version tag). |
-
-The host contract is part of `Maniacal.Scumm`: the engine base class, the graphics, input and
-audio drivers it is given and a headless host (`Hosting`, `Input`), screen surfaces and PNG
-writing (`Graphics`), game folders and save stores (`Storage`), and the audio sources (`Sound`).
-The SDL host is part of `Maniacal.Player` (`Sdl`). These come from
-[Daventry](https://github.com/jeffnyman/daventry), the AGI and SCI interpreter, whose 0.1.0-alpha
-host layer they were taken from and adapted. Beyond the .NET SDK, the only dependency is SDL3
-(`ppy.SDL3-CS`), for the player.
-
-## Installing
-
-The player is a dotnet tool, and the interpreter a library, both on nuget.org. There is no
-download to unzip: the player is installed and run from a terminal (PowerShell or Windows
-Terminal on Windows, Terminal on macOS) with .NET's own `dotnet` command.
-
-### The player
-
-1. Install the .NET 10 SDK, once, from [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/10.0)
-   (the SDK, not just the runtime: installing a tool needs the SDK). From a terminal instead:
-   `winget install Microsoft.DotNet.SDK.10` on Windows, `brew install --cask dotnet-sdk` on macOS
-   with Homebrew; on Linux, see
-   [Install .NET on Linux](https://learn.microsoft.com/dotnet/core/install/linux) for your
-   distribution. `dotnet --version` should then print 10 or later.
-2. Install the player:
-
-   ```
-   dotnet tool install -g Maniacal
-   ```
-
-3. Play, pointing it at the folder that holds a release's files (see [Game data](#game-data)):
-
-   ```
-   maniacal <game folder>
-   ```
-
-If the terminal says `maniacal` is not found, open a new one: the first tool installed adds
-.NET's tools folder (`%USERPROFILE%\.dotnet\tools`, `~/.dotnet/tools`) to the path, and a
-terminal already open does not see that. On macOS and Linux with zsh, if a new terminal still
-does not find it, `dotnet tool install` printed the line to add to `~/.zprofile`.
-
-`dotnet tool update -g Maniacal` moves to the latest release, and `dotnet tool uninstall -g
-Maniacal` removes it. `maniacal --help` lists the options.
-
-### The library
-
-```
-dotnet add package Maniacal.Scumm
-```
-
-`maniacal` plays in a window (SDL3); `--run` plays headless, for screenshots and recordings. The
-library opens a release from its folder (or one a level or two below it) and plays it headless:
+The library opens a release from its folder (or one a level or two below it) and plays it headless:
 
 ```csharp
 using Maniacal.Scumm;
@@ -300,11 +290,26 @@ foreach (var line in inspector.Script(4)!.Lines)
 GameInspector(...)` does the same a step at a time, and `CreateEngine(host)` gives a host the
 engine that plays the release in its window.
 
-`tools/PackageSmoke/run.ps1 -Game <folder> [-MoreGames <folder>,...]` packs the repository into
-`artifacts/packages` and checks the packages as a consumer would: a console app restores
-`Maniacal.Scumm` from that feed and plays each game headless, and the tool, installed from it,
-lists the game and takes a screenshot. The build workflow builds, tests and packs every push; the
-publish workflow pushes the packages to nuget.org for a tag such as `v1.0.0`.
+## Layout
+
+| Path | What it is |
+|---|---|
+| `src/Maniacal.Scumm` | The interpreter: detection, resources, script VM, rooms, actors, walkboxes, costumes, verbs, text, sound, saves. |
+| `src/Maniacal.Player` | The `maniacal` command line player on the SDL host. |
+| `tests/Maniacal.Scumm.Tests` | Unit tests, and tests that run against the real game data when it is present. |
+| `tools` | Generators that port tables from the ScummVM source (`port_md5_table.py`, `port_fonts.py`, `port_opcodes.py`, `port_sound_tables.py`, `port_disk_tables.py`, `port_palettes.py`, `port_v0_verbs.py`, `port_v0_actors.py`, `port_sid_tables.py`, `port_transitions.py`). |
+| `docs` | How Maniac Mansion works and how an interpreter for it is built: the commented C64 engine, the game's scripts, the boot loader, the NES data, and the game itself. Start at [docs/README.md](docs/README.md). |
+| `assets/screenshots` | The screenshots above. |
+| `tools/PackageSmoke` | The packages' consumer check (see Building and running). |
+| `.github/workflows` | The build workflow (every push) and the publish workflow (a version tag). |
+
+The host contract is part of `Maniacal.Scumm`: the engine base class, the graphics, input and
+audio drivers it is given and a headless host (`Hosting`, `Input`), screen surfaces and PNG
+writing (`Graphics`), game folders and save stores (`Storage`), and the audio sources (`Sound`).
+The SDL host is part of `Maniacal.Player` (`Sdl`). These come from
+[Daventry](https://github.com/jeffnyman/daventry), the AGI and SCI interpreter, whose 0.1.0-alpha
+host layer they were taken from and adapted. Beyond the .NET SDK, the only dependency is SDL3
+(`ppy.SDL3-CS`), for the player.
 
 ## Building and running
 
@@ -317,9 +322,7 @@ dotnet run --project src/Maniacal.Player -- <game folder> [options]
 dotnet run --project src/Maniacal.Player -- --help
 ```
 
-## Game data
-
-Maniacal ships no game data. Point it at a folder holding a release. The tests look for the folders
+The tests look for the folders
 `maniac_mansion_original_DOS.com` (V1), `maniac_mansion_enhanced_DOS.com` (V2), `maniac_mansion_c64`
 (V0), and the demos' `maniac_mansion_demo_original_DOS`, `maniac_mansion_demo_enhanced_DOS` and
 `maniac_mansion_demo_C64`, the NES's `maniac_mansion_NES`, the Atari ST's `maniac_mansion_ST` and
@@ -336,11 +339,11 @@ close-ups), as ScummVM slot files for the release's target, from slot 31 on (`ma
 `maniac1.s32`, `maniacnes.s33`, ...; Bernard's own sections from slot 49, Wendy's from 52, Michael's from 55), to
 load in ScummVM and compare.
 
-The C64 release's disk images are found by ScummVM's names, `maniac1.d64` and `maniac2.d64`, or by
-the bytes each disk starts with. The NES cartridge is found by its contents, under any name ending
-in `.nes` (a dump with its iNES header) or `.prg` (the program data alone, as ScummVM wants it).
-The Atari ST's disk is read where it is, a `.st` image under any name, and the Amiga's two, `.adf`
-images under any names (ScummVM wants their files copied off them).
+`tools/PackageSmoke/run.ps1 -Game <folder> [-MoreGames <folder>,...]` packs the repository into
+`artifacts/packages` and checks the packages as a consumer would: a console app restores
+`Maniacal.Scumm` from that feed and plays each game headless, and the tool, installed from it,
+lists the game and takes a screenshot. The build workflow builds, tests and packs every push; the
+publish workflow pushes the packages to nuget.org for a tag such as `v1.0.0`.
 
 ## Documentation
 
