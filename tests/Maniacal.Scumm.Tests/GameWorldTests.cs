@@ -148,7 +148,7 @@ public class GameWorldTests
                     break;
             }
 
-            world.Step();
+            Recording.Step(world);
         }
 
         return world;

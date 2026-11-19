@@ -64,14 +64,14 @@ public class WalkthroughTests
         world.Boot();
         for (int step = 0; step < 2000 && world.CurrentRoom?.Number != NesSelection; step++)
         {
-            world.Step();
+            Recording.Step(world);
         }
 
         foreach (int obj in new[] { NesPortraits[second], NesPortraits[third], NesStart })
         {
             for (int step = 0; step < 100; step++)
             {
-                world.Step();
+                Recording.Step(world);
             }
 
             world.ClickObject(obj);
@@ -79,7 +79,7 @@ public class WalkthroughTests
 
         for (int step = 0; step < 3000 && !(world.CurrentRoom?.Number == Driveway && world.CursorShown); step++)
         {
-            world.Step();
+            Recording.Step(world);
         }
 
         return world;
@@ -1063,11 +1063,31 @@ public class WalkthroughTests
     [InlineData(Nes)]
     public void The_route_plays(string folder)
     {
+        Recording.Begin($"maniac-mansion-{RecordingName(folder)}-syd");
         if (Start(folder) is not { } p)
         {
+            Recording.Finish(null);
             return;
         }
 
+        try
+        {
+            TheRoute(p, folder);
+        }
+        finally
+        {
+            Recording.Finish(p.World);
+        }
+    }
+
+    // a release's name in its recording's file name
+    private static string RecordingName(string folder) => folder switch
+    {
+        C64 => "c64", V1 => "dos-1987", V2 => "dos-1988", Nes => "nes", AtariSt => "atari-st", Amiga => "amiga", _ => folder,
+    };
+
+    private static void TheRoute(Player p, string folder)
+    {
         ToTheLabDoors(p, folder, saved: true);
         TheStamps(p);
         Checkpoint(p, folder, 45);
@@ -1084,6 +1104,13 @@ public class WalkthroughTests
         p.Begin("Use", "yellow key", "weird edsel");
         p.Hear("You won the game!", TimeSpan.FromMinutes(5));
         Assert.Empty(p.Unhandled);
+
+        // a recording holds the ending on screen a while
+        if (Recording.IsRecording(p.World))
+        {
+            var end = p.World.Time + TimeSpan.FromSeconds(10);
+            p.Until(() => p.World.Time >= end, int.MaxValue);
+        }
 
         // the Amiga changes rooms without fading out, so its ending's room 0 leaves the last room
         // showing under the message, the porch, as ScummVM 2026.4.0 showed it to the pixel

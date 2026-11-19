@@ -166,7 +166,7 @@ public class PlayingTests
     {
         for (int i = 0; i < count; i++)
         {
-            world.Step();
+            Recording.Step(world);
         }
     }
 
@@ -242,7 +242,7 @@ public class PlayingTests
 
         for (int step = 0; step < 3000 && !(world.CurrentRoom?.Number == 44 && world.CursorShown); step++)
         {
-            world.Step();
+            Recording.Step(world);
         }
 
         return world;

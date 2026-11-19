@@ -69,6 +69,7 @@ internal sealed class Player(GameWorld world)
     private void Step()
     {
         world.Step();
+        Recording.Stepped(world);
         _seen.Add(Room);
         if (world.Sound.LastSound is var sound and not 0 && (_sounds.Count == 0 || _sounds[^1] != sound))
         {
