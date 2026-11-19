@@ -197,12 +197,40 @@ host layer they were taken from and adapted. Beyond the .NET SDK, the only depen
 
 ## Installing
 
-The player is a dotnet tool, and the interpreter a library, on nuget.org (both need .NET 10):
+The player is a dotnet tool, and the interpreter a library, both on nuget.org. There is no
+download to unzip: the player is installed and run from a terminal (PowerShell or Windows
+Terminal on Windows, Terminal on macOS) with .NET's own `dotnet` command.
 
-```
-dotnet tool install -g Maniacal
-maniacal <game folder>
-```
+### The player
+
+1. Install the .NET 10 SDK, once, from [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/10.0)
+   (the SDK, not just the runtime: installing a tool needs the SDK). From a terminal instead:
+   `winget install Microsoft.DotNet.SDK.10` on Windows, `brew install --cask dotnet-sdk` on macOS
+   with Homebrew; on Linux, see
+   [Install .NET on Linux](https://learn.microsoft.com/dotnet/core/install/linux) for your
+   distribution. `dotnet --version` should then print 10 or later.
+2. Install the player:
+
+   ```
+   dotnet tool install -g Maniacal
+   ```
+
+3. Play, pointing it at the folder that holds a release's files (see
+   [Game data](https://github.com/jeffnyman/maniacal#game-data)):
+
+   ```
+   maniacal <game folder>
+   ```
+
+If the terminal says `maniacal` is not found, open a new one: the first tool installed adds
+.NET's tools folder (`%USERPROFILE%\.dotnet\tools`, `~/.dotnet/tools`) to the path, and a
+terminal already open does not see that. On macOS and Linux with zsh, if a new terminal still
+does not find it, `dotnet tool install` printed the line to add to `~/.zprofile`.
+
+`dotnet tool update -g Maniacal` moves to the latest release, and `dotnet tool uninstall -g
+Maniacal` removes it. `maniacal --help` lists the options.
+
+### The library
 
 ```
 dotnet add package Maniacal.Scumm
