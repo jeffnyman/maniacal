@@ -19,7 +19,7 @@ on:
         required: true
 
 permissions:
-  contents: read
+  contents: write   # a tag push also creates the GitHub release
   id-token: write   # Trusted Publishing exchanges the workflow's OIDC token for a short-lived key
 
 jobs:
@@ -72,3 +72,23 @@ jobs:
             dotnet nuget push $package.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
             if ($LASTEXITCODE -ne 0) { throw "pushing $($package.Name) failed" }
           }
+
+      # only for a tag push: a version run by hand has no tag to hang a release on. A version with a
+      # suffix (1.1.0-alpha) is marked a prerelease. The packages go up with it, for reference.
+      - name: GitHub release
+        if: github.event_name == 'push'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $notes = @"
+          Published to nuget.org:
+
+          - the player: ``dotnet tool install -g Maniacal`` (or ``dotnet tool update -g Maniacal``), [Maniacal $version](https://www.nuget.org/packages/Maniacal/$version)
+          - the library: [Maniacal.Scumm $version](https://www.nuget.org/packages/Maniacal.Scumm/$version)
+          "@
+          $prerelease = if ($version -match '-') { @('--prerelease') } else { @() }
+          $packages = (Get-ChildItem artifacts/packages -Filter *.nupkg).FullName
+          gh release create "${{ github.ref_name }}" @packages --verify-tag --title $version --notes $notes --generate-notes @prerelease
+          if ($LASTEXITCODE -ne 0) { throw "creating the release failed" }
